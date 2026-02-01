@@ -1,5 +1,6 @@
 package com.markel.flowstate.feature.tasks.components
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -22,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,12 +51,14 @@ fun DynamicHeader(isMinimized: Boolean) {
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "height"
     )
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = 16.dp)
+            .padding(top = if (isLandscape) 6.dp else 28.dp)
     ) {
         Box(
             modifier = Modifier
@@ -96,7 +100,7 @@ fun DynamicHeader(isMinimized: Boolean) {
 
         AnimatedVisibility(visible = isMinimized) {
             HorizontalDivider(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = if(isLandscape) 4.dp else 8.dp),
                 thickness = 0.5.dp,
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
             )

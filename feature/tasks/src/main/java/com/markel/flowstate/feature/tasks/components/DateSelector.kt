@@ -10,6 +10,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,7 +62,8 @@ fun DateSelector(
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = dueDate ?: System.currentTimeMillis()
+            initialSelectedDateMillis = dueDate ?: System.currentTimeMillis(),
+            initialDisplayMode = if (isLandscape) DisplayMode.Input else DisplayMode.Picker
         )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
