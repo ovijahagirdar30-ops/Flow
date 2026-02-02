@@ -33,6 +33,7 @@ import com.markel.flowstate.feature.tasks.components.DynamicHeader
 import com.markel.flowstate.feature.tasks.components.EmptyStateView
 import com.markel.flowstate.feature.tasks.components.ExpandableFabMenu
 import com.markel.flowstate.feature.tasks.components.TaskCreationSheetContent
+import com.markel.flowstate.feature.tasks.components.TaskEditorOverlay
 import com.markel.flowstate.feature.tasks.components.TaskEditorSheetContent
 import com.markel.flowstate.feature.tasks.util.HandleSystemBars
 import com.markel.flowstate.feature.tasks.util.asColor
@@ -187,86 +188,16 @@ fun TaskScreen(viewModel: TaskViewModel) {
                 )
             }
         }
-        AnimatedVisibility(
-            visible = taskToEdit != null,
-            enter = slideInVertically { it } + fadeIn(),
-            exit = slideOutVertically { it } + fadeOut(),
-            modifier = Modifier.zIndex(10f)
-        ) {
-            // A BackHandler to close the editor with the back button instead of the app
-            BackHandler(enabled = taskToEdit != null) {
-                taskToEdit = null
+        TaskEditorOverlay(
+            task = taskToEdit,
+            onDismiss = { taskToEdit = null },
+            priority = editorPriority,
+            onPriorityChange = { editorPriority = it },
+            dueDate = editorDueDate,
+            onDueDateChange = { editorDueDate = it },
+            onUpdate = { task, title, desc, prio, date, subs ->
+                viewModel.updateTask(task, title, desc, prio, date, subs)
             }
-
-            if (taskToEdit != null) {
-                val currentTask = taskToEdit!! // Local capture to avoid null safety issues
-                
-                Scaffold(
-                    contentWindowInsets = WindowInsets(0.dp),
-                    topBar = {
-                        TopAppBar(
-                            title = {},
-                            navigationIcon = {
-                                IconButton(onClick = {taskToEdit = null}) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                                        contentDescription = "Close"
-                                    )
-                                }
-                            },
-                            actions = {
-                                IconButton(onClick = {
-                                    val nextPriority = when (editorPriority) {
-                                        Priority.NOTHING -> Priority.LOW
-                                        Priority.LOW -> Priority.MEDIUM
-                                        Priority.MEDIUM -> Priority.HIGH
-                                        Priority.HIGH -> Priority.NOTHING
-                                    }
-                                    editorPriority = nextPriority
-                                }) {
-                                    Icon(
-                                        imageVector = ImageVector.vectorResource(R.drawable.flag_2_24px),
-                                        contentDescription = "Priority",
-                                        tint = editorPriority.asColor(),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-
-                                DateSelector(
-                                    dueDate = editorDueDate,
-                                    onDueDateChange = { editorDueDate = it },
-                                    modifier = Modifier,
-                                    showLabel = true
-                                )
-
-                                IconButton(onClick = { /* TODO: Implement format */ }) {
-                                    Icon(
-                                        imageVector = ImageVector.vectorResource(R.drawable.format_color_text_24px),
-                                        contentDescription = "Format",
-                                        modifier = Modifier.size(24.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.95f)
-                                    )
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
-                        )
-                    },
-                    containerColor = MaterialTheme.colorScheme.surface
-                ) { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding)) {
-                        TaskEditorSheetContent(
-                            task = currentTask,
-                            priority = editorPriority,
-                            dueDate = editorDueDate,
-                            onAutoUpdate = { title, desc, priority, dueDate, subTasks ->
-                                viewModel.updateTask(currentTask, title, desc, priority, dueDate, subTasks)
-                            }
-                        )
-                    }
-                }
-            }
-        }
+        )
     }
 }
