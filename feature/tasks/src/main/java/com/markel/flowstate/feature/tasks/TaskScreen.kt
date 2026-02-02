@@ -1,6 +1,7 @@
 package com.markel.flowstate.feature.tasks
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -9,25 +10,32 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.tasks.components.AnimatableTaskItem
+import com.markel.flowstate.feature.tasks.components.DateSelector
 import com.markel.flowstate.feature.tasks.components.DynamicHeader
 import com.markel.flowstate.feature.tasks.components.EmptyStateView
 import com.markel.flowstate.feature.tasks.components.ExpandableFabMenu
 import com.markel.flowstate.feature.tasks.components.TaskCreationSheetContent
 import com.markel.flowstate.feature.tasks.components.TaskEditorSheetContent
 import com.markel.flowstate.feature.tasks.util.HandleSystemBars
+import com.markel.flowstate.feature.tasks.util.asColor
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -52,20 +60,25 @@ fun TaskScreen(viewModel: TaskViewModel) {
 
     var isFabExpanded by remember { mutableStateOf(false) }
     var taskToEdit by remember { mutableStateOf<Task?>(null) }
-    var showSheet by remember { mutableStateOf(false) }
+    var showCreationSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    // For creation
     var draftTitle by rememberSaveable { mutableStateOf("") }
     var draftDescription by rememberSaveable { mutableStateOf("") }
     var draftPriority by rememberSaveable { mutableStateOf(Priority.NOTHING)}
     var draftDueDate by rememberSaveable { mutableStateOf<Long?>(null) }
+
+    // For edition
+    var editorPriority by remember(taskToEdit) { mutableStateOf(taskToEdit?.priority ?: Priority.NOTHING) }
+    var editorDueDate by remember(taskToEdit) { mutableStateOf(taskToEdit?.dueDate) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             contentWindowInsets = WindowInsets(0.dp),
             floatingActionButton = {
                 AnimatedVisibility(
-                    visible = !showSheet,
+                    visible = !showCreationSheet && taskToEdit == null,
                     enter = scaleIn(),
                     exit = scaleOut()
                 ) {
@@ -73,7 +86,7 @@ fun TaskScreen(viewModel: TaskViewModel) {
                         expanded = isFabExpanded,
                         onToggle = { isFabExpanded = !isFabExpanded },
                         onTaskClick = {
-                            isFabExpanded = false; taskToEdit = null; showSheet = true
+                            isFabExpanded = false; taskToEdit = null; showCreationSheet = true
                         },
                         onIdeaClick = { isFabExpanded = false }
                     )
@@ -130,7 +143,6 @@ fun TaskScreen(viewModel: TaskViewModel) {
                                                 onComplete = { viewModel.toggleTaskDone(task) },
                                                 onContentClick = {
                                                     taskToEdit = task // EDIT Mode
-                                                    showSheet = true
                                                 }
                                             )
                                         }
@@ -143,11 +155,11 @@ fun TaskScreen(viewModel: TaskViewModel) {
             }
         }
 
-        if (showSheet) {
+        if (showCreationSheet) {
             ModalBottomSheet(
-                onDismissRequest = { showSheet = false },
+                onDismissRequest = { showCreationSheet = false },
                 sheetState = sheetState,
-                dragHandle = { if (taskToEdit == null) null else Spacer(modifier = Modifier.height(28.dp)) },
+                dragHandle = null,
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 shape = if (taskToEdit == null) RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp) else RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
             ) {
@@ -155,35 +167,104 @@ fun TaskScreen(viewModel: TaskViewModel) {
                 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
                 HandleSystemBars(isLandscape)
 
-                if (taskToEdit == null) {
-                    // --- CREATION MODE ---
-                    TaskCreationSheetContent(
-                        title = draftTitle,
-                        onTitleChange = { draftTitle = it },
-                        description = draftDescription,
-                        onDescriptionChange = { draftDescription = it },
-                        priority = draftPriority,
-                        onPriorityChange = { draftPriority = it },
-                        dueDate = draftDueDate,
-                        onDueDateChange = { draftDueDate = it },
-                        onSave = { title, desc, prio, date ->
-                            viewModel.addTask(title, desc, prio, date, emptyList())
-                            draftTitle = ""
-                            draftDescription = ""
-                            draftPriority = Priority.NOTHING
-                            draftDueDate = null
-                            showSheet = false
-                        }
-                    )
-                }
-                else {
-                    // --- EDITION MODE ---
-                    TaskEditorSheetContent(
-                        task = taskToEdit,
-                        onAutoUpdate = { title, desc, priority, dueDate, subTasks ->
-                            viewModel.updateTask(taskToEdit!!, title, desc, priority, dueDate, subTasks)
-                        }
-                    )
+                TaskCreationSheetContent(
+                    title = draftTitle,
+                    onTitleChange = { draftTitle = it },
+                    description = draftDescription,
+                    onDescriptionChange = { draftDescription = it },
+                    priority = draftPriority,
+                    onPriorityChange = { draftPriority = it },
+                    dueDate = draftDueDate,
+                    onDueDateChange = { draftDueDate = it },
+                    onSave = { title, desc, prio, date ->
+                        viewModel.addTask(title, desc, prio, date, emptyList())
+                        draftTitle = ""
+                        draftDescription = ""
+                        draftPriority = Priority.NOTHING
+                        draftDueDate = null
+                        showCreationSheet = false
+                    }
+                )
+            }
+        }
+        AnimatedVisibility(
+            visible = taskToEdit != null,
+            enter = slideInVertically { it } + fadeIn(),
+            exit = slideOutVertically { it } + fadeOut(),
+            modifier = Modifier.zIndex(10f)
+        ) {
+            // A BackHandler to close the editor with the back button instead of the app
+            BackHandler(enabled = taskToEdit != null) {
+                taskToEdit = null
+            }
+
+            if (taskToEdit != null) {
+                val currentTask = taskToEdit!! // Local capture to avoid null safety issues
+                
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0.dp),
+                    topBar = {
+                        TopAppBar(
+                            title = {},
+                            navigationIcon = {
+                                IconButton(onClick = {taskToEdit = null}) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                        contentDescription = "Close"
+                                    )
+                                }
+                            },
+                            actions = {
+                                IconButton(onClick = {
+                                    val nextPriority = when (editorPriority) {
+                                        Priority.NOTHING -> Priority.LOW
+                                        Priority.LOW -> Priority.MEDIUM
+                                        Priority.MEDIUM -> Priority.HIGH
+                                        Priority.HIGH -> Priority.NOTHING
+                                    }
+                                    editorPriority = nextPriority
+                                }) {
+                                    Icon(
+                                        imageVector = ImageVector.vectorResource(R.drawable.flag_2_24px),
+                                        contentDescription = "Priority",
+                                        tint = editorPriority.asColor(),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                DateSelector(
+                                    dueDate = editorDueDate,
+                                    onDueDateChange = { editorDueDate = it },
+                                    modifier = Modifier,
+                                    showLabel = true
+                                )
+
+                                IconButton(onClick = { /* TODO: Implement format */ }) {
+                                    Icon(
+                                        imageVector = ImageVector.vectorResource(R.drawable.format_color_text_24px),
+                                        contentDescription = "Format",
+                                        modifier = Modifier.size(24.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.95f)
+                                    )
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
+                        )
+                    },
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) { innerPadding ->
+                    Box(modifier = Modifier.padding(innerPadding)) {
+                        TaskEditorSheetContent(
+                            task = currentTask,
+                            priority = editorPriority,
+                            dueDate = editorDueDate,
+                            onAutoUpdate = { title, desc, priority, dueDate, subTasks ->
+                                viewModel.updateTask(currentTask, title, desc, priority, dueDate, subTasks)
+                            }
+                        )
+                    }
                 }
             }
         }
