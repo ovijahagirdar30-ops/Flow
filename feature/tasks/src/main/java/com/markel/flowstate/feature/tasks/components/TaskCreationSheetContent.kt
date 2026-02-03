@@ -51,6 +51,7 @@ fun TaskCreationSheetContent(
     onPriorityChange: (Priority) -> Unit,
     dueDate: Long?,
     onDueDateChange: (Long?) -> Unit,
+    titlePlaceholder: String = stringResource(R.string.new_task_placeholder),
     onSave: (String, String, Priority, Long?) -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -69,7 +70,7 @@ fun TaskCreationSheetContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester),
-            placeholder = { Text(stringResource(R.string.new_task_placeholder), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))) },
+            placeholder = { Text(titlePlaceholder, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))) },
             textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,

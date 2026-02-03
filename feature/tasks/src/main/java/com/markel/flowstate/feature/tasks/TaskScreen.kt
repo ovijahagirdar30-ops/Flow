@@ -162,7 +162,7 @@ fun TaskScreen(viewModel: TaskViewModel) {
                 sheetState = sheetState,
                 dragHandle = null,
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                shape = if (taskToEdit == null) RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp) else RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
             ) {
                 val configuration = LocalConfiguration.current
                 val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE

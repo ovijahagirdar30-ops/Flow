@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -47,6 +48,15 @@ fun TaskEditorSheetContent(
     // Information about the subtasks
     var showSubTaskDialog by remember { mutableStateOf(false) }
     var subTaskToEdit by remember { mutableStateOf<SubTask?>(null) }
+
+    // States to show the creation sheet when creating a subtask
+    var showCreationSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Draft states for the new subtask
+    var draftSubTitle by rememberSaveable { mutableStateOf("") }
+    var draftSubDescription by rememberSaveable { mutableStateOf("") }
+    var draftSubPriority by rememberSaveable { mutableStateOf(Priority.NOTHING) }
+    var draftSubDueDate by rememberSaveable { mutableStateOf<Long?>(null) }
 
     // Checkpoints to track what was actually last saved
     var lastSavedTitle by remember { mutableStateOf(title) }
@@ -235,8 +245,7 @@ fun TaskEditorSheetContent(
         // Button to create a new subtask
         TextButton(
             onClick = {
-                subTaskToEdit = null
-                showSubTaskDialog = true
+                showCreationSheet = true
             },
             colors = ButtonDefaults.textButtonColors(
                 contentColor = MaterialTheme.colorScheme.tertiary
@@ -249,6 +258,45 @@ fun TaskEditorSheetContent(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+    }
+    if (showCreationSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showCreationSheet = false },
+            sheetState = sheetState,
+            dragHandle = null,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+        ) {
+            TaskCreationSheetContent(
+                title = draftSubTitle,
+                onTitleChange = { draftSubTitle = it },
+                description = draftSubDescription,
+                onDescriptionChange = { draftSubDescription = it },
+                priority = draftSubPriority,
+                onPriorityChange = { draftSubPriority = it },
+                dueDate = draftSubDueDate,
+                onDueDateChange = { draftSubDueDate = it },
+                titlePlaceholder = stringResource(R.string.add_subtask_placeholder),
+                onSave = { title, desc, prio, date ->
+                    val newSubTask = SubTask(
+                        id = java.util.UUID.randomUUID().toString(),
+                        title = title,
+                        description = desc,
+                        isDone = false,
+                        priority = prio,
+                        dueDate = date,
+                        position = subTasks.size
+                    )
+                    subTasks.add(newSubTask)
+
+                    draftSubTitle = ""
+                    draftSubDescription = ""
+                    draftSubPriority = Priority.NOTHING
+                    draftSubDueDate = null
+                    showCreationSheet = false
+                }
+            )
+        }
     }
     // POPUP DIALOG
     if (showSubTaskDialog) {
