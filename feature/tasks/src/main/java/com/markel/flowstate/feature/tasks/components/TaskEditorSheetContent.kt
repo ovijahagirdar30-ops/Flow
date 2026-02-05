@@ -45,9 +45,9 @@ fun TaskEditorSheetContent(
             addAll(task?.subTasks ?: emptyList())
         }
     }
-    // Information about the subtasks
-    var showSubTaskDialog by remember { mutableStateOf(false) }
-    var subTaskToEdit by remember { mutableStateOf<SubTask?>(null) }
+
+    // Track which subtask is expanded for inline editing
+    var expandedSubTaskId by remember { mutableStateOf<String?>(null) }
 
     // States to show the creation sheet when creating a subtask
     var showCreationSheet by remember { mutableStateOf(false) }
@@ -186,9 +186,7 @@ fun TaskEditorSheetContent(
 
         // SUBTASKS
         val visibleSubTasks = remember(subTasks.toList()) {
-
             subTasks.filter { !it.isDone }
-
         }
 
         Text(
@@ -210,26 +208,34 @@ fun TaskEditorSheetContent(
             ) {
                 Column {
                     visibleSubTasks.forEachIndexed { index, subTask ->
-                        RichSubTaskItem(
+                        EditableSubTaskItem(
                             subTask = subTask,
+                            isExpanded = expandedSubTaskId == subTask.id,
+                            onExpandChange = { shouldExpand ->
+                                expandedSubTaskId = if (shouldExpand) subTask.id else null
+                            },
+                            onUpdate = { updatedSubTask ->
+                                val realIndex = subTasks.indexOfFirst { it.id == updatedSubTask.id }
+                                if (realIndex != -1) {
+                                    subTasks[realIndex] = updatedSubTask
+                                }
+                            },
                             onCheckedChange = {
                                 // We need to find the index in the REAL list, not the visible list
                                 val realIndex = subTasks.indexOfFirst { it.id == subTask.id }
                                 if (realIndex != -1) {
                                     subTasks[realIndex] = subTask.copy(isDone = !subTask.isDone)
                                 }
-
-                            },
-                            onClick = {
-                                subTaskToEdit = subTask
-                                showSubTaskDialog = true
                             },
                             onDelete = {
                                 val realIndex = subTasks.indexOfFirst { it.id == subTask.id }
                                 if (realIndex != -1) {
                                     subTasks.removeAt(realIndex)
                                 }
-
+                                // Close expansion if this was the expanded item
+                                if (expandedSubTaskId == subTask.id) {
+                                    expandedSubTaskId = null
+                                }
                             }
                         )
                         if (index < visibleSubTasks.lastIndex) {
@@ -245,12 +251,16 @@ fun TaskEditorSheetContent(
         // Button to create a new subtask
         TextButton(
             onClick = {
+                // Close any expanded subtask before opening creation sheet
+                expandedSubTaskId = null
                 showCreationSheet = true
             },
             colors = ButtonDefaults.textButtonColors(
                 contentColor = MaterialTheme.colorScheme.tertiary
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .imePadding()
         ) {
             Icon(Icons.Rounded.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -259,6 +269,7 @@ fun TaskEditorSheetContent(
 
         Spacer(modifier = Modifier.height(8.dp))
     }
+
     if (showCreationSheet) {
         ModalBottomSheet(
             onDismissRequest = { showCreationSheet = false },
@@ -297,22 +308,6 @@ fun TaskEditorSheetContent(
                 }
             )
         }
-    }
-    // POPUP DIALOG
-    if (showSubTaskDialog) {
-        SubTaskDialog(
-            subTask = subTaskToEdit,
-            onDismiss = { showSubTaskDialog = false },
-            onSave = { resultSubTask ->
-                val index = subTasks.indexOfFirst { it.id == resultSubTask.id }
-                if (index != -1) {
-                    subTasks[index] = resultSubTask // Update existing one
-                } else {
-                    subTasks.add(resultSubTask) // Create a new subtask
-                }
-                showSubTaskDialog = false
-            }
-        )
     }
 
     LaunchedEffect(Unit) {
