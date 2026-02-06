@@ -16,5 +16,6 @@ data class TaskEntity(
     val isDone: Boolean = false,
     val position: Int = 0,
     val priority: Int = 0,
-    val dueDate: Long? = null
+    val dueDate: Long? = null,
+    val completedAt: Long? = null
 )

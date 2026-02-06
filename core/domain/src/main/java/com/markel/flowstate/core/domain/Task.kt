@@ -18,7 +18,8 @@ data class SubTask(
     val isDone: Boolean = false,
     val priority: Priority = Priority.NOTHING,
     val dueDate: Long? = null,
-    val position: Int = 0
+    val position: Int = 0,
+    val completedAt: Long? = null
 )
 data class Task(
     val id: Int = 0,
@@ -28,8 +29,6 @@ data class Task(
     val position: Int = 0,
     val priority: Priority = Priority.NOTHING,
     val dueDate: Long? = null,
+    val completedAt: Long? = null,
     val subTasks: List<SubTask> = emptyList()
-    // Other domain fields would go here, such as:
-    // priority: Priority,
-    // dueDate: LocalDate?
 )

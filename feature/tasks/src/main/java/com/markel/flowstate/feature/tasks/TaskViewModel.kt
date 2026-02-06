@@ -91,8 +91,12 @@ class TaskViewModel  @Inject constructor(
 
     // Function to toggle task completion status
     fun toggleTaskDone(task: Task) {
+        val newIsDone = !task.isDone
+        val newCompletedAt = if (newIsDone) System.currentTimeMillis() else null
         viewModelScope.launch {
-            repository.upsertTask(task.copy(isDone = !task.isDone))
+            repository.upsertTask(task.copy(
+                isDone = newIsDone,
+                completedAt = newCompletedAt))
         }
     }
 

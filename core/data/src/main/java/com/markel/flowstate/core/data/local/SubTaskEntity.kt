@@ -27,5 +27,6 @@ data class SubTaskEntity(
     val isDone: Boolean,
     val priority: Int,
     val dueDate: Long?,
-    val position: Int
+    val position: Int,
+    val completedAt: Long? = null
 )

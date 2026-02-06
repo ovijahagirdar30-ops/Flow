@@ -67,6 +67,7 @@ class TaskRepositoryImpl @Inject constructor(
             position = this.task.position,
             priority = priorityEnum,
             dueDate = this.task.dueDate,
+            completedAt = this.task.completedAt,
             subTasks = this.subTasks.map { it.toDomain() }
         )
     }
@@ -79,7 +80,8 @@ class TaskRepositoryImpl @Inject constructor(
             isDone = this.isDone,
             priority = Priority.entries.getOrElse(this.priority) { Priority.NOTHING },
             dueDate = this.dueDate,
-            position = this.position
+            position = this.position,
+            completedAt = this.completedAt
         )
     }
 
@@ -91,7 +93,9 @@ class TaskRepositoryImpl @Inject constructor(
             isDone = this.isDone,
             position = this.position,
             priority = this.priority.ordinal,
-            dueDate = this.dueDate
+            dueDate = this.dueDate,
+            completedAt = this.completedAt
+
         )
     }
 
@@ -104,7 +108,8 @@ class TaskRepositoryImpl @Inject constructor(
             isDone = this.isDone,
             priority = this.priority.ordinal,
             dueDate = this.dueDate,
-            position = this.position
+            position = this.position,
+            completedAt = this.completedAt
         )
     }
 }

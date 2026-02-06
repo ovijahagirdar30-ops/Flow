@@ -1,7 +1,10 @@
 package com.markel.flowstate.core.data.local
 
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * This is the main database class.
@@ -10,7 +13,8 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class], // List of all tables
-    version = 5
+    version = 6,
+    exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
 
@@ -20,5 +24,11 @@ abstract class FlowStateDatabase : RoomDatabase() {
     // Room will use this to create the DB instance.
     companion object {
         const val DATABASE_NAME = "flowstate_db"
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN completedAt INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE subtasks ADD COLUMN completedAt INTEGER DEFAULT NULL")
+            }
+        }
     }
 }
