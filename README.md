@@ -2,8 +2,8 @@
 
 **A modern, intuitive task management app built with Jetpack Compose and Clean Architecture**
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-blue.svg)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/Compose-1.7.0-blue)](https://developer.android.com/jetpack/compose)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.1.10-blue.svg)](https://kotlinlang.org)
+[![Compose](https://img.shields.io/badge/Compose-1.9.2-blue)](https://developer.android.com/jetpack/compose)
 [![Room](https://img.shields.io/badge/Room-2.8.4-green)](https://developer.android.com/training/data-storage/room)
 [![Hilt](https://img.shields.io/badge/Hilt-2.57.2-red)](https://dagger.dev/hilt/)
 
