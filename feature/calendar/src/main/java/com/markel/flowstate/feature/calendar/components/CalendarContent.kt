@@ -154,8 +154,8 @@ fun DayCell(
             .clip(CircleShape)
             .background(
                 color = when {
-                    isSelected -> MaterialTheme.colorScheme.primary
-                    isToday -> MaterialTheme.colorScheme.secondaryContainer
+                    isSelected -> MaterialTheme.colorScheme.tertiary
+                    isToday -> MaterialTheme.colorScheme.surfaceVariant
                     else -> Color.Transparent
                 }
             )
@@ -163,23 +163,24 @@ fun DayCell(
         contentAlignment = Alignment.Center
     ) {
         if (day.position == DayPosition.MonthDate) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = day.date.dayOfMonth.toString(),
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                    fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
-                )
+            Text(
+                modifier = Modifier.align(Alignment.Center),
+                text = day.date.dayOfMonth.toString(),
+                color = if (isSelected) MaterialTheme.colorScheme.onTertiary else if (isToday) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
+            )
 
-                // Dot if there are tasks
-                if (hasTasks) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(4.dp)
-                            .clip(CircleShape)
-                            .background(if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary)
-                    )
-                }
+            // Dot if there are tasks
+            if (hasTasks) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom =6.dp)
+                        .size(4.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.tertiary)
+                )
             }
         }
     }
@@ -202,7 +203,7 @@ fun SimpleTaskRow(task: Task) {
                 imageVector = if(task.isDone) androidx.compose.material.icons.Icons.Default.Check else ImageVector.vectorResource(
                     R.drawable.radio_button_unchecked_24px),
                 contentDescription = null,
-                tint = if(task.isDone) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if(task.isDone) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
