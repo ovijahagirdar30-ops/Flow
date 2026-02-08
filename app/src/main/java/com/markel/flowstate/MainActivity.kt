@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,24 +14,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Face
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -40,18 +37,23 @@ import androidx.navigation.compose.rememberNavController
 import com.markel.flowstate.feature.tasks.TaskScreen
 import com.markel.flowstate.feature.tasks.TaskViewModel
 import com.markel.flowstate.core.designsystem.theme.FlowStateTheme
+import com.markel.flowstate.feature.calendar.CalendarScreen
+import com.markel.flowstate.feature.calendar.CalendarViewModel
 import com.markel.flowstate.feature.tasks.util.HandleSystemBars
 import dagger.hilt.android.AndroidEntryPoint
+import java.time.LocalDate
 
 // We define our navigation routes
 sealed class Screen(val route: String, @StringRes val labelRes: Int, val iconRes: Int) {
     object Tasks : Screen("tasks", com.markel.flowstate.feature.tasks.R.string.tasks, R.drawable.task_alt_24px)
+    object Calendar : Screen("calendar", com.markel.flowstate.feature.tasks.R.string.calendar, R.drawable.calendar_today)
     object Habits : Screen("habits", com.markel.flowstate.feature.tasks.R.string.habits, R.drawable.calendar_month_24px)
     object Mood : Screen("mood", com.markel.flowstate.feature.tasks.R.string.mood, R.drawable.self_improvement_24px)
 }
 
 val bottomNavItems = listOf(
     Screen.Tasks,
+    Screen.Calendar,
     Screen.Habits,
     Screen.Mood
 )
@@ -97,6 +99,10 @@ class MainActivity : ComponentActivity() {
                             // We pass the ViewModel to the tasks screen
                             TaskScreen(viewModel = taskViewModel)
                         }
+                        composable(Screen.Calendar.route) {
+                            val calendarViewModel: CalendarViewModel = hiltViewModel()
+                            CalendarScreen(viewModel = calendarViewModel)
+                        }
                         composable(Screen.Habits.route) {
                             // Temporarily a placeholder
                             PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.habits))
@@ -131,7 +137,13 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
             bottomNavItems.forEach { screen ->
                 val label = stringResource(screen.labelRes)
                 NavigationBarItem(
-                    icon = { Icon(imageVector = ImageVector.vectorResource(screen.iconRes), contentDescription = label) },
+                    icon = {
+                        if (screen == Screen.Calendar) {
+                        DynamicCalendarIcon()
+                        }
+                        else
+                            Icon(imageVector = ImageVector.vectorResource(screen.iconRes), contentDescription = label)
+                    },
                     label = if (!isLandscape) { { Text(label) } } else null,  // Hide labels in landscape mode
                     selected = currentRoute == screen.route,
                     onClick = {
@@ -167,5 +179,29 @@ fun PlaceholderScreen(text: String) {
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
     ) {
         Text(text = text, style = MaterialTheme.typography.headlineMedium)
+    }
+}
+
+@Composable
+fun DynamicCalendarIcon() {
+    val today = remember { LocalDate.now().dayOfMonth.toString() }
+
+    Box(contentAlignment = Alignment.Center) {
+        // Base icon
+        Icon(
+            imageVector = ImageVector.vectorResource(R.drawable.calendar_today),
+            contentDescription = null,
+            modifier = Modifier.size(24.dp)
+        )
+
+        // Number day
+        Text(
+            text = today,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            // Adjust size to fit it inside the icon
+            fontSize = 11.sp,
+            modifier = Modifier.padding(top = 2.dp, start = 1.dp)
+        )
     }
 }
