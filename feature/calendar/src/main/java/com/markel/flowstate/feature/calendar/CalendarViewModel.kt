@@ -73,4 +73,18 @@ class CalendarViewModel @Inject constructor(
             }
             .groupBy({ it.first }, { it.second })
     }
+
+    fun toggleTaskDone(task: Task) {
+        val newIsDone = !task.isDone
+        val newCompletedAt = if (newIsDone) System.currentTimeMillis() else null
+
+        viewModelScope.launch {
+            repository.upsertTask(
+                task.copy(
+                    isDone = newIsDone,
+                    completedAt = newCompletedAt
+                )
+            )
+        }
+    }
 }

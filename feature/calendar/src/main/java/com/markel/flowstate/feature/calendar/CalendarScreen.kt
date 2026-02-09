@@ -24,7 +24,10 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
                 CalendarContent(
                     tasksByDate = state.tasksByDate,
                     selectedDate = state.selectedDate,
-                    onDateSelected = viewModel::onDateSelected
+                    onDateSelected = viewModel::onDateSelected,
+                    onTaskToggle = { task ->
+                        viewModel.toggleTaskDone(task)
+                    },
                 )
             }
         }

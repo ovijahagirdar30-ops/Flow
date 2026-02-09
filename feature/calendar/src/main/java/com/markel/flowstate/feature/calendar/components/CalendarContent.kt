@@ -53,7 +53,8 @@ import java.util.Locale
 fun CalendarContent(
     tasksByDate: Map<java.time.LocalDate, List<Task>>,
     selectedDate: java.time.LocalDate,
-    onDateSelected: (java.time.LocalDate) -> Unit
+    onDateSelected: (java.time.LocalDate) -> Unit,
+    onTaskToggle: (Task) -> Unit,
 ) {
     val currentMonth = remember { YearMonth.now() }
     val startMonth = remember { currentMonth.minusMonths(100) }
@@ -132,7 +133,10 @@ fun CalendarContent(
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
                 items(tasksForSelectedDate) { task ->
-                    SimpleTaskRow(task)
+                    InteractiveTaskRow(
+                        task = task,
+                        onToggle = { onTaskToggle(task) }
+                    )
                 }
             }
         }
