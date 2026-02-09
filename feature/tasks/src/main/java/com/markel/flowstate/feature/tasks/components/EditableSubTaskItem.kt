@@ -9,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -46,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -53,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
@@ -119,34 +123,38 @@ fun EditableSubTaskItem(
                     },
                     headlineContent = {
                         if (isExpanded) {
-                            TextField(
-                                value = editedTitle,
-                                onValueChange = { editedTitle = it },
-                                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                ),
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .focusRequester(focusRequester),
-                                keyboardOptions = KeyboardOptions(
-                                    capitalization = KeyboardCapitalization.Sentences,
-                                    imeAction = ImeAction.Next
-                                ),
-                                placeholder = {
+                                    .padding(start = 4.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                if (editedTitle.isEmpty()) {
                                     Text(
-                                        stringResource(R.string.add_subtask_placeholder),
+                                        text = stringResource(R.string.add_subtask_placeholder),
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                     )
-                                },
-                                maxLines = 2
-                            )
+                                }
+                                BasicTextField(
+                                    value = editedTitle,
+                                    onValueChange = { editedTitle = it },
+                                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequester),
+                                    keyboardOptions = KeyboardOptions(
+                                        capitalization = KeyboardCapitalization.Sentences,
+                                        imeAction = ImeAction.Next
+                                    ),
+                                    maxLines = 3,
+                                    minLines = 1,
+                                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
+                                )
+                            }
                         } else {
                             Text(
                                 text = subTask.title,
@@ -176,6 +184,8 @@ fun EditableSubTaskItem(
                                     Text(
                                         text = subTask.description,
                                         maxLines = 1,
+                                        minLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -208,9 +218,7 @@ fun EditableSubTaskItem(
                         modifier = Modifier
                             .padding(
                                 start = 56.dp,
-                                end = 16.dp,
-                                top = 4.dp,
-                                bottom = 4.dp
+                                end = 16.dp
                             )
                     ) {
                         HorizontalDivider(
@@ -220,30 +228,35 @@ fun EditableSubTaskItem(
                         )
 
                         // Description
-                        TextField(
-                            value = editedDescription,
-                            onValueChange = { editedDescription = it },
-                            placeholder = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 4.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (editedDescription.isEmpty()) {
                                 Text(
-                                    stringResource(R.string.description_placeholder),
+                                    text = stringResource(R.string.description_placeholder),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                 )
-                            },
-                            textStyle = MaterialTheme.typography.bodyMedium,
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            maxLines = 3,
-                            keyboardOptions = KeyboardOptions(
-                                capitalization = KeyboardCapitalization.Sentences
+                            }
+
+                            BasicTextField(
+                                value = editedDescription,
+                                onValueChange = { editedDescription = it },
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                                maxLines = 3,
+                                minLines = 1,
+                                keyboardOptions = KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.Sentences
+                                ),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
                             )
-                        )
+                        }
 
                         Spacer(modifier = Modifier.height(4.dp))
 
