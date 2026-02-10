@@ -3,6 +3,8 @@ package com.markel.flowstate.feature.calendar.components
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -40,7 +42,8 @@ fun AnimatedUndoFab(
             onClick = onUndoClick,
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
+            shape = CircleShape
         ) {
             Icon(
                 imageVector = ImageVector.vectorResource(R.drawable.undo_24px),
