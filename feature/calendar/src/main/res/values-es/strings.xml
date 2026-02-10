@@ -2,4 +2,6 @@
 <resources>
     <string name="noth_new">Nada programado para este día</string>
     <string name="today">Hoy</string>
+    <string name="toggle">Tarea marcada como no completada</string>
+    <string name="undo">Deshacer</string>
 </resources>

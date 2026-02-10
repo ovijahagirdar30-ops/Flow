@@ -87,4 +87,15 @@ class CalendarViewModel @Inject constructor(
             )
         }
     }
+
+    fun undoTaskToggle(originalTask: Task) {
+        viewModelScope.launch {
+            repository.upsertTask(
+                originalTask.copy(
+                    isDone = true,
+                    completedAt = originalTask.completedAt
+                )
+            )
+        }
+    }
 }

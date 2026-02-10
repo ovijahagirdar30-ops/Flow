@@ -2,4 +2,6 @@
 <resources>
     <string name="noth_new">Nothing scheduled for this day</string>
     <string name="today">Today</string>
+    <string name="toggle">Task marked as incomplete</string>
+    <string name="undo">Undo</string>
 </resources>
