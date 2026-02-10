@@ -130,13 +130,17 @@ fun CalendarContent(
             }
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(bottom = 80.dp)
+                contentPadding = PaddingValues(bottom = 40.dp)
             ) {
-                items(tasksForSelectedDate) { task ->
-                    InteractiveTaskRow(
-                        task = task,
-                        onToggle = { onTaskToggle(task) }
-                    )
+                items(tasksForSelectedDate, key = { task -> task.id }) { task ->
+                    Box(
+                        modifier = Modifier.animateItem()
+                    ) {
+                        InteractiveTaskRow(
+                            task = task,
+                            onToggle = { onTaskToggle(task) }
+                        )
+                    }
                 }
             }
         }
@@ -184,37 +188,6 @@ fun DayCell(
                         .size(4.dp)
                         .clip(CircleShape)
                         .background(if (isSelected) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.tertiary)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun SimpleTaskRow(task: Task) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Only visualization, no interaction yet
-            Icon(
-                imageVector = if(task.isDone) androidx.compose.material.icons.Icons.Default.Check else ImageVector.vectorResource(
-                    R.drawable.radio_button_unchecked_24px),
-                contentDescription = null,
-                tint = if(task.isDone) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.bodyMedium.copy(textDecoration = if(task.isDone) TextDecoration.LineThrough else null)
                 )
             }
         }
