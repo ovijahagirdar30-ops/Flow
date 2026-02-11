@@ -11,8 +11,9 @@
 > This project is actively being developed and may have bugs. We welcome contributions from the community!
 
 ## Screenshots
-| ![Image 1](screenshots/home_light.png) | ![Image 2](screenshots/home_dark.png) |
-|:--------------------------------------:|:-------------------------------------:|
+| ![Image 1](screenshots/home_light.png) |   ![Image 2](screenshots/home_dark.png)   |
+|:--------------------------------------:|:-----------------------------------------:|
+| ![Image 3](screenshots/edit_task.png)  | ![Image 4](screenshots/calendar_view.png) |
 
 ## Features
 
@@ -24,16 +25,22 @@
 - **Drag & Drop**: Reorder tasks via intuitive drag handles
 - **Auto-save**: Changes are saved automatically when editing a task
 - **Material 3**: Modern design with dynamic colors
+- **Task Scheduling**: Add due dates
+- **Calendar** view
 
 ### In Development
 - **Overall visual improvements**: Improve the main visual aesthetics of the app
 - **Habit Tracking**: Build daily routines and track streaks
+- **Reminders**
 - **Mood Tracking**: Log daily emotions and view trends
-- **Task Scheduling**: Add due dates and reminders
-- **Calendar** view
 - **Widgets**: Home screen widgets for quick access
 - **Themes**: More customization options
 - Any new **suggestion**
+
+## Motivation
+
+I wanted to build a fully-featured Android app completely **free**, **ad-free**, and **privacy-focused** — no servers, no tracking, no data collection, works 100% offline.
+This project was mainly a way for me to learn modern **Kotlin** (coming from a Java-only background) while creating something truly **customizable** that I (and others) can easily modify, extend and adapt to different needs.
 
 ## Getting Started
 
