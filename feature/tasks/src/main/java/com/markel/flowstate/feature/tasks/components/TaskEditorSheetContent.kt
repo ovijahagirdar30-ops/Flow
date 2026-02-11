@@ -264,7 +264,7 @@ fun TaskEditorSheetContent(
         ) {
             Icon(Icons.Rounded.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Añadir subtarea", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.add_subtask), fontWeight = FontWeight.SemiBold)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
