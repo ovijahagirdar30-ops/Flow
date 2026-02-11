@@ -42,7 +42,7 @@ fun AnimatedUndoFab(
             onClick = onUndoClick,
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(start = 16.dp, bottom = 64.dp),
             shape = CircleShape
         ) {
             Icon(

@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.calendar.components.AnimatedUndoFab
 import com.markel.flowstate.feature.calendar.components.CalendarContent
@@ -26,6 +27,7 @@ fun CalendarScreen(viewModel: CalendarViewModel) {
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
