@@ -18,6 +18,9 @@ hilt = "2.57.2"
 hiltNavigation = "1.3.0"
 reorderable = "3.0.0"
 calendar = "2.9.1"  # 1.9.x compose version-> 2.9.x calendar version
+mockk = "1.13.8"
+coroutines-test = "1.9.0"
+turbine = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,6 +51,9 @@ hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", ve
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 androidx-core-splashscreen = {group = "androidx.core",name = "core-splashscreen",version.ref = "splashscreen" }
 kizitonwose-calendar-compose = { module = "com.kizitonwose.calendar:compose", version.ref = "calendar" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines-test" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -1,13 +1,10 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.hiltAndroid)
-    alias(libs.plugins.ksp)
 }
 
 android {
-    namespace = "com.markel.flowstate.feature.calendar"
+    namespace = "com.markel.testing"
     compileSdk {
         version = release(36)
     }
@@ -35,35 +32,15 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
-    buildFeatures {
-        compose = true
-    }
 }
 
 dependencies {
-    implementation(project(":core:domain"))
-    implementation(project(":core:data"))
-    implementation(project(":core:designsystem"))
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
-    implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui.tooling.preview)
 
-    // HILT (Dependency injection)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
-    implementation(libs.hilt.navigation.compose)
-    // Calendar view
-    implementation(libs.kizitonwose.calendar.compose)
-
-    testImplementation(project(":core:testing"))
-    testImplementation(libs.turbine)
-    testImplementation(libs.mockk)
+    api(libs.kotlinx.coroutines.test)
+    api(libs.junit)
 }

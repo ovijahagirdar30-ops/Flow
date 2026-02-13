@@ -56,14 +56,17 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.tooling.preview)
 
-    // HILT (Inyección de Dependencias)
+    // HILT (Dependency Injection)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
-    // Recolectar Flows de forma segura en Compose
+    // Collect Flows safely in Compose
     implementation(libs.androidx.lifecycle.runtime.compose)
-    // Listas con elementos reordenables
+    // Lists with reorderable items
     implementation(libs.reorderable)
 
+    testImplementation(project(":core:testing"))
+    testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
 
 }
