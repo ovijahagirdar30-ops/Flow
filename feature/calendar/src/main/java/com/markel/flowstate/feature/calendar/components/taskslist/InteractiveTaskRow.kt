@@ -1,6 +1,5 @@
-package com.markel.flowstate.feature.calendar.components
+package com.markel.flowstate.feature.calendar.components.taskslist
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,7 +55,7 @@ fun InteractiveTaskRow(
             ) {
                 Icon(
                     imageVector = if (task.isDone)
-                        androidx.compose.material.icons.Icons.Default.Check
+                        Icons.Default.Check
                     else
                         ImageVector.vectorResource(R.drawable.radio_button_unchecked_24px),
                     contentDescription = if (task.isDone) "Mark as incomplete" else "Mark as complete",
