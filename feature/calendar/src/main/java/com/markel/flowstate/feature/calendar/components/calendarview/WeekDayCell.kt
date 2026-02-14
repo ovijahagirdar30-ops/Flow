@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.WeekDay
 
 @Composable
@@ -30,47 +31,54 @@ fun WeekDayCell(
 ) {
     Box(
         modifier = Modifier
-            .aspectRatio(1f)
-            .padding(4.dp)
-            .clip(CircleShape)
-            .background(
-                color = when {
-                    isSelected -> MaterialTheme.colorScheme.tertiary
-                    isToday -> MaterialTheme.colorScheme.surfaceVariant
-                    else -> Color.Transparent
-                }
-            )
-            .clickable(onClick = onClick),
+            .aspectRatio(1.4f)
+            .padding(1.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            modifier = Modifier.align(Alignment.Center),
-            text = day.date.dayOfMonth.toString(),
-            color = if (isSelected)
-                MaterialTheme.colorScheme.onTertiary
-            else if (isToday)
-                MaterialTheme.colorScheme.onSurfaceVariant
-            else
-                MaterialTheme.colorScheme.onSurface,
-            fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
-        )
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(
+                    color = when {
+                        isSelected -> MaterialTheme.colorScheme.tertiary
+                        isToday -> MaterialTheme.colorScheme.surfaceVariant
+                        else -> Color.Transparent
+                    }
+                )
+                .clickable(onClick = onClick)
+        ) {
 
-        // Dot if there are tasks
-        if (hasTasks) {
-            Spacer(modifier = Modifier.height(2.dp))
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 6.dp)
-                    .size(4.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isSelected)
-                            MaterialTheme.colorScheme.onTertiary
-                        else
-                            MaterialTheme.colorScheme.tertiary
-                    )
+            Text(
+                modifier = Modifier.align(Alignment.Center),
+                text = day.date.dayOfMonth.toString(),
+                fontSize = 15.sp,
+                color = if (isSelected)
+                    MaterialTheme.colorScheme.onTertiary
+                else if (isToday)
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                else
+                    MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
             )
+
+            // Dot if there are tasks
+            if (hasTasks) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 5.dp)
+                        .size(3.5.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isSelected)
+                                MaterialTheme.colorScheme.onTertiary
+                            else
+                                MaterialTheme.colorScheme.tertiary
+                        )
+                )
+            }
         }
     }
 }

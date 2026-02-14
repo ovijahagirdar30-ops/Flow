@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.DayPosition
 
@@ -29,10 +30,23 @@ fun DayCell(
     isToday: Boolean,
     onClick: () -> Unit
 ) {
+    val isCurrentMonth = day.position == DayPosition.MonthDate
+
+    val textColor = when {
+        isSelected -> MaterialTheme.colorScheme.onTertiary
+        isToday -> MaterialTheme.colorScheme.onSurfaceVariant
+        isCurrentMonth -> MaterialTheme.colorScheme.onSurface
+        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+    }
+
     Box(
         modifier = Modifier
-            .aspectRatio(1f)
-            .padding(4.dp)
+            .aspectRatio(1.4f)
+            .padding(1.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(modifier = Modifier
+            .size(38.dp)
             .clip(CircleShape)
             .background(
                 color = when {
@@ -42,24 +56,25 @@ fun DayCell(
                 }
             )
             .clickable(enabled = day.position == DayPosition.MonthDate, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (day.position == DayPosition.MonthDate) {
+            contentAlignment = Alignment.Center
+        ) {
+
             Text(
                 modifier = Modifier.align(Alignment.Center),
                 text = day.date.dayOfMonth.toString(),
-                color = if (isSelected) MaterialTheme.colorScheme.onTertiary else if (isToday) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                color = textColor,
+                fontSize = 15.sp,
                 fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
             )
 
             // Dot if there are tasks
-            if (hasTasks) {
+            if (hasTasks && isCurrentMonth) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 6.dp)
-                        .size(4.dp)
+                        .padding(bottom = 5.dp)
+                        .size(3.5.dp)
                         .clip(CircleShape)
                         .background(if (isSelected) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.tertiary)
                 )
