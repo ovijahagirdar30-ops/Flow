@@ -60,6 +60,7 @@ fun CalendarContent(
     var isExpanded by rememberSaveable { mutableStateOf(true) }
     var dragOffset by remember { mutableFloatStateOf(0f) }  // State for the accumulated drag
     val threshold = 100f  // Threshold to change states (pixels)
+    var scrollTrigger by remember { mutableStateOf(0L) }
 
     val monthState = rememberCalendarState(
         startMonth = startMonth,
@@ -79,7 +80,7 @@ fun CalendarContent(
     val listState = rememberLazyListState()  // Tasks list
 
     // Automatically navigate to the month of the selected date
-    LaunchedEffect(selectedDate, isExpanded) {
+    LaunchedEffect(selectedDate, isExpanded, scrollTrigger) {
         val selectedYearMonth = YearMonth.from(selectedDate)
         if (isExpanded && monthState.firstVisibleMonth.yearMonth != selectedYearMonth) {
             monthState.animateScrollToMonth(selectedYearMonth)
@@ -179,7 +180,20 @@ fun CalendarContent(
             weekState = weekState,
             tasksByDate = tasksByDate,
             selectedDate = selectedDate,
-            onDateSelected = onDateSelected
+            onDateSelected = { date ->
+                // If we select a date that is already selected, force the scroll only when the date is not visible
+                if (date == selectedDate) {
+                    if (isExpanded) {
+                        // This is for the edge case when a day of other month is selected but visible from a different month to still make the scroll available
+                        val selectedYearMonth = YearMonth.from(selectedDate)
+                        if (monthState.firstVisibleMonth.yearMonth != selectedYearMonth) {
+                            scrollTrigger = System.currentTimeMillis()
+                        }
+                    }
+                }
+                onDateSelected(date)
+            }
+
         )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

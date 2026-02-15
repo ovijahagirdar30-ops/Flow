@@ -32,12 +32,11 @@ fun CalendarMonthHeader(
         val displayMonth = if (isExpanded) {
             monthState.firstVisibleMonth.yearMonth
         } else {
-            // En vista de semana: si el día seleccionado está en la semana visible, mostrar su mes
-            // Si no, mostrar el mes de la semana visible (cuando te desplazas sin seleccionar)
+            // In the week view: if the selected day is visible, show that month
+            // Else, show the one of the visible week (when scrolling)
             val selectedYearMonth = YearMonth.from(selectedDate)
             val visibleWeekYearMonth = YearMonth.from(weekState.firstVisibleWeek.days.first().date)
 
-            // Verificar si selectedDate está en la semana visible
             val isSelectedInVisibleWeek = weekState.firstVisibleWeek.days.any { it.date == selectedDate }
 
             if (isSelectedInVisibleWeek) {
