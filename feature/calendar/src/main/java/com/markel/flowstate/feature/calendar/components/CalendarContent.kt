@@ -13,6 +13,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +77,17 @@ fun CalendarContent(
     )
 
     val listState = rememberLazyListState()  // Tasks list
+
+    // Automatically navigate to the month of the selected date
+    LaunchedEffect(selectedDate, isExpanded) {
+        val selectedYearMonth = YearMonth.from(selectedDate)
+        if (isExpanded && monthState.firstVisibleMonth.yearMonth != selectedYearMonth) {
+            monthState.animateScrollToMonth(selectedYearMonth)
+        }
+        if (!isExpanded) {
+            weekState.animateScrollToWeek(selectedDate)
+        }
+    }
 
     // NestedScrollConnection to handle the list scroll
     val nestedScrollConnection = remember {
@@ -154,7 +166,7 @@ fun CalendarContent(
             }
     ){
         // MONTH HEADER
-        CalendarMonthHeader(isExpanded = isExpanded, monthState = monthState, weekState = weekState)
+        CalendarMonthHeader(isExpanded = isExpanded, monthState = monthState, weekState = weekState, selectedDate = selectedDate)
 
         // WEEKDAYS
         CalendarWeekdaysHeader()

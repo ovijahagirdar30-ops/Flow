@@ -22,7 +22,7 @@ fun CalendarWeekdaysHeader(){
                 text = day.getDisplayName(TextStyle.SHORT, Locale.getDefault()).uppercase(),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
             )
         }
     }

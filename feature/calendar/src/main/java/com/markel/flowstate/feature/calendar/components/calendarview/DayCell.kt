@@ -32,8 +32,11 @@ fun DayCell(
 ) {
     val isCurrentMonth = day.position == DayPosition.MonthDate
 
+    // Only show selection circle if the day is in the current month AND selected
+    val showSelection = isSelected && isCurrentMonth
+
     val textColor = when {
-        isSelected -> MaterialTheme.colorScheme.onTertiary
+        showSelection -> MaterialTheme.colorScheme.onTertiary
         isToday -> MaterialTheme.colorScheme.onSurfaceVariant
         isCurrentMonth -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
@@ -50,12 +53,12 @@ fun DayCell(
             .clip(CircleShape)
             .background(
                 color = when {
-                    isSelected -> MaterialTheme.colorScheme.tertiary
-                    isToday -> MaterialTheme.colorScheme.surfaceVariant
+                    showSelection -> MaterialTheme.colorScheme.tertiary
+                    isToday && isCurrentMonth -> MaterialTheme.colorScheme.surfaceVariant
                     else -> Color.Transparent
                 }
             )
-            .clickable(enabled = day.position == DayPosition.MonthDate, onClick = onClick),
+            .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
 
@@ -64,7 +67,7 @@ fun DayCell(
                 text = day.date.dayOfMonth.toString(),
                 color = textColor,
                 fontSize = 15.sp,
-                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
+                fontWeight = if (showSelection || isToday) FontWeight.Bold else FontWeight.Normal
             )
 
             // Dot if there are tasks
@@ -76,7 +79,7 @@ fun DayCell(
                         .padding(bottom = 5.dp)
                         .size(3.5.dp)
                         .clip(CircleShape)
-                        .background(if (isSelected) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.tertiary)
+                        .background(if (showSelection) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.tertiary)
                 )
             }
         }

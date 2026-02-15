@@ -22,7 +22,8 @@ fun CalendarMonthHeader(
     isExpanded: Boolean,
     monthState: CalendarState,
     weekState: WeekCalendarState,
-) {
+    selectedDate: java.time.LocalDate
+    ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -31,7 +32,20 @@ fun CalendarMonthHeader(
         val displayMonth = if (isExpanded) {
             monthState.firstVisibleMonth.yearMonth
         } else {
-            YearMonth.from(weekState.firstVisibleWeek.days.first().date)
+            // En vista de semana: si el día seleccionado está en la semana visible, mostrar su mes
+            // Si no, mostrar el mes de la semana visible (cuando te desplazas sin seleccionar)
+            val selectedYearMonth = YearMonth.from(selectedDate)
+            val visibleWeekYearMonth = YearMonth.from(weekState.firstVisibleWeek.days.first().date)
+
+            // Verificar si selectedDate está en la semana visible
+            val isSelectedInVisibleWeek = weekState.firstVisibleWeek.days.any { it.date == selectedDate }
+
+            if (isSelectedInVisibleWeek) {
+                selectedYearMonth
+            } else {
+                visibleWeekYearMonth
+            }
+
         }
 
         Text(
