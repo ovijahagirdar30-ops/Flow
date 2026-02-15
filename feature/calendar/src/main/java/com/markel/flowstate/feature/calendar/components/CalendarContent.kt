@@ -167,7 +167,16 @@ fun CalendarContent(
             }
     ){
         // MONTH HEADER
-        CalendarMonthHeader(isExpanded = isExpanded, monthState = monthState, weekState = weekState, selectedDate = selectedDate)
+        CalendarMonthHeader(
+            isExpanded = isExpanded,
+            monthState = monthState,
+            weekState = weekState,
+            selectedDate = selectedDate,
+            onTodayClick = {
+                onDateSelected(java.time.LocalDate.now())
+                scrollTrigger = System.currentTimeMillis()
+            }
+        )
 
         // WEEKDAYS
         CalendarWeekdaysHeader()
