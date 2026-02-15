@@ -66,7 +66,7 @@ fun CalendarMonthHeader(
         ) {
             TodayIcon(
                 outlineColor = MaterialTheme.colorScheme.onSurface,
-                dotColor = MaterialTheme.colorScheme.surfaceVariant
+                dotColor = MaterialTheme.colorScheme.tertiary
             )
         }
 
