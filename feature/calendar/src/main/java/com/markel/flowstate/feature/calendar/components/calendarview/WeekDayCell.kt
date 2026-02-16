@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,8 +32,8 @@ fun WeekDayCell(
 ) {
     Box(
         modifier = Modifier
-            .aspectRatio(1.4f)
-            .padding(1.dp),
+            .fillMaxWidth()
+            .height(39.dp),
         contentAlignment = Alignment.Center
     ) {
         Box(

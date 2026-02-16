@@ -5,8 +5,10 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
@@ -202,8 +204,8 @@ fun CalendarContent(
                 }
                 onDateSelected(date)
             }
-
         )
+        if (!isExpanded) Spacer(modifier = Modifier.height(4.dp))
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
