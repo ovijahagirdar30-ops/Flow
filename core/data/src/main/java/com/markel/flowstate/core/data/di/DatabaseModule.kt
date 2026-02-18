@@ -2,7 +2,9 @@ package com.markel.flowstate.core.data.di
 
 import android.app.Application
 import androidx.room.Room
+import com.markel.flowstate.core.data.local.CheckListDao
 import com.markel.flowstate.core.data.local.FlowStateDatabase
+import com.markel.flowstate.core.data.local.IdeaDao
 import com.markel.flowstate.core.data.local.TaskDao
 import dagger.Module
 import dagger.Provides
@@ -22,7 +24,7 @@ object DatabaseModule {
             FlowStateDatabase::class.java,
             FlowStateDatabase.DATABASE_NAME
         )
-            .addMigrations(FlowStateDatabase.MIGRATION_5_6)
+            .addMigrations(FlowStateDatabase.MIGRATION_5_6, FlowStateDatabase.MIGRATION_6_7)
             .build()
     }
 
@@ -30,5 +32,17 @@ object DatabaseModule {
     @Singleton // A single instance of the DAO
     fun provideTaskDao(db: FlowStateDatabase): TaskDao {
         return db.taskDao
+    }
+
+    @Provides
+    @Singleton
+    fun provideIdeaDao(db: FlowStateDatabase): IdeaDao{
+        return db.ideaDao
+    }
+
+    @Provides
+    @Singleton
+    fun provideCheckListDao(db: FlowStateDatabase): CheckListDao{
+        return db.checkListDao
     }
 }

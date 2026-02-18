@@ -1,0 +1,24 @@
+package com.markel.flowstate.core.data
+
+import com.markel.flowstate.core.data.local.IdeaDao
+import com.markel.flowstate.core.data.local.IdeaEntity
+import com.markel.flowstate.core.domain.Idea
+import com.markel.flowstate.core.domain.IdeaRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+
+class IdeaRepositoryImpl @Inject constructor(
+    private val ideaDao: IdeaDao
+) : IdeaRepository {
+    override fun getIdeas(): Flow<List<Idea>> =
+        ideaDao.getIdeas().map { entities -> entities.map { it.toDomain() } }
+
+    override suspend fun upsertIdea(idea: Idea) = ideaDao.upsertIdea(idea.toEntity())
+
+    override suspend fun deleteIdea(idea: Idea) = ideaDao.deleteIdea(idea.toEntity())
+
+    // Mappers
+    private fun IdeaEntity.toDomain() = Idea(id, content, createdAt, color)
+    private fun Idea.toEntity() = IdeaEntity(id, content, createdAt, color)
+}

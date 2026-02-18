@@ -1,6 +1,10 @@
 package com.markel.flowstate.core.data.di
 
+import com.markel.flowstate.core.data.CheckListRepositoryImpl
+import com.markel.flowstate.core.data.IdeaRepositoryImpl
 import com.markel.flowstate.core.data.TaskRepositoryImpl
+import com.markel.flowstate.core.domain.CheckListRepository
+import com.markel.flowstate.core.domain.IdeaRepository
 import com.markel.flowstate.core.domain.TaskRepository
 import dagger.Binds
 import dagger.Module
@@ -19,4 +23,12 @@ abstract class RepositoryModule {
     abstract fun bindTaskRepository(
         taskRepositoryImpl: TaskRepositoryImpl
     ): TaskRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindIdeaRepository(impl: IdeaRepositoryImpl): IdeaRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCheckListRepository(impl: CheckListRepositoryImpl): CheckListRepository
 }

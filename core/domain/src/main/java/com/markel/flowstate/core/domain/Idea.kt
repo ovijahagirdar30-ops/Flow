@@ -1,0 +1,8 @@
+package com.markel.flowstate.core.domain
+
+data class Idea(
+    val id: Int = 0,
+    val content: String,
+    val createdAt: Long = System.currentTimeMillis(),
+    val color: Int
+)
