@@ -44,8 +44,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":feature:flow"))
     // Módulos propios
-    implementation(project(":feature:tasks"))
     implementation(project(":feature:calendar"))
     implementation(project(":core:data"))
     implementation(project(":core:domain"))

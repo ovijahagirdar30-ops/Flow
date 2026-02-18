@@ -6,34 +6,29 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.markel.flowstate.components.FlowBottomBar
-import com.markel.flowstate.feature.tasks.TaskScreen
-import com.markel.flowstate.feature.tasks.TaskViewModel
+import com.markel.flowstate.feature.flow.tasks.TaskScreen
+import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.core.designsystem.theme.FlowStateTheme
 import com.markel.flowstate.feature.calendar.CalendarScreen
 import com.markel.flowstate.feature.calendar.CalendarViewModel
-import com.markel.flowstate.feature.tasks.util.HandleSystemBars
+import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import dagger.hilt.android.AndroidEntryPoint
 
 // We define our navigation routes
