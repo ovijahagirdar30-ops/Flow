@@ -55,6 +55,7 @@ abstract class FlowStateDatabase : RoomDatabase() {
                         `listId` INTEGER NOT NULL, 
                         `text` TEXT NOT NULL, 
                         `isDone` INTEGER NOT NULL, 
+                        `position` INTEGER NOT NULL,
                         PRIMARY KEY(`id`), 
                         FOREIGN KEY(`listId`) REFERENCES `checklists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
                     )
