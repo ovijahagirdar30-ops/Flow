@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class ], // List of all tables
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -60,6 +60,12 @@ abstract class FlowStateDatabase : RoomDatabase() {
                         FOREIGN KEY(`listId`) REFERENCES `checklists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
                     )
                 """.trimIndent())
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE ideas ADD COLUMN title TEXT NOT NULL DEFAULT ''")
             }
         }
     }

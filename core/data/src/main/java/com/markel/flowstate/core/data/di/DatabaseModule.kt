@@ -24,7 +24,7 @@ object DatabaseModule {
             FlowStateDatabase::class.java,
             FlowStateDatabase.DATABASE_NAME
         )
-            .addMigrations(FlowStateDatabase.MIGRATION_5_6, FlowStateDatabase.MIGRATION_6_7)
+            .addMigrations(FlowStateDatabase.MIGRATION_5_6, FlowStateDatabase.MIGRATION_6_7, FlowStateDatabase.MIGRATION_7_8)
             .build()
     }
 

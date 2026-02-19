@@ -28,6 +28,8 @@ import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.core.designsystem.theme.FlowStateTheme
 import com.markel.flowstate.feature.calendar.CalendarScreen
 import com.markel.flowstate.feature.calendar.CalendarViewModel
+import com.markel.flowstate.feature.flow.FlowScreen
+import com.markel.flowstate.feature.flow.FlowViewModel
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -83,9 +85,13 @@ class MainActivity : ComponentActivity() {
                     ) {
                         // --- Here we define each screen ---
                         composable(Screen.Tasks.route) {
+                            val flowViewModel: FlowViewModel = hiltViewModel()
                             val taskViewModel: TaskViewModel = hiltViewModel()
-                            // We pass the ViewModel to the tasks screen
-                            TaskScreen(viewModel = taskViewModel)
+                            // We pass the ViewModels to the flow screen
+                            FlowScreen(
+                                flowViewModel = flowViewModel,
+                                taskViewModel = taskViewModel
+                            )
                         }
                         composable(Screen.Calendar.route) {
                             val calendarViewModel: CalendarViewModel = hiltViewModel()

@@ -22,7 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.tasks.components.AnimatableTaskItem
-import com.markel.flowstate.feature.flow.tasks.components.DynamicHeader
+import com.markel.flowstate.feature.flow.components.DynamicHeader
 import com.markel.flowstate.feature.flow.tasks.components.EmptyStateView
 import com.markel.flowstate.feature.flow.tasks.components.ExpandableFabMenu
 import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
@@ -33,20 +33,18 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskScreen(viewModel: TaskViewModel) {
+fun TaskScreen(
+    viewModel: TaskViewModel,
+    onScrolled: () -> Unit = {}
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
-    // This state survives screen rotations but resets when the app is closed
-    var hasScrolledOnce by rememberSaveable { mutableStateOf(false) }
-
-    // Detect scroll only to activate the flag the first time
+    // Detect scroll only to activate the flag
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 90 }
             .collect { scrolled ->
-                if (scrolled && !hasScrolledOnce) {
-                    hasScrolledOnce = true
-                }
+                if (scrolled) onScrolled()
             }
     }
 
@@ -87,7 +85,6 @@ fun TaskScreen(viewModel: TaskViewModel) {
         ) { paddingValues ->
             Column(modifier = Modifier.padding(paddingValues)) {
 
-                DynamicHeader(isMinimized = hasScrolledOnce)
                 when (val state = uiState) {
                     is TasksUiState.Loading -> {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
