@@ -9,6 +9,8 @@ import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.domain.usecase.DeleteTaskUseCase
+import com.markel.flowstate.core.domain.usecase.ToggleTaskUseCase
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +36,9 @@ class FlowViewModel @Inject constructor(
     // Repositories required for the unified grid
     private val taskRepository: TaskRepository,
     private val ideaRepository: IdeaRepository,
-    private val checkListRepository: CheckListRepository
+    private val checkListRepository: CheckListRepository,
+    private val toggleTaskUseCase: ToggleTaskUseCase,
+    private val deleteTaskUseCase: DeleteTaskUseCase
 ) : ViewModel() {
 
     // ── View state ───────────────────────────────────────────────────────
@@ -70,15 +74,11 @@ class FlowViewModel @Inject constructor(
     // FlowViewModel only needs these operations for the grid cards
 
     fun deleteTask(task: Task) {
-        viewModelScope.launch { taskRepository.deleteTask(task) }
+        viewModelScope.launch { deleteTaskUseCase(task) }
     }
 
     fun toggleTaskDone(task: Task) {
-        val newIsDone = !task.isDone
-        val newCompletedAt = if (newIsDone) System.currentTimeMillis() else null
-        viewModelScope.launch {
-            taskRepository.upsertTask(task.copy(isDone = newIsDone, completedAt = newCompletedAt))
-        }
+        viewModelScope.launch { toggleTaskUseCase(task) }
     }
 
     // ── Ideas ─────────────────────────────────────────────────────────────────

@@ -6,6 +6,8 @@ import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.domain.usecase.DeleteTaskUseCase
+import com.markel.flowstate.core.domain.usecase.ToggleTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,7 +36,9 @@ data class TaskDraftState(
  */
 @HiltViewModel
 class TaskViewModel  @Inject constructor(
-    private val repository: TaskRepository
+    private val repository: TaskRepository,
+    private val toggleTaskUseCase: ToggleTaskUseCase,
+    private val deleteTaskUseCase: DeleteTaskUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TasksUiState>(TasksUiState.Loading)
@@ -104,19 +108,13 @@ class TaskViewModel  @Inject constructor(
     // Function to delete a task
     fun deleteTask(task: Task) {
         viewModelScope.launch {
-            repository.deleteTask(task)
+            deleteTaskUseCase(task)
         }
     }
 
     // Function to toggle task completion status
     fun toggleTaskDone(task: Task) {
-        val newIsDone = !task.isDone
-        val newCompletedAt = if (newIsDone) System.currentTimeMillis() else null
-        viewModelScope.launch {
-            repository.upsertTask(task.copy(
-                isDone = newIsDone,
-                completedAt = newCompletedAt))
-        }
+        viewModelScope.launch { toggleTaskUseCase(task) }
     }
 
     fun onReorder(fromIndex: Int, toIndex: Int) {
