@@ -5,8 +5,6 @@ import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
-import com.markel.flowstate.feature.flow.tasks.TaskViewModel
-import com.markel.flowstate.feature.flow.tasks.TasksUiState
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

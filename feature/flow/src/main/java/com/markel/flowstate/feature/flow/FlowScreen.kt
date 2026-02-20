@@ -1,24 +1,35 @@
 package com.markel.flowstate.feature.flow
 
+import android.content.res.Configuration
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.markel.flowstate.core.domain.Priority
+import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.components.CheckListGridCard
 import com.markel.flowstate.feature.flow.components.DynamicHeader
+import com.markel.flowstate.feature.flow.components.ExpandableFabMenu
 import com.markel.flowstate.feature.flow.components.IdeaGridCard
 import com.markel.flowstate.feature.flow.components.TaskGridCard
 import com.markel.flowstate.feature.flow.tasks.TaskScreen
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.feature.flow.tasks.components.EmptyStateView
+import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
+import com.markel.flowstate.feature.flow.tasks.components.TaskEditorOverlay
+import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
+import com.markel.flowstate.feature.flow.components.GridView
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlowScreen(
     flowViewModel: FlowViewModel,
@@ -27,106 +38,113 @@ fun FlowScreen(
     val isGridView by flowViewModel.isGridView.collectAsStateWithLifecycle()
     val flowUiState by flowViewModel.flowUiState.collectAsStateWithLifecycle()
 
-    // Única fuente de la verdad para el header general
+    var isFabExpanded by remember { mutableStateOf(false) }
+    var taskToEdit by remember { mutableStateOf<Task?>(null) }
+    var showCreationSheet by remember { mutableStateOf(false) }
+
+    // Only source of truth for the header
     var isHeaderMinimized by rememberSaveable { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    // For task creation
+    var draftTitle by rememberSaveable { mutableStateOf("") }
+    var draftDescription by rememberSaveable { mutableStateOf("") }
+    var draftPriority by rememberSaveable { mutableStateOf(Priority.NOTHING)}
+    var draftDueDate by rememberSaveable { mutableStateOf<Long?>(null) }
 
-        DynamicHeader(
-            isMinimized = isHeaderMinimized,
-            isGridView = isGridView,
-            onToggleView = { flowViewModel.toggleView() }
-        )
+    // For task edition
+    var editorPriority by remember(taskToEdit) { mutableStateOf(taskToEdit?.priority ?: Priority.NOTHING) }
+    var editorDueDate by remember(taskToEdit) { mutableStateOf(taskToEdit?.dueDate) }
 
-        AnimatedContent(
-            targetState = isGridView,
-            transitionSpec = { fadeIn(tween(280)) togetherWith fadeOut(tween(200)) },
-            label = "flow_view_transition"
-        ) { showGrid ->
-            if (showGrid) {
-                GridView(
-                    uiState = flowUiState,
-                    onScrolled = { isHeaderMinimized = true },
-                    onToggleTask = { flowViewModel.toggleTaskDone(it) },
-                    onDeleteTask = { flowViewModel.deleteTask(it) },
-                    onDeleteIdea = { flowViewModel.deleteIdea(it) }
-                )
-            } else {
-                // TaskScreen manages all is internal states still (FAB, sheets, editor)
-                TaskScreen(
-                    viewModel = taskViewModel,
-                    onScrolled = { isHeaderMinimized = true }
-                )
-            }
-        }
-    }
-}
+    Box(modifier = Modifier.fillMaxSize()) {
 
-@Composable
-private fun GridView(
-    uiState: FlowUiState,
-    onScrolled: () -> Unit,
-    onToggleTask: (com.markel.flowstate.core.domain.Task) -> Unit,
-    onDeleteTask: (com.markel.flowstate.core.domain.Task) -> Unit,
-    onDeleteIdea: (com.markel.flowstate.core.domain.Idea) -> Unit
-) {
-    val gridState = rememberLazyStaggeredGridState()
-    LaunchedEffect(gridState) {
-        snapshotFlow { gridState.firstVisibleItemIndex > 0 }
-            .collect { if (it) onScrolled() }
-    }
-
-    when (uiState) {
-        is FlowUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {}
-        is FlowUiState.Success -> {
-            if (uiState.items.isEmpty()) {
-                EmptyStateView()
-            } else {
-                val gridState = rememberLazyStaggeredGridState()
-
-                LaunchedEffect(gridState) {
-                    snapshotFlow { gridState.firstVisibleItemIndex > 0 }
-                        .collect { if (it) onScrolled() }
+        Scaffold(
+            contentWindowInsets = WindowInsets(0.dp),  // To avoid big gaps of surface at the top & bottom
+            floatingActionButton = {
+                AnimatedVisibility(visible = taskToEdit == null && !showCreationSheet) {
+                    ExpandableFabMenu(
+                        expanded = isFabExpanded,
+                        onToggle = { isFabExpanded = !isFabExpanded },
+                        onTaskClick = { isFabExpanded = false; taskToEdit = null; showCreationSheet = true },
+                        onIdeaClick = { isFabExpanded = false  /* TODO: Implement something to show while creating an idea */}
+                    )
                 }
+            }
+        ) { paddingValues ->
+            Column(modifier = Modifier.padding(paddingValues)) {
+                DynamicHeader(
+                    isMinimized = isHeaderMinimized,
+                    isGridView = isGridView,
+                    onToggleView = { flowViewModel.toggleView() }
+                )
 
-                LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),
-                    state = gridState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 12.dp),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalItemSpacing = 8.dp
-                ) {
-                    items(
-                        items = uiState.items,
-                        key = { item ->
-                            when (item) {
-                                is WorkspaceItem.TaskItem      -> "task_${item.task.id}"
-                                is WorkspaceItem.IdeaItem      -> "idea_${item.idea.id}"
-                                is WorkspaceItem.CheckListItem -> "cl_${item.checkList.id}"
+                AnimatedContent(
+                    targetState = isGridView,
+                    transitionSpec = { fadeIn(tween(280)) togetherWith fadeOut(tween(200)) },
+                    label = "flow_view_transition"
+                ) { showGrid ->
+                    if (showGrid) {
+                        GridView(
+                            uiState = flowUiState,
+                            onScrolled = { isHeaderMinimized = true },
+                            onToggleTask = { flowViewModel.toggleTaskDone(it) },
+                            onDeleteTask = { flowViewModel.deleteTask(it) },
+                            onDeleteIdea = { flowViewModel.deleteIdea(it) }
+                        )
+                    } else {
+                        // TaskScreen manages all of the internal states still (FAB, sheets, editor)
+                        TaskScreen(
+                            viewModel = taskViewModel,
+                            onScrolled = { isHeaderMinimized = true },
+                            onTaskClick = { clickedTask ->
+                                taskToEdit = clickedTask
                             }
-                        }
-                    ) { item ->
-                        when (item) {
-                            is WorkspaceItem.TaskItem ->
-                                TaskGridCard(
-                                    task = item.task,
-                                    onComplete = { onToggleTask(item.task) },
-                                    onDelete = { onDeleteTask(item.task) }
-                                )
-                            is WorkspaceItem.IdeaItem ->
-                                IdeaGridCard(
-                                    idea = item.idea,
-                                    onDelete = { onDeleteIdea(item.idea) }
-                                )
-                            is WorkspaceItem.CheckListItem ->
-                                CheckListGridCard(checkList = item.checkList)
-                        }
+                        )
                     }
                 }
             }
         }
+        if (showCreationSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showCreationSheet = false },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                dragHandle = null,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            ) {
+                val configuration = LocalConfiguration.current
+                val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+                HandleSystemBars(isLandscape)
+
+                TaskCreationSheetContent(
+                    title = draftTitle,
+                    onTitleChange = { draftTitle = it },
+                    description = draftDescription,
+                    onDescriptionChange = { draftDescription = it },
+                    priority = draftPriority,
+                    onPriorityChange = { draftPriority = it },
+                    dueDate = draftDueDate,
+                    onDueDateChange = { draftDueDate = it },
+                    onSave = { title, desc, prio, date ->
+                        taskViewModel.addTask(title, desc, prio, date, emptyList())
+                        draftTitle = ""
+                        draftDescription = ""
+                        draftPriority = Priority.NOTHING
+                        draftDueDate = null
+                        showCreationSheet = false
+                    }
+                )
+            }
+        }
+        TaskEditorOverlay(
+            task = taskToEdit,
+            onDismiss = { taskToEdit = null },
+            priority = editorPriority,
+            onPriorityChange = { editorPriority = it },
+            dueDate = editorDueDate,
+            onDueDateChange = { editorDueDate = it },
+            onUpdate = { task, title, desc, prio, date, subs ->
+                taskViewModel.updateTask(task, title, desc, prio, date, subs)
+            }
+        )
     }
 }

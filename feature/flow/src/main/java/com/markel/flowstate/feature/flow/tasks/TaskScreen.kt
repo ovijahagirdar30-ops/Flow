@@ -24,7 +24,6 @@ import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.tasks.components.AnimatableTaskItem
 import com.markel.flowstate.feature.flow.components.DynamicHeader
 import com.markel.flowstate.feature.flow.tasks.components.EmptyStateView
-import com.markel.flowstate.feature.flow.tasks.components.ExpandableFabMenu
 import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
 import com.markel.flowstate.feature.flow.tasks.components.TaskEditorOverlay
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
@@ -35,6 +34,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun TaskScreen(
     viewModel: TaskViewModel,
+    onTaskClick: (Task) -> Unit,
     onScrolled: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -48,94 +48,57 @@ fun TaskScreen(
             }
     }
 
-    var isFabExpanded by remember { mutableStateOf(false) }
-    var taskToEdit by remember { mutableStateOf<Task?>(null) }
-    var showCreationSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    Column(modifier = Modifier.fillMaxSize()) {
 
-    // For creation
-    var draftTitle by rememberSaveable { mutableStateOf("") }
-    var draftDescription by rememberSaveable { mutableStateOf("") }
-    var draftPriority by rememberSaveable { mutableStateOf(Priority.NOTHING)}
-    var draftDueDate by rememberSaveable { mutableStateOf<Long?>(null) }
-
-    // For edition
-    var editorPriority by remember(taskToEdit) { mutableStateOf(taskToEdit?.priority ?: Priority.NOTHING) }
-    var editorDueDate by remember(taskToEdit) { mutableStateOf(taskToEdit?.dueDate) }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            contentWindowInsets = WindowInsets(0.dp),
-            floatingActionButton = {
-                AnimatedVisibility(
-                    visible = !showCreationSheet && taskToEdit == null,
-                    enter = scaleIn(),
-                    exit = scaleOut()
-                ) {
-                    ExpandableFabMenu(
-                        expanded = isFabExpanded,
-                        onToggle = { isFabExpanded = !isFabExpanded },
-                        onTaskClick = {
-                            isFabExpanded = false; taskToEdit = null; showCreationSheet = true
-                        },
-                        onIdeaClick = { isFabExpanded = false }
-                    )
+        when (val state = uiState) {
+            is TasksUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    // Empty because it loads too fast to show a loading spinner or skeleton list
                 }
             }
-        ) { paddingValues ->
-            Column(modifier = Modifier.padding(paddingValues)) {
-
-                when (val state = uiState) {
-                    is TasksUiState.Loading -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            // Empty because it loads too fast to show a loading spinner or skeleton list
+            is TasksUiState.Success -> {
+                if (state.tasks.isEmpty()) {
+                    EmptyStateView()
+                }
+                else {
+                    val reorderableState =
+                        rememberReorderableLazyListState(listState) { from, to ->
+                            viewModel.onReorder(from.index, to.index)
                         }
-                    }
-                    is TasksUiState.Success -> {
-                        if (state.tasks.isEmpty()) {
-                            EmptyStateView()
-                        }
-                        else {
-                            val reorderableState =
-                                rememberReorderableLazyListState(listState) { from, to ->
-                                    viewModel.onReorder(from.index, to.index)
-                                }
-                            LazyColumn(
-                                state = listState,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 20.dp),
-                                contentPadding = PaddingValues(bottom = 100.dp, top = 8.dp)
-                            ) {
-                                items(state.tasks, key = { it.id }) { task ->
-                                    ReorderableItem(reorderableState, key = task.id) { isDragging ->
-                                        val scale by animateFloatAsState(
-                                            targetValue = if (isDragging) 1.05f else 1.0f,
-                                            label = "drag_scale"
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp),
+                        contentPadding = PaddingValues(bottom = 100.dp, top = 8.dp)
+                    ) {
+                        items(state.tasks, key = { it.id }) { task ->
+                            ReorderableItem(reorderableState, key = task.id) { isDragging ->
+                                val scale by animateFloatAsState(
+                                    targetValue = if (isDragging) 1.05f else 1.0f,
+                                    label = "drag_scale"
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .longPressDraggableHandle(
+                                            interactionSource = remember { MutableInteractionSource() }
                                         )
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .longPressDraggableHandle(
-                                                    interactionSource = remember { MutableInteractionSource() }
-                                                )
-                                                .graphicsLayer {
-                                                    scaleX = scale
-                                                    scaleY = scale
-                                                    alpha = if (isDragging) 0.9f else 1.0f
-                                                }
-                                                .zIndex(if (isDragging) 1f else 0f)
-                                        ) {
-                                            AnimatableTaskItem(
-                                                task = task,
-                                                onDelete = { viewModel.deleteTask(task) },
-                                                onComplete = { viewModel.toggleTaskDone(task) },
-                                                onContentClick = {
-                                                    taskToEdit = task // EDIT Mode
-                                                }
-                                            )
+                                        .graphicsLayer {
+                                            scaleX = scale
+                                            scaleY = scale
+                                            alpha = if (isDragging) 0.9f else 1.0f
                                         }
-                                    }
+                                        .zIndex(if (isDragging) 1f else 0f)
+                                ) {
+                                    AnimatableTaskItem(
+                                        task = task,
+                                        onDelete = { viewModel.deleteTask(task) },
+                                        onComplete = { viewModel.toggleTaskDone(task) },
+                                        onContentClick = {
+                                            onTaskClick(task) // EDIT Mode
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -143,49 +106,6 @@ fun TaskScreen(
                 }
             }
         }
-
-        if (showCreationSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showCreationSheet = false },
-                sheetState = sheetState,
-                dragHandle = null,
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-            ) {
-                val configuration = LocalConfiguration.current
-                val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-                HandleSystemBars(isLandscape)
-
-                TaskCreationSheetContent(
-                    title = draftTitle,
-                    onTitleChange = { draftTitle = it },
-                    description = draftDescription,
-                    onDescriptionChange = { draftDescription = it },
-                    priority = draftPriority,
-                    onPriorityChange = { draftPriority = it },
-                    dueDate = draftDueDate,
-                    onDueDateChange = { draftDueDate = it },
-                    onSave = { title, desc, prio, date ->
-                        viewModel.addTask(title, desc, prio, date, emptyList())
-                        draftTitle = ""
-                        draftDescription = ""
-                        draftPriority = Priority.NOTHING
-                        draftDueDate = null
-                        showCreationSheet = false
-                    }
-                )
-            }
-        }
-        TaskEditorOverlay(
-            task = taskToEdit,
-            onDismiss = { taskToEdit = null },
-            priority = editorPriority,
-            onPriorityChange = { editorPriority = it },
-            dueDate = editorDueDate,
-            onDueDateChange = { editorDueDate = it },
-            onUpdate = { task, title, desc, prio, date, subs ->
-                viewModel.updateTask(task, title, desc, prio, date, subs)
-            }
-        )
     }
+
 }

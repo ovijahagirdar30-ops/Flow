@@ -1,4 +1,4 @@
-package com.markel.flowstate.feature.flow.tasks.components
+package com.markel.flowstate.feature.flow.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
