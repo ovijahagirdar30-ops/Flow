@@ -39,13 +39,6 @@ fun GridView(
             if (uiState.items.isEmpty()) {
                 EmptyStateView()
             } else {
-                val gridState = rememberLazyStaggeredGridState()
-
-                LaunchedEffect(gridState) {
-                    snapshotFlow { gridState.firstVisibleItemIndex > 0 }
-                        .collect { if (it) onScrolled() }
-                }
-
                 LazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(2),
                     state = gridState,
