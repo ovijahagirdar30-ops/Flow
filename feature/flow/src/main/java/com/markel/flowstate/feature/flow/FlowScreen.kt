@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.Task
@@ -32,8 +33,8 @@ import com.markel.flowstate.feature.flow.components.GridView
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlowScreen(
-    flowViewModel: FlowViewModel,
-    taskViewModel: TaskViewModel
+    flowViewModel: FlowViewModel = hiltViewModel(),
+    taskViewModel: TaskViewModel = hiltViewModel()
 ) {
     val isGridView by flowViewModel.isGridView.collectAsStateWithLifecycle()
     val flowUiState by flowViewModel.flowUiState.collectAsStateWithLifecycle()

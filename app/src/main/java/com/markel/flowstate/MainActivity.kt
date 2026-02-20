@@ -85,13 +85,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         // --- Here we define each screen ---
                         composable(Screen.Tasks.route) {
-                            val flowViewModel: FlowViewModel = hiltViewModel()
-                            val taskViewModel: TaskViewModel = hiltViewModel()
-                            // We pass the ViewModels to the flow screen
-                            FlowScreen(
-                                flowViewModel = flowViewModel,
-                                taskViewModel = taskViewModel
-                            )
+                            FlowScreen()
                         }
                         composable(Screen.Calendar.route) {
                             val calendarViewModel: CalendarViewModel = hiltViewModel()
