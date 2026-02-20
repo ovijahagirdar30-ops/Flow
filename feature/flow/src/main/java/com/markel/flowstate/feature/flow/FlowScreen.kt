@@ -45,11 +45,7 @@ fun FlowScreen(
     // Only source of truth for the header
     var isHeaderMinimized by rememberSaveable { mutableStateOf(false) }
 
-    // For task creation
-    var draftTitle by rememberSaveable { mutableStateOf("") }
-    var draftDescription by rememberSaveable { mutableStateOf("") }
-    var draftPriority by rememberSaveable { mutableStateOf(Priority.NOTHING)}
-    var draftDueDate by rememberSaveable { mutableStateOf<Long?>(null) }
+    val draft by taskViewModel.draft.collectAsStateWithLifecycle()
 
     // For task edition
     var editorPriority by remember(taskToEdit) { mutableStateOf(taskToEdit?.priority ?: Priority.NOTHING) }
@@ -116,20 +112,16 @@ fun FlowScreen(
                 HandleSystemBars(isLandscape)
 
                 TaskCreationSheetContent(
-                    title = draftTitle,
-                    onTitleChange = { draftTitle = it },
-                    description = draftDescription,
-                    onDescriptionChange = { draftDescription = it },
-                    priority = draftPriority,
-                    onPriorityChange = { draftPriority = it },
-                    dueDate = draftDueDate,
-                    onDueDateChange = { draftDueDate = it },
-                    onSave = { title, desc, prio, date ->
-                        taskViewModel.addTask(title, desc, prio, date, emptyList())
-                        draftTitle = ""
-                        draftDescription = ""
-                        draftPriority = Priority.NOTHING
-                        draftDueDate = null
+                    title = draft.title,
+                    onTitleChange = { taskViewModel.updateDraftTitle(it) },
+                    description = draft.description,
+                    onDescriptionChange = { taskViewModel.updateDraftDescription(it) },
+                    priority = draft.priority,
+                    onPriorityChange = { taskViewModel.updateDraftPriority(it) },
+                    dueDate = draft.dueDate,
+                    onDueDateChange = { taskViewModel.updateDraftDueDate(it) },
+                    onSave = { _, _, _, _ ->
+                        taskViewModel.submitDraft()
                         showCreationSheet = false
                     }
                 )
