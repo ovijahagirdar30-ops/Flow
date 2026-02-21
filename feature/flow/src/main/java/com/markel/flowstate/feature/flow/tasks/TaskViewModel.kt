@@ -23,10 +23,16 @@ sealed interface TasksUiState {
     data class Success(val tasks: List<Task>) : TasksUiState
 }
 
-// Draft state para la creación de tareas
+// Draft state for task creation
 data class TaskDraftState(
     val title: String = "",
     val description: String = "",
+    val priority: Priority = Priority.NOTHING,
+    val dueDate: Long? = null
+)
+
+data class TaskEditorState(
+    val task: Task? = null,
     val priority: Priority = Priority.NOTHING,
     val dueDate: Long? = null
 )
@@ -48,16 +54,8 @@ class TaskViewModel  @Inject constructor(
     private val _draft = MutableStateFlow(TaskDraftState())
     val draft: StateFlow<TaskDraftState> = _draft.asStateFlow()
 
-    fun updateDraftTitle(value: String) { _draft.update { it.copy(title = value) } }
-    fun updateDraftDescription(value: String) { _draft.update { it.copy(description = value) } }
-    fun updateDraftPriority(value: Priority) { _draft.update { it.copy(priority = value) } }
-    fun updateDraftDueDate(value: Long?) { _draft.update { it.copy(dueDate = value) } }
-
-    fun submitDraft() {
-        val d = _draft.value
-        addTask(d.title, d.description, d.priority, d.dueDate, emptyList())
-        _draft.value = TaskDraftState() // reset
-    }
+    private val _editor = MutableStateFlow(TaskEditorState())
+    val editor: StateFlow<TaskEditorState> = _editor.asStateFlow()
 
     // The init block acts as a "subscriber" to the repository
     init {
@@ -137,4 +135,31 @@ class TaskViewModel  @Inject constructor(
             repository.updateTasksOrder(updatedList)
         }
     }
+
+    // TASK CREATION
+    fun updateDraftTitle(value: String) { _draft.update { it.copy(title = value) } }
+    fun updateDraftDescription(value: String) { _draft.update { it.copy(description = value) } }
+    fun updateDraftPriority(value: Priority) { _draft.update { it.copy(priority = value) } }
+    fun updateDraftDueDate(value: Long?) { _draft.update { it.copy(dueDate = value) } }
+
+    fun submitDraft() {
+        val d = _draft.value
+        addTask(d.title, d.description, d.priority, d.dueDate, emptyList())
+        _draft.value = TaskDraftState() // reset
+    }
+
+    // TASK EDITION
+
+    fun openEditor(task: Task) {  // This doesn't open the editor but triggers a change in the task variable and that makes it not null, therefore the TaskEditorOverlay is visible
+        _editor.value = TaskEditorState(
+            task = task,
+            priority = task.priority,
+            dueDate = task.dueDate
+        )
+    }
+
+    fun closeEditor() { _editor.value = TaskEditorState() }
+
+    fun updateEditorPriority(value: Priority) { _editor.update { it.copy(priority = value) } }
+    fun updateEditorDueDate(value: Long?) { _editor.update { it.copy(dueDate = value) } }
 }
