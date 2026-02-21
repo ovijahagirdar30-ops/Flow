@@ -4,6 +4,8 @@ import app.cash.turbine.test
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.domain.usecase.DeleteTaskUseCase
+import com.markel.flowstate.core.domain.usecase.ToggleTaskUseCase
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -24,6 +26,8 @@ class TaskViewModelTest {
     // 2. Create a mock of the repository.
     // relaxed = true means that if we call something undefined, it won't fail (returns null/void).
     private val repository: TaskRepository = mockk(relaxed = true)
+    private val toggleTaskUseCase: ToggleTaskUseCase = mockk(relaxed = true)
+    private val deleteTaskUseCase: DeleteTaskUseCase = mockk(relaxed = true)
 
     private lateinit var viewModel: TaskViewModel
 
@@ -34,7 +38,7 @@ class TaskViewModelTest {
         coEvery { repository.getTasks() } returns flowOf(emptyList())
 
         // WHEN (When we initialize the ViewModel)
-        viewModel = TaskViewModel(repository)
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
 
         // THEN (Then the first state should be Loading or a quick empty Success)
         // Note: Since we use UnconfinedTestDispatcher, init runs very quickly.
@@ -62,7 +66,7 @@ class TaskViewModelTest {
         coEvery { repository.getTasks() } returns flowOf(mockTasks)
 
         // WHEN - Initialize
-        viewModel = TaskViewModel(repository)
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
 
         // THEN - Verify that it filters out completed tasks (according to the logic in init, it filters tasks to only work with incomplete ones)
         viewModel.uiState.test {
@@ -82,7 +86,7 @@ class TaskViewModelTest {
     fun addTask_callsRepositoryUpsertWithCorrectData() = runTest {
         // GIVEN
         coEvery { repository.getTasks() } returns flowOf(emptyList())
-        viewModel = TaskViewModel(repository)
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
 
         val title = "New Task"
         val desc = "Description"
@@ -104,22 +108,15 @@ class TaskViewModelTest {
     }
 
     @Test
-    fun toggleTaskDone_updatesCompletedAtWhenTaskIsDone() = runTest {
-        // GIVEN
+    fun toggleTaskDone_callsToggleUseCase_withCorrectTask() = runTest {
         coEvery { repository.getTasks() } returns flowOf(emptyList())
-        viewModel = TaskViewModel(repository)
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
 
         val task = Task(id = 1, title = "Demo", isDone = false)
 
-        // WHEN
         viewModel.toggleTaskDone(task)
 
-        // THEN
-        coVerify {
-            repository.upsertTask(match { updatedTask ->
-                updatedTask.isDone && updatedTask.completedAt != null // Verify that the date was set
-            })
-        }
+        coVerify { toggleTaskUseCase(task) }
     }
 
     @Test
@@ -131,7 +128,7 @@ class TaskViewModelTest {
         val initialList = listOf(task1, task2, task3)
 
         coEvery { repository.getTasks() } returns flowOf(initialList)
-        viewModel = TaskViewModel(repository)
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
 
         // Wait for the ViewModel to load the initial state
         viewModel.uiState.test {
@@ -164,5 +161,17 @@ class TaskViewModelTest {
                         list[2].id == 1 && list[2].position == 2
             })
         }
+    }
+
+    @Test
+    fun deleteTask_callsDeleteUseCase_withCorrectTask() = runTest {
+        coEvery { repository.getTasks() } returns flowOf(emptyList())
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+
+        val task = Task(id = 1, title = "Demo", isDone = false)
+
+        viewModel.deleteTask(task)
+
+        coVerify { deleteTaskUseCase(task) }
     }
 }

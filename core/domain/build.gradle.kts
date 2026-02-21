@@ -45,4 +45,8 @@ dependencies {
     // HILT (Dependency Injection)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+
+    testImplementation(project(":core:testing"))
+    testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
 }
