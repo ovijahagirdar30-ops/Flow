@@ -50,7 +50,7 @@ fun TaskGridCard(
             if (task.priority != Priority.NOTHING) {
                 Box(
                     modifier = Modifier
-                        .width(4.dp)
+                        .width(3.dp)
                         .fillMaxHeight()
                         .background(
                             color = priorityColor,
