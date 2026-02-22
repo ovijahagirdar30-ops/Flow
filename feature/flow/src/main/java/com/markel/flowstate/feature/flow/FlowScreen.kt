@@ -71,8 +71,9 @@ fun FlowScreen(
                         GridView(
                             uiState = flowUiState,
                             onScrolled = { isHeaderMinimized = true },
-                            onToggleTask = { flowViewModel.toggleTaskDone(it) },
-                            onDeleteTask = { flowViewModel.deleteTask(it) },
+                            onTaskClick = { clickedTask ->
+                                taskViewModel.openEditor(clickedTask)
+                            },
                             onDeleteIdea = { flowViewModel.deleteIdea(it) }
                         )
                     } else {

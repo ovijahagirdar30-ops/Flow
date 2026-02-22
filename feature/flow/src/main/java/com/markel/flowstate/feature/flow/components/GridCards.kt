@@ -1,6 +1,7 @@
 package com.markel.flowstate.feature.flow.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
@@ -18,7 +20,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.Idea
+import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.Task
+import com.markel.flowstate.feature.flow.tasks.util.asColor
 import com.markel.flowstate.feature.tasks.R
 
 // ── Task ─────────────────────────────────────────────────────────────────────
@@ -26,54 +30,61 @@ import com.markel.flowstate.feature.tasks.R
 @Composable
 fun TaskGridCard(
     task: Task,
-    onComplete: () -> Unit,
-    onDelete: () -> Unit
+    onClick: () -> Unit
 ) {
+    val priorityColor = task.priority.asColor()
+
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = task.title,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textDecoration = if (task.isDone) TextDecoration.LineThrough else TextDecoration.None
-            )
-            if (task.description.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = task.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+        ) {
+            if (task.priority != Priority.NOTHING) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .background(
+                            color = priorityColor,
+                            shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
+                        )
                 )
             }
-            Spacer(Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+
+            Column(
+                modifier = Modifier.padding(12.dp)
             ) {
-                IconButton(onClick = onComplete, modifier = Modifier.size(28.dp)) {
-                    Icon(
-                        imageVector = ImageVector.vectorResource(R.drawable.radio_button_unchecked_24px),
-                        contentDescription = "Complete",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Task title
+                    Text(
+                        text = task.title,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        maxLines = if (task.description.isBlank()) 12 else 4,
+                        overflow = TextOverflow.Ellipsis,
+                        textDecoration = if (task.isDone) TextDecoration.LineThrough else TextDecoration.None,
+                        modifier = Modifier.weight(1f)
                     )
                 }
-                Spacer(Modifier.width(4.dp))
-                IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
-                    Icon(
-                        Icons.Rounded.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                        modifier = Modifier.size(18.dp)
+                // Description
+                if (task.description.isNotBlank()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = task.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 8,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }

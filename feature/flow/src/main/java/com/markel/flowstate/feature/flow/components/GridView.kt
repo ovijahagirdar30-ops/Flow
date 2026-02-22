@@ -23,8 +23,7 @@ import com.markel.flowstate.feature.flow.tasks.components.EmptyStateView
 fun GridView(
     uiState: FlowUiState,
     onScrolled: () -> Unit,
-    onToggleTask: (com.markel.flowstate.core.domain.Task) -> Unit,
-    onDeleteTask: (com.markel.flowstate.core.domain.Task) -> Unit,
+    onTaskClick: (com.markel.flowstate.core.domain.Task) -> Unit,
     onDeleteIdea: (com.markel.flowstate.core.domain.Idea) -> Unit
 ) {
     val gridState = rememberLazyStaggeredGridState()
@@ -63,8 +62,7 @@ fun GridView(
                             is WorkspaceItem.TaskItem ->
                                 TaskGridCard(
                                     task = item.task,
-                                    onComplete = { onToggleTask(item.task) },
-                                    onDelete = { onDeleteTask(item.task) }
+                                    onClick = { onTaskClick(item.task) }
                                 )
                             is WorkspaceItem.IdeaItem ->
                                 IdeaGridCard(
