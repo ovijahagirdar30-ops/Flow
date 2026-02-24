@@ -30,7 +30,9 @@ import com.markel.flowstate.feature.flow.ideas.IdeaEditorViewModel
 fun FlowScreen(
     flowViewModel: FlowViewModel = hiltViewModel(),
     taskViewModel: TaskViewModel = hiltViewModel(),
-    ideaEditorViewModel: IdeaEditorViewModel = hiltViewModel()
+    ideaEditorViewModel: IdeaEditorViewModel = hiltViewModel(),
+    onOverlayOpened: () -> Unit = {},  // notify MainActivity to hide bottom bar
+    onOverlayClosed: () -> Unit = {}  // notify MainActivity to show bottom bar
 ) {
     val isGridView by flowViewModel.isGridView.collectAsStateWithLifecycle()
     val flowUiState by flowViewModel.flowUiState.collectAsStateWithLifecycle()
@@ -46,6 +48,12 @@ fun FlowScreen(
 
     var showIdeaEditor by remember { mutableStateOf(false) }  // For the ideas, de editor and creation overlay is the same
     val ideaEditor by ideaEditorViewModel.editor.collectAsStateWithLifecycle()
+
+    // Notify parent whenever overlay visibility changes
+    val anyOverlayOpen = editor.task != null || showIdeaEditor
+    LaunchedEffect(anyOverlayOpen) {
+        if (anyOverlayOpen) onOverlayOpened() else onOverlayClosed()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
 

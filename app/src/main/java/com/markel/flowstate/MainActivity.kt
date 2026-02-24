@@ -6,6 +6,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -64,28 +69,39 @@ class MainActivity : ComponentActivity() {
                 HandleSystemBars(isLandscape)
                 // Compose navigation controller
                 val navController = rememberNavController()
+                // Lifted state: any overlay in any screen can request to hide the bottom bar
+                var isBottomBarVisible by remember { mutableStateOf(true) }
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     bottomBar = {
-                        FlowBottomBar(
-                            navController = navController,
-                            isLandscape = isLandscape
-                        )
+                        AnimatedVisibility(
+                            visible = isBottomBarVisible,
+                            enter = slideInVertically { it } + fadeIn(),
+                            exit = slideOutVertically { it } + fadeOut()
+                        ) {
+                            FlowBottomBar(
+                                navController = navController,
+                                isLandscape = isLandscape
+                            )
+                        }
                     },
                     // Adjusting insets if we hide native navigation bar
-                    contentWindowInsets = if (isLandscape) WindowInsets(0.dp) else WindowInsets.navigationBars
+                    contentWindowInsets = WindowInsets(0.dp)
                 ) { innerPadding ->
                     // Navigation host: decides which screen to show
                     // based on the route
                     NavHost(
                         navController = navController,
-                        startDestination = Screen.Tasks.route, // Starting in Tasks
+                        startDestination = Screen.Tasks.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
                         // --- Here we define each screen ---
                         composable(Screen.Tasks.route) {
-                            FlowScreen()
+                            FlowScreen(
+                                onOverlayOpened = { isBottomBarVisible = false },
+                                onOverlayClosed = { isBottomBarVisible = true }
+                            )
                         }
                         composable(Screen.Calendar.route) {
                             val calendarViewModel: CalendarViewModel = hiltViewModel()

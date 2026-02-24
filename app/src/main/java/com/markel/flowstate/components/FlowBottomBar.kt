@@ -1,8 +1,10 @@
 package com.markel.flowstate.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
@@ -28,7 +31,16 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
     // We get the current route to know which item to select
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val barHeight = if (isLandscape) 56.dp else 110.dp  // Reduce height in landscape mode
+
+    val navBarHeightDp = with(LocalDensity.current) {
+        WindowInsets.navigationBars.getBottom(this).toDp()
+    }
+    val isGestureNav = navBarHeightDp <= 16.dp
+    val barHeight = when {
+        isLandscape -> 56.dp
+        isGestureNav -> 90.dp  // gesture nav: shorter, the system bar area is minimal
+        else -> 110.dp
+    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         // Divider to separate bottom bar from content, both have the same surface color
