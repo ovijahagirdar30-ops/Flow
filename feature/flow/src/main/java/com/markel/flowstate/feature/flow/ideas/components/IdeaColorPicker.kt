@@ -33,17 +33,17 @@ const val IDEA_COLOR_TRANSPARENT = 0x00000000L
  * Each entry is a Pair(lightColor, darkColor).
  */
 private val ideaColorPairs: List<Pair<Long, Long>> = listOf(
-    0xFFFFF59DL to 0xFF5C561AL, // amarillo
-    0xFFFFCC80L to 0xFF5C3D14L, // naranja
-    0xFFEF9A9AL to 0xFF5C3236L, // rojo
-    0xFFF48FB1L to 0xFF5C2E46L, // rosa
-    0xFFCE93D8L to 0xFF46305CL, // morado
-    0xFF90CAF9L to 0xFF1E3F5CL, // azul
-    0xFF80DEEFL to 0xFF1A4C54L, // cian
-    0xFFA5D6A7L to 0xFF244A28L, // verde
-    0xFFC5E1A5L to 0xFF324A1EL, // verde lima
-    0xFFBCAAA4L to 0xFF3D2E26L, // marrón
-    0xFFB0BEC5L to 0xFF2C363DL, // gris azulado
+    0xFFFFF59DL to 0xFF5C561AL, // yellow
+    0xFFFFCC80L to 0xFF5C3D14L, // orange
+    0xFFEF9A9AL to 0xFF5C3236L, // red
+    0xFFF48FB1L to 0xFF5C2E46L, // pink
+    0xFFCE93D8L to 0xFF46305CL, // purple
+    0xFF90CAF9L to 0xFF1E3F5CL, // blue
+    0xFF80DEEFL to 0xFF1A4C54L, // cyan
+    0xFFA5D6A7L to 0xFF244A28L, // green
+    0xFFC5E1A5L to 0xFF324A1EL, // lime green
+    0xFFBCAAA4L to 0xFF3D2E26L, // brown
+    0xFFB0BEC5L to 0xFF2C363DL, // blue-gray
 
 )
 

@@ -24,4 +24,7 @@
     <string name="clear_cal">Limpiar</string>
     <string name="calendar">Calendario</string>
     <string name="add_subtask">Añadir subtarea</string>
+    <string name="title">Título</string>
+    <string name="idea_content">Comienza a escribir...</string>
+    <string name="backg_color">Color de fondo</string>
 </resources>

@@ -77,7 +77,7 @@ class IdeaEditorViewModel @Inject constructor(
         }
     }
 
-    /** Discards changes without saving (e.g. user explicitly cancels). */
+    /** Discards changes without saving (e.g. user explicitly cancels (not implemented yet)). */
     fun closeWithoutSaving() {
         _editor.value = IdeaEditorState()
     }

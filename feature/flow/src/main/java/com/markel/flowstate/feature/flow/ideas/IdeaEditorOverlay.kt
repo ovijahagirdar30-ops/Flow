@@ -17,6 +17,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -83,7 +84,7 @@ fun IdeaEditorOverlay(
                     IconButton(onClick = { showColorSheet = true }) {
                         Icon(
                             imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
-                            contentDescription = "Cambiar color de fondo",
+                            contentDescription = "Change background color",
                             tint = onCardColor.copy(alpha = 0.8f)
                         )
                     }
@@ -112,7 +113,7 @@ fun IdeaEditorOverlay(
                     Box {
                         if (editorState.title.isEmpty()) {
                             Text(
-                                text = "Title",
+                                text = stringResource(R.string.title),
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = onCardColor.copy(alpha = 0.4f)
@@ -140,7 +141,7 @@ fun IdeaEditorOverlay(
                     Box {
                         if (editorState.content.isEmpty()) {
                             Text(
-                                text = "Start writing...",
+                                text = stringResource(R.string.idea_content),
                                 fontSize = 16.sp,
                                 color = onCardColor.copy(alpha = 0.35f)
                             )
@@ -171,7 +172,7 @@ fun IdeaEditorOverlay(
                     .padding(bottom = 24.dp)
             ) {
                 Text(
-                    text = "Background color",
+                    text = stringResource(R.string.backg_color),
                     style = MaterialTheme.typography.titleSmall,
                     color = onCardColor.copy(alpha = 0.7f),
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
