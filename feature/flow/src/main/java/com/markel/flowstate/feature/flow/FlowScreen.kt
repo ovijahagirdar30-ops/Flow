@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.feature.flow.components.DynamicHeader
@@ -21,12 +22,15 @@ import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetConte
 import com.markel.flowstate.feature.flow.tasks.components.TaskEditorOverlay
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import com.markel.flowstate.feature.flow.components.GridView
+import com.markel.flowstate.feature.flow.ideas.IdeaEditorOverlay
+import com.markel.flowstate.feature.flow.ideas.IdeaEditorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlowScreen(
     flowViewModel: FlowViewModel = hiltViewModel(),
-    taskViewModel: TaskViewModel = hiltViewModel()
+    taskViewModel: TaskViewModel = hiltViewModel(),
+    ideaEditorViewModel: IdeaEditorViewModel = hiltViewModel()
 ) {
     val isGridView by flowViewModel.isGridView.collectAsStateWithLifecycle()
     val flowUiState by flowViewModel.flowUiState.collectAsStateWithLifecycle()
@@ -40,17 +44,20 @@ fun FlowScreen(
     val draft by taskViewModel.draft.collectAsStateWithLifecycle()  // State with all the info for the new task
     val editor by taskViewModel.editor.collectAsStateWithLifecycle()  // State with all the info for the editing task
 
+    var showIdeaEditor by remember { mutableStateOf(false) }  // For the ideas, de editor and creation overlay is the same
+    val ideaEditor by ideaEditorViewModel.editor.collectAsStateWithLifecycle()
+
     Box(modifier = Modifier.fillMaxSize()) {
 
         Scaffold(
             contentWindowInsets = WindowInsets(0.dp),  // To avoid big gaps of surface at the top & bottom
             floatingActionButton = {
-                AnimatedVisibility(visible = editor.task == null && !showCreationSheet) {
+                AnimatedVisibility(visible = editor.task == null && !showCreationSheet  && !showIdeaEditor) {
                     ExpandableFabMenu(
                         expanded = isFabExpanded,
                         onToggle = { isFabExpanded = !isFabExpanded },
                         onTaskClick = { isFabExpanded = false; taskViewModel.closeEditor(); showCreationSheet = true },
-                        onIdeaClick = { isFabExpanded = false  /* TODO: Implement something to show while creating an idea */}
+                        onIdeaClick = { isFabExpanded = false; ideaEditorViewModel.openNew(); showIdeaEditor = true}
                     )
                 }
             }
@@ -73,6 +80,10 @@ fun FlowScreen(
                             onScrolled = { isHeaderMinimized = true },
                             onTaskClick = { clickedTask ->
                                 taskViewModel.openEditor(clickedTask)
+                            },
+                            onIdeaClick = { clickedIdea ->
+                                ideaEditorViewModel.openExisting(clickedIdea)
+                                showIdeaEditor = true
                             },
                             onDeleteIdea = { flowViewModel.deleteIdea(it) }
                         )
@@ -117,6 +128,7 @@ fun FlowScreen(
                 )
             }
         }
+        // ── Task editor overlay ───────────────────────────────────────────────
         TaskEditorOverlay(
             task = editor.task,
             onDismiss = { taskViewModel.closeEditor() },
@@ -128,5 +140,25 @@ fun FlowScreen(
                 taskViewModel.updateTask(task, title, desc, prio, date, subs)
             }
         )
+
+        // ── Idea editor overlay ───────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = showIdeaEditor,
+            enter = slideInVertically { it } + fadeIn(),
+            exit = slideOutVertically { it } + fadeOut(),
+            modifier = Modifier.zIndex(10f)
+        ) {
+            IdeaEditorOverlay(
+                editorState = ideaEditor,
+                onClose = {
+                    ideaEditorViewModel.closeAndSave()
+                    showIdeaEditor = false
+                },
+                onTitleChange = { ideaEditorViewModel.updateTitle(it) },
+                onContentChange = { ideaEditorViewModel.updateContent(it) },
+                onColorChange = { ideaEditorViewModel.updateColor(it) }
+            )
+        }
+
     }
 }

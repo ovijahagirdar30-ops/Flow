@@ -1,6 +1,7 @@
 package com.markel.flowstate.feature.flow.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +23,8 @@ import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.Task
+import com.markel.flowstate.feature.flow.ideas.components.IDEA_COLOR_TRANSPARENT
+import com.markel.flowstate.feature.flow.ideas.components.resolveIdeaColor
 import com.markel.flowstate.feature.flow.tasks.util.asColor
 import com.markel.flowstate.feature.tasks.R
 
@@ -97,14 +100,27 @@ fun TaskGridCard(
 @Composable
 fun IdeaGridCard(
     idea: Idea,
+    onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val cardColor = Color(idea.color).copy(alpha = 0.25f)
+    val resolvedColor = idea.color.resolveIdeaColor()
+    val isTransparent = resolvedColor == IDEA_COLOR_TRANSPARENT
+    val cardColor = if (isTransparent) Color.Transparent else Color(resolvedColor)
+    val shape = RoundedCornerShape(12.dp)
 
     Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = shape,
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (isTransparent) Modifier.border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                    shape = shape
+                ) else Modifier
+            )
+            .clickable { onClick() }
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
@@ -122,17 +138,6 @@ fun IdeaGridCard(
                     maxLines = 5,
                     overflow = TextOverflow.Ellipsis
                 )
-            }
-            Spacer(Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
-                    Icon(
-                        Icons.Rounded.Delete,
-                        contentDescription = "Eliminar idea",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
             }
         }
     }

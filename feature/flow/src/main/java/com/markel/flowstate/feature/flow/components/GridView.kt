@@ -15,6 +15,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.markel.flowstate.core.domain.Idea
+import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.FlowUiState
 import com.markel.flowstate.feature.flow.WorkspaceItem
 import com.markel.flowstate.feature.flow.tasks.components.EmptyStateView
@@ -23,8 +25,9 @@ import com.markel.flowstate.feature.flow.tasks.components.EmptyStateView
 fun GridView(
     uiState: FlowUiState,
     onScrolled: () -> Unit,
-    onTaskClick: (com.markel.flowstate.core.domain.Task) -> Unit,
-    onDeleteIdea: (com.markel.flowstate.core.domain.Idea) -> Unit
+    onTaskClick: (Task) -> Unit,
+    onIdeaClick: (Idea) -> Unit,
+    onDeleteIdea: (Idea) -> Unit
 ) {
     val gridState = rememberLazyStaggeredGridState()
     LaunchedEffect(gridState) {
@@ -67,6 +70,7 @@ fun GridView(
                             is WorkspaceItem.IdeaItem ->
                                 IdeaGridCard(
                                     idea = item.idea,
+                                    onClick = { onIdeaClick(item.idea) },
                                     onDelete = { onDeleteIdea(item.idea) }
                                 )
                             is WorkspaceItem.CheckListItem ->
