@@ -38,13 +38,13 @@ fun TaskGridCard(
     val priorityColor = task.priority.asColor()
 
     Card(
+        onClick = onClick,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
     ) {
         Row(modifier = Modifier
             .fillMaxWidth()
@@ -109,6 +109,7 @@ fun IdeaGridCard(
     val shape = RoundedCornerShape(12.dp)
 
     Card(
+        onClick = onClick,
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = cardColor),
         modifier = Modifier
@@ -120,7 +121,6 @@ fun IdeaGridCard(
                     shape = shape
                 ) else Modifier
             )
-            .clickable { onClick() }
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
