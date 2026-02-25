@@ -1,15 +1,31 @@
 package com.markel.flowstate.feature.flow.ideas
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -23,43 +39,49 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.feature.flow.ideas.components.IDEA_COLOR_TRANSPARENT
 import com.markel.flowstate.feature.flow.ideas.components.IdeaColorPicker
 import com.markel.flowstate.feature.flow.ideas.components.resolveIdeaColor
+import com.markel.flowstate.feature.flow.tasks.components.Icon
 import com.markel.flowstate.feature.tasks.R
 
 /**
- * Full-screen overlay for creating / editing an idea.
- * Auto-saves on back / close via [onClose]
+ * Full screen for idea editing/creation.
+ *
+ * As a standalone navigation destination:
+ * - The bottom bar automatically disappears (controlled by route in MainActivity)
+ * - The Navigation back stack manages "back"
+ *
+ * [ideaId] = null → new idea creation mode
+ * [ideaId] = Int → existing idea editing mode
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IdeaEditorOverlay(
-    editorState: IdeaEditorState,
-    onClose: () -> Unit,
-    onTitleChange: (String) -> Unit,
-    onContentChange: (String) -> Unit,
-    onColorChange: (Long) -> Unit
+fun IdeaEditorScreen(
+    ideaId: Int?, // null = new idea
+    onBack: () -> Unit,
+    viewModel: IdeaEditorViewModel = hiltViewModel()
 ) {
+    val editorState by viewModel.editor.collectAsStateWithLifecycle()
 
-    BackHandler { onClose() }
-
+    // We initialize the editor's state depending on whether we are creating or editing
+    LaunchedEffect(ideaId) {
+        if (ideaId == null) viewModel.openNew()
+        else viewModel.loadIdeaForEditing(ideaId)
+    }
+    
     val resolvedColor = editorState.color.resolveIdeaColor()
     val cardColor = if (resolvedColor == IDEA_COLOR_TRANSPARENT)
         MaterialTheme.colorScheme.surface
     else
         Color(resolvedColor)
 
-    // For text legibility use a dark tint over light backgrounds
     val onCardColor = MaterialTheme.colorScheme.onSurface
 
     val contentFocusRequester = remember { FocusRequester() }
     var showColorSheet by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        // Auto-focus content area when opening a new idea
-        if (editorState.idea == null) contentFocusRequester.requestFocus()
-    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
@@ -72,11 +94,11 @@ fun IdeaEditorOverlay(
                     actionIconContentColor = onCardColor
                 ),
                 navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = "Close editor"
-                        )
+                    IconButton(onClick = {
+                        viewModel.closeAndSave()
+                        onBack()
+                    }) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
                 title = {},
@@ -97,12 +119,12 @@ fun IdeaEditorOverlay(
                 .padding(innerPadding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
-            // ── Title ─────────────────────────────────────────────────────────
             BasicTextField(
                 value = editorState.title,
-                onValueChange = onTitleChange,
+                onValueChange = { viewModel.updateTitle(it) },
                 textStyle = TextStyle(
                     fontSize = 22.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -127,10 +149,9 @@ fun IdeaEditorOverlay(
 
             Spacer(Modifier.height(16.dp))
 
-            // ── Content ───────────────────────────────────────────────────────
             BasicTextField(
                 value = editorState.content,
-                onValueChange = onContentChange,
+                onValueChange = { viewModel.updateContent(it) },
                 textStyle = TextStyle(
                     fontSize = 16.sp,
                     lineHeight = 24.sp,
@@ -157,13 +178,12 @@ fun IdeaEditorOverlay(
         }
     }
 
-    // ── Color picker bottom sheet ─────────────────────────────────────────────
     if (showColorSheet) {
         ModalBottomSheet(
             onDismissRequest = { showColorSheet = false },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             dragHandle = null,
-            containerColor = cardColor, // Sheet background matches the selected card color for immersion
+            containerColor = cardColor,
             scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.24f),
         ) {
             Column(
@@ -180,12 +200,9 @@ fun IdeaEditorOverlay(
                 Spacer(Modifier.height(8.dp))
                 IdeaColorPicker(
                     selectedColor = editorState.color,
-                    onColorSelected = {
-                        onColorChange(it)
-                    }
+                    onColorSelected = { viewModel.updateColor(it) }
                 )
             }
         }
     }
-
 }

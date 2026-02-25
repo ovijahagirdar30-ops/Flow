@@ -5,13 +5,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
@@ -26,8 +19,10 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.markel.flowstate.components.FlowBottomBar
+import com.markel.flowstate.components.PlaceholderScreen
 import com.markel.flowstate.feature.flow.tasks.TaskScreen
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.core.designsystem.theme.FlowStateTheme
@@ -35,16 +30,11 @@ import com.markel.flowstate.feature.calendar.CalendarScreen
 import com.markel.flowstate.feature.calendar.CalendarViewModel
 import com.markel.flowstate.feature.flow.FlowScreen
 import com.markel.flowstate.feature.flow.FlowViewModel
+import com.markel.flowstate.feature.flow.ideas.IdeaEditorScreen
+import com.markel.flowstate.feature.flow.tasks.components.TaskEditorScreen
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
+import com.markel.flowstate.navigation.Screen
 import dagger.hilt.android.AndroidEntryPoint
-
-// We define our navigation routes
-sealed class Screen(val route: String, @StringRes val labelRes: Int, val iconRes: Int) {
-    object Tasks : Screen("tasks", com.markel.flowstate.feature.tasks.R.string.tasks, R.drawable.task_alt_24px)
-    object Calendar : Screen("calendar", com.markel.flowstate.feature.tasks.R.string.calendar, R.drawable.calendar_today)
-    object Habits : Screen("habits", com.markel.flowstate.feature.tasks.R.string.habits, R.drawable.calendar_month_24px)
-    object Mood : Screen("mood", com.markel.flowstate.feature.tasks.R.string.mood, R.drawable.self_improvement_24px)
-}
 
 val bottomNavItems = listOf(
     Screen.Tasks,
@@ -53,6 +43,8 @@ val bottomNavItems = listOf(
     Screen.Mood
 )
 
+// Routes where the bottom bar should be displayed
+private val routesWithBottomBar = bottomNavItems.map { it.route }.toSet()
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -69,17 +61,16 @@ class MainActivity : ComponentActivity() {
                 HandleSystemBars(isLandscape)
                 // Compose navigation controller
                 val navController = rememberNavController()
-                // Lifted state: any overlay in any screen can request to hide the bottom bar
-                var isBottomBarVisible by remember { mutableStateOf(true) }
+                // The bottom bar is controlled BY ROUTE, not by manual state
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+                // We show the bottom bar only if the current route is one of the main tabs
+                val isBottomBarVisible = currentRoute in routesWithBottomBar
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     bottomBar = {
-                        AnimatedVisibility(
-                            visible = isBottomBarVisible,
-                            enter = slideInVertically { it } + fadeIn(),
-                            exit = slideOutVertically { it } + fadeOut()
-                        ) {
+                        if (isBottomBarVisible) {
                             FlowBottomBar(
                                 navController = navController,
                                 isLandscape = isLandscape
@@ -96,11 +87,18 @@ class MainActivity : ComponentActivity() {
                         startDestination = Screen.Tasks.route,
                         modifier = Modifier.padding(innerPadding)
                     ) {
-                        // --- Here we define each screen ---
+                        // --- Main tabs ---
                         composable(Screen.Tasks.route) {
                             FlowScreen(
-                                onOverlayOpened = { isBottomBarVisible = false },
-                                onOverlayClosed = { isBottomBarVisible = true }
+                                onNavigateToTaskEditor = { taskId ->
+                                    navController.navigate(Screen.Detail.taskEditor(taskId))
+                                },
+                                onNavigateToIdeaEditor = { ideaId ->
+                                    navController.navigate(Screen.Detail.ideaEditor(ideaId))
+                                },
+                                onNavigateToNewIdea = {
+                                    navController.navigate(Screen.Detail.newIdea())
+                                }
                             )
                         }
                         composable(Screen.Calendar.route) {
@@ -114,25 +112,28 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Mood.route) {
                             PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.mood))
                         }
+
+                        // ── Detail screens (without bottom bar) ─────────────
+                        composable(Screen.Detail.TASK_EDITOR) { backStackEntry ->
+                            val taskId = backStackEntry.arguments
+                                ?.getString("taskId")
+                                ?.toIntOrNull() ?: return@composable
+                            TaskEditorScreen(
+                                taskId = taskId,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Screen.Detail.IDEA_EDITOR) { backStackEntry ->
+                            val ideaIdArg = backStackEntry.arguments?.getString("ideaId")
+                            IdeaEditorScreen(
+                                ideaId = ideaIdArg?.toIntOrNull(), // null = new idea
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
                     }
                 }
             }
         }
-    }
-}
-
-
-
-// Simple Composable for screens we haven't made yet
-@Composable
-fun PlaceholderScreen(text: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
-    ) {
-        Text(text = text, style = MaterialTheme.typography.headlineMedium)
     }
 }

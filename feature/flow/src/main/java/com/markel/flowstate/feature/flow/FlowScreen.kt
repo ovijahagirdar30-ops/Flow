@@ -19,20 +19,18 @@ import com.markel.flowstate.feature.flow.components.ExpandableFabMenu
 import com.markel.flowstate.feature.flow.tasks.TaskScreen
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
-import com.markel.flowstate.feature.flow.tasks.components.TaskEditorOverlay
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import com.markel.flowstate.feature.flow.components.GridView
-import com.markel.flowstate.feature.flow.ideas.IdeaEditorOverlay
-import com.markel.flowstate.feature.flow.ideas.IdeaEditorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlowScreen(
     flowViewModel: FlowViewModel = hiltViewModel(),
     taskViewModel: TaskViewModel = hiltViewModel(),
-    ideaEditorViewModel: IdeaEditorViewModel = hiltViewModel(),
-    onOverlayOpened: () -> Unit = {},  // notify MainActivity to hide bottom bar
-    onOverlayClosed: () -> Unit = {}  // notify MainActivity to show bottom bar
+    // Nvigation Callbacks to detail screens (edition)
+    onNavigateToTaskEditor: (taskId: Int) -> Unit,
+    onNavigateToIdeaEditor: (ideaId: Int) -> Unit,
+    onNavigateToNewIdea: () -> Unit
 ) {
     val isGridView by flowViewModel.isGridView.collectAsStateWithLifecycle()
     val flowUiState by flowViewModel.flowUiState.collectAsStateWithLifecycle()
@@ -44,28 +42,17 @@ fun FlowScreen(
     var isHeaderMinimized by rememberSaveable { mutableStateOf(false) }
 
     val draft by taskViewModel.draft.collectAsStateWithLifecycle()  // State with all the info for the new task
-    val editor by taskViewModel.editor.collectAsStateWithLifecycle()  // State with all the info for the editing task
-
-    var showIdeaEditor by remember { mutableStateOf(false) }  // For the ideas, de editor and creation overlay is the same
-    val ideaEditor by ideaEditorViewModel.editor.collectAsStateWithLifecycle()
-
-    // Notify parent whenever overlay visibility changes
-    val anyOverlayOpen = editor.task != null || showIdeaEditor
-    LaunchedEffect(anyOverlayOpen) {
-        if (anyOverlayOpen) onOverlayOpened() else onOverlayClosed()
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         Scaffold(
             contentWindowInsets = WindowInsets(0.dp),  // To avoid big gaps of surface at the top & bottom
             floatingActionButton = {
-                AnimatedVisibility(visible = editor.task == null && !showCreationSheet  && !showIdeaEditor) {
+                AnimatedVisibility(!showCreationSheet) {
                     ExpandableFabMenu(
                         expanded = isFabExpanded,
                         onToggle = { isFabExpanded = !isFabExpanded },
-                        onTaskClick = { isFabExpanded = false; taskViewModel.closeEditor(); showCreationSheet = true },
-                        onIdeaClick = { isFabExpanded = false; ideaEditorViewModel.openNew(); showIdeaEditor = true}
+                        onTaskClick = { isFabExpanded = false; showCreationSheet = true },
+                        onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea() }
                     )
                 }
             }
@@ -87,11 +74,10 @@ fun FlowScreen(
                             uiState = flowUiState,
                             onScrolled = { isHeaderMinimized = true },
                             onTaskClick = { clickedTask ->
-                                taskViewModel.openEditor(clickedTask)
+                                onNavigateToTaskEditor(clickedTask.id)
                             },
                             onIdeaClick = { clickedIdea ->
-                                ideaEditorViewModel.openExisting(clickedIdea)
-                                showIdeaEditor = true
+                                onNavigateToIdeaEditor(clickedIdea.id)
                             },
                             onDeleteIdea = { flowViewModel.deleteIdea(it) }
                         )
@@ -101,7 +87,7 @@ fun FlowScreen(
                             viewModel = taskViewModel,
                             onScrolled = { isHeaderMinimized = true },
                             onTaskClick = { clickedTask ->
-                                taskViewModel.openEditor(clickedTask)
+                                onNavigateToTaskEditor(clickedTask.id)
                             }
                         )
                     }
@@ -136,37 +122,5 @@ fun FlowScreen(
                 )
             }
         }
-        // ── Task editor overlay ───────────────────────────────────────────────
-        TaskEditorOverlay(
-            task = editor.task,
-            onDismiss = { taskViewModel.closeEditor() },
-            priority = editor.priority,
-            onPriorityChange = { taskViewModel.updateEditorPriority(it) },
-            dueDate = editor.dueDate,
-            onDueDateChange = { taskViewModel.updateEditorDueDate(it) },
-            onUpdate = { task, title, desc, prio, date, subs ->
-                taskViewModel.updateTask(task, title, desc, prio, date, subs)
-            }
-        )
-
-        // ── Idea editor overlay ───────────────────────────────────────────────
-        AnimatedVisibility(
-            visible = showIdeaEditor,
-            enter = slideInVertically { it } + fadeIn(),
-            exit = slideOutVertically { it } + fadeOut(),
-            modifier = Modifier.zIndex(10f)
-        ) {
-            IdeaEditorOverlay(
-                editorState = ideaEditor,
-                onClose = {
-                    ideaEditorViewModel.closeAndSave()
-                    showIdeaEditor = false
-                },
-                onTitleChange = { ideaEditorViewModel.updateTitle(it) },
-                onContentChange = { ideaEditorViewModel.updateContent(it) },
-                onColorChange = { ideaEditorViewModel.updateColor(it) }
-            )
-        }
-
     }
 }

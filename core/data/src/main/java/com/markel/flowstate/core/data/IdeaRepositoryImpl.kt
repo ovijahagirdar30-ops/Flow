@@ -18,6 +18,10 @@ class IdeaRepositoryImpl @Inject constructor(
 
     override suspend fun deleteIdea(idea: Idea) = ideaDao.deleteIdea(idea.toEntity())
 
+    override suspend fun getIdeaById(id: Int): Idea? {
+        return ideaDao.getIdeaById(id)?.toDomain()
+    }
+
     // Mappers
     private fun IdeaEntity.toDomain() = Idea(id, title, content, createdAt, color)
     private fun Idea.toEntity() = IdeaEntity(id, title, content, createdAt, color)

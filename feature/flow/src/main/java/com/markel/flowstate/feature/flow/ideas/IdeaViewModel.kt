@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class IdeaEditorState(
-    val idea: Idea? = null, // null = overlay closed
+    val idea: Idea? = null,
     val title: String = "",
     val content: String = "",
     val color: Long = IDEA_COLOR_TRANSPARENT // default: no background color
@@ -45,10 +45,20 @@ class IdeaEditorViewModel @Inject constructor(
     }
 
     /**
-     * Closes the overlay and auto-saves if there is something worth saving:
-     * - Creating: saves if title or content is not blank.
-     * - Editing: always updates (even if cleared).
+     * Loads an idea by ID from the repository.
+     * Used when navigating (IdeaEditorScreen) with only the ID.
      */
+    fun loadIdeaForEditing(ideaId: Int) {
+        viewModelScope.launch {
+            val idea = ideaRepository.getIdeaById(ideaId)
+            if (idea != null) {
+                openExisting(idea)
+            }
+            // If the idea does not exist, the editor remains in an empty state (new idea)
+        }
+    }
+
+
     fun closeAndSave() {
         val state = _editor.value
         viewModelScope.launch {

@@ -13,4 +13,7 @@ interface IdeaDao {
 
     @Delete
     suspend fun deleteIdea(idea: IdeaEntity)
+
+    @Query("SELECT * FROM ideas WHERE id = :id")
+    suspend fun getIdeaById(id: Int): IdeaEntity?
 }

@@ -23,8 +23,8 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.markel.flowstate.Screen
 import com.markel.flowstate.bottomNavItems
+import com.markel.flowstate.navigation.Screen
 
 @Composable
 fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {

@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
 // Define possible screen states
 sealed interface TasksUiState {
     data object Loading : TasksUiState
@@ -31,17 +30,12 @@ data class TaskDraftState(
     val dueDate: Long? = null
 )
 
-data class TaskEditorState(
-    val task: Task? = null,
-    val priority: Priority = Priority.NOTHING,
-    val dueDate: Long? = null
-)
 /**
  * ViewModel for the Tasks screen.
  * Contains business logic and exposes state to the UI.
  */
 @HiltViewModel
-class TaskViewModel  @Inject constructor(
+class TaskViewModel @Inject constructor(
     private val repository: TaskRepository,
     private val toggleTaskUseCase: ToggleTaskUseCase,
     private val deleteTaskUseCase: DeleteTaskUseCase
@@ -54,9 +48,6 @@ class TaskViewModel  @Inject constructor(
     private val _draft = MutableStateFlow(TaskDraftState())
     val draft: StateFlow<TaskDraftState> = _draft.asStateFlow()
 
-    private val _editor = MutableStateFlow(TaskEditorState())
-    val editor: StateFlow<TaskEditorState> = _editor.asStateFlow()
-
     // The init block acts as a "subscriber" to the repository
     init {
         viewModelScope.launch {
@@ -67,7 +58,7 @@ class TaskViewModel  @Inject constructor(
         }
     }
 
-    // Function to add a new task
+    // ── CRUD ──────────────────────────────────────────────────────────────────
     fun addTask(title: String, description: String, priority: Priority, dueDate: Long?, subTasks: List<SubTask>) {
         if (title.isBlank()) return
         viewModelScope.launch {
@@ -84,22 +75,6 @@ class TaskViewModel  @Inject constructor(
                 subTasks = subTasks
             )
             repository.upsertTask(newTask)
-        }
-    }
-
-    // Function to edit an existing task
-    fun updateTask(originalTask: Task, newTitle: String, newDescription: String, newPriority: Priority, newDueDate: Long?, newSubTasks: List<SubTask>) {
-        if (newTitle.isBlank()) return
-        viewModelScope.launch {
-            repository.upsertTask(
-                originalTask.copy(
-                    title = newTitle,
-                    description = newDescription,
-                    priority = newPriority,
-                    dueDate = newDueDate,
-                    subTasks = newSubTasks
-                )
-            )
         }
     }
 
@@ -147,19 +122,4 @@ class TaskViewModel  @Inject constructor(
         addTask(d.title, d.description, d.priority, d.dueDate, emptyList())
         _draft.value = TaskDraftState() // reset
     }
-
-    // TASK EDITION
-
-    fun openEditor(task: Task) {  // This doesn't open the editor but triggers a change in the task variable and that makes it not null, therefore the TaskEditorOverlay is visible
-        _editor.value = TaskEditorState(
-            task = task,
-            priority = task.priority,
-            dueDate = task.dueDate
-        )
-    }
-
-    fun closeEditor() { _editor.value = TaskEditorState() }
-
-    fun updateEditorPriority(value: Priority) { _editor.update { it.copy(priority = value) } }
-    fun updateEditorDueDate(value: Long?) { _editor.update { it.copy(dueDate = value) } }
 }
