@@ -49,6 +49,10 @@ fun TaskEditorScreen(
                 onDueDateChange = { viewModel.updateDueDate(it) },
                 isDone = editor.isDone,
                 onComplete = { viewModel.toggleDone() },
+                onDelete = {
+                    viewModel.deleteTask(editor.task!!)
+                    onBack()
+                },
                 onBack = onBack
             )
         },

@@ -6,6 +6,7 @@ import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.domain.usecase.DeleteTaskUseCase
 import com.markel.flowstate.core.domain.usecase.ToggleTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +38,7 @@ data class TaskEditorState(
 class TaskEditorViewModel @Inject constructor(
     private val repository: TaskRepository,
     private val toggleTaskUseCase: ToggleTaskUseCase,
+    private val deleteTaskUseCase: DeleteTaskUseCase
 ) : ViewModel() {
 
     private val _editor = MutableStateFlow(TaskEditorState())
@@ -93,6 +95,11 @@ class TaskEditorViewModel @Inject constructor(
         _editor.update { it.copy(isDone = newIsDone) }
         viewModelScope.launch {
             toggleTaskUseCase(current)
+        }
+    }
+    fun deleteTask(task: Task) {
+        viewModelScope.launch {
+            deleteTaskUseCase(task)
         }
     }
 }

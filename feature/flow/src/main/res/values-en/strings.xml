@@ -27,4 +27,7 @@
     <string name="title">Title</string>
     <string name="idea_content">Start writing...</string>
     <string name="backg_color">Background color</string>
+    <string name="mark_pending">Mark as pending</string>
+    <string name="mark_completed">Mark as completed</string>
+    <string name="delete_task">Delete task</string>
 </resources>

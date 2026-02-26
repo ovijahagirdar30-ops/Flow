@@ -27,4 +27,7 @@
     <string name="title">Título</string>
     <string name="idea_content">Comienza a escribir...</string>
     <string name="backg_color">Color de fondo</string>
+    <string name="mark_pending">Marcar como pendiente</string>
+    <string name="mark_completed">Marcar como completada</string>
+    <string name="delete_task">Eliminar tarea</string>
 </resources>
