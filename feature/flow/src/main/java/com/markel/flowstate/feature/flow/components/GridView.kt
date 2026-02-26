@@ -26,8 +26,7 @@ fun GridView(
     uiState: FlowUiState,
     onScrolled: () -> Unit,
     onTaskClick: (Task) -> Unit,
-    onIdeaClick: (Idea) -> Unit,
-    onDeleteIdea: (Idea) -> Unit
+    onIdeaClick: (Idea) -> Unit
 ) {
     val gridState = rememberLazyStaggeredGridState()
     LaunchedEffect(gridState) {
@@ -70,8 +69,7 @@ fun GridView(
                             is WorkspaceItem.IdeaItem ->
                                 IdeaGridCard(
                                     idea = item.idea,
-                                    onClick = { onIdeaClick(item.idea) },
-                                    onDelete = { onDeleteIdea(item.idea) }
+                                    onClick = { onIdeaClick(item.idea) }
                                 )
                             is WorkspaceItem.CheckListItem ->
                                 CheckListGridCard(checkList = item.checkList)

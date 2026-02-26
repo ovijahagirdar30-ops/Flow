@@ -1,5 +1,6 @@
 package com.markel.flowstate.feature.flow.ideas
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,6 +67,11 @@ fun IdeaEditorScreen(
     onBack: () -> Unit,
     viewModel: IdeaEditorViewModel = hiltViewModel()
 ) {
+    BackHandler {
+        viewModel.closeAndSave()
+        onBack()
+    }
+
     val editorState by viewModel.editor.collectAsStateWithLifecycle()
 
     // We initialize the editor's state depending on whether we are creating or editing
@@ -115,6 +122,18 @@ fun IdeaEditorScreen(
                             contentDescription = "Change background color",
                             tint = onCardColor.copy(alpha = 0.8f)
                         )
+                    }
+                    if (ideaId != null) {
+                        IconButton(onClick = {
+                            viewModel.deleteIdea(ideaId)
+                            onBack()
+                        }) {
+                            Icon(
+                                imageVector = Icons.Rounded.Delete,
+                                contentDescription = "Delete idea",
+                                tint = onCardColor.copy(alpha = 0.8f)
+                            )
+                        }
                     }
                 }
             )

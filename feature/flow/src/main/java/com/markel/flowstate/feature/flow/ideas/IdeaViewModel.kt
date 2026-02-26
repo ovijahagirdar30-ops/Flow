@@ -100,4 +100,12 @@ class IdeaEditorViewModel @Inject constructor(
 
     fun updateColor(color: Long) = _editor.update { it.copy(color = color) }
 
+    fun deleteIdea(ideaId: Int) {
+        viewModelScope.launch {
+            val idea = ideaRepository.getIdeaById(ideaId) ?: return@launch
+            ideaRepository.deleteIdea(idea)
+            _editor.value = IdeaEditorState()
+        }
+    }
+
 }

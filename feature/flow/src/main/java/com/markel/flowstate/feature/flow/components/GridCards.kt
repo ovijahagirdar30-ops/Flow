@@ -101,8 +101,7 @@ fun TaskGridCard(
 @Composable
 fun IdeaGridCard(
     idea: Idea,
-    onClick: () -> Unit,
-    onDelete: () -> Unit
+    onClick: () -> Unit
 ) {
     val resolvedColor = idea.color.resolveIdeaColor()
     val isTransparent = resolvedColor == IDEA_COLOR_TRANSPARENT

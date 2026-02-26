@@ -78,8 +78,7 @@ fun FlowScreen(
                             },
                             onIdeaClick = { clickedIdea ->
                                 onNavigateToIdeaEditor(clickedIdea.id)
-                            },
-                            onDeleteIdea = { flowViewModel.deleteIdea(it) }
+                            }
                         )
                     } else {
                         // TaskScreen manages all of the internal states still (FAB, sheets, editor)
