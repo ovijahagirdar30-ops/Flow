@@ -47,6 +47,8 @@ fun TaskEditorScreen(
                 onPriorityChange = { viewModel.updatePriority(it) },
                 dueDate = editor.dueDate,
                 onDueDateChange = { viewModel.updateDueDate(it) },
+                isDone = editor.isDone,
+                onComplete = { viewModel.toggleDone() },
                 onBack = onBack
             )
         },

@@ -24,9 +24,6 @@ import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.tasks.components.AnimatableTaskItem
 import com.markel.flowstate.feature.flow.components.DynamicHeader
 import com.markel.flowstate.feature.flow.tasks.components.EmptyStateView
-import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
-import com.markel.flowstate.feature.flow.tasks.components.TaskEditorOverlay
-import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 

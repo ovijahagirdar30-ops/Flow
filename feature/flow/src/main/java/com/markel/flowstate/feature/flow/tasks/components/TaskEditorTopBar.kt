@@ -25,6 +25,8 @@ fun TaskEditorTopBar(
     onPriorityChange: (Priority) -> Unit,
     dueDate: Long?,
     onDueDateChange: (Long?) -> Unit,
+    isDone: Boolean,
+    onComplete: () -> Unit,
     onBack: () -> Unit
 ) {
     TopAppBar(
@@ -38,6 +40,19 @@ fun TaskEditorTopBar(
             }
         },
         actions = {
+            IconButton(onClick = onComplete) {
+                Icon(
+                    imageVector = if (isDone)
+                        ImageVector.vectorResource(R.drawable.radio_button_checked_24px)
+                    else
+                        ImageVector.vectorResource(R.drawable.radio_button_unchecked_24px),
+                    contentDescription = if (isDone) "Mark as pending" else "Mark as completed",
+                    tint = if (isDone)
+                        MaterialTheme.colorScheme.tertiary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             IconButton(onClick = {
                 val nextPriority = when (priority) {
                     Priority.NOTHING -> Priority.LOW

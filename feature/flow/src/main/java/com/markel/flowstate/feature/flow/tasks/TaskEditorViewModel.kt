@@ -6,6 +6,7 @@ import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.domain.usecase.ToggleTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,11 +30,13 @@ import javax.inject.Inject
 data class TaskEditorState(
     val task: Task? = null,
     val priority: Priority = Priority.NOTHING,
-    val dueDate: Long? = null
+    val dueDate: Long? = null,
+    val isDone: Boolean = false
 )
 @HiltViewModel
 class TaskEditorViewModel @Inject constructor(
-    private val repository: TaskRepository
+    private val repository: TaskRepository,
+    private val toggleTaskUseCase: ToggleTaskUseCase,
 ) : ViewModel() {
 
     private val _editor = MutableStateFlow(TaskEditorState())
@@ -53,7 +56,8 @@ class TaskEditorViewModel @Inject constructor(
                 _editor.value = TaskEditorState(
                     task = task,
                     priority = task.priority,
-                    dueDate = task.dueDate
+                    dueDate = task.dueDate,
+                    isDone = task.isDone
                 )
             }
         }
@@ -83,4 +87,12 @@ class TaskEditorViewModel @Inject constructor(
 
     fun updatePriority(value: Priority) = _editor.update { it.copy(priority = value) }
     fun updateDueDate(value: Long?) = _editor.update { it.copy(dueDate = value) }
+    fun toggleDone() {
+        val current = _editor.value.task ?: return
+        val newIsDone = !_editor.value.isDone
+        _editor.update { it.copy(isDone = newIsDone) }
+        viewModelScope.launch {
+            toggleTaskUseCase(current)
+        }
+    }
 }
