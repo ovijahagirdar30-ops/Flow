@@ -23,7 +23,7 @@ rootProject.name = "FlowState"
 include(":app")
 include(":core:data")
 include(":core:designsystem")
-include(":feature:tasks")
+include(":feature:flow")
 include(":core:domain")
 include(":feature:calendar")
 include(":core:testing")
