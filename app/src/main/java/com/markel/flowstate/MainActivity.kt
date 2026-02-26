@@ -133,18 +133,20 @@ class MainActivity : ComponentActivity() {
                                     val taskId = backStackEntry.arguments
                                         ?.getString("taskId")
                                         ?.toIntOrNull() ?: return@composable
-                                    TaskEditorScreen(
-                                        taskId = taskId,
-                                        onBack = { navController.popBackStack() }
-                                    )
+                                    CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                        TaskEditorScreen(
+                                            taskId = taskId,
+                                            onBack = { navController.popBackStack() }
+                                        )
+                                    }
                                 }
                                 composable(Screen.Detail.IDEA_EDITOR) { backStackEntry ->
                                     val ideaIdArg = backStackEntry.arguments?.getString("ideaId")
                                     CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                    IdeaEditorScreen(
-                                        ideaId = ideaIdArg?.toIntOrNull(), // null = new idea
-                                        onBack = { navController.popBackStack() }
-                                    )
+                                        IdeaEditorScreen(
+                                            ideaId = ideaIdArg?.toIntOrNull(), // null = new idea
+                                            onBack = { navController.popBackStack() }
+                                        )
                                         }
                                 }
                             }

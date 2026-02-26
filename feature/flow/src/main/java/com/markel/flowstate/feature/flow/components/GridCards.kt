@@ -1,29 +1,20 @@
 package com.markel.flowstate.feature.flow.components
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.markel.flowstate.core.designsystem.ui.IdeaSharedKeys
+import com.markel.flowstate.core.designsystem.ui.TaskSharedKeys
 import com.markel.flowstate.core.designsystem.ui.sharedCardBounds
 import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.Idea
@@ -32,7 +23,6 @@ import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.ideas.components.IDEA_COLOR_TRANSPARENT
 import com.markel.flowstate.feature.flow.ideas.components.resolveIdeaColor
 import com.markel.flowstate.feature.flow.tasks.util.asColor
-import com.markel.flowstate.feature.tasks.R
 
 // ── Task ─────────────────────────────────────────────────────────────────────
 
@@ -42,14 +32,20 @@ fun TaskGridCard(
     onClick: () -> Unit
 ) {
     val priorityColor = task.priority.asColor()
+    val shape = RoundedCornerShape(12.dp)
 
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .sharedCardBounds(
+                key = TaskSharedKeys.container(task.id),
+                shape = shape
+            )
     ) {
         Row(modifier = Modifier
             .fillMaxWidth()

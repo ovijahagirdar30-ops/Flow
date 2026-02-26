@@ -30,4 +30,5 @@
     <string name="mark_pending">Marcar como pendiente</string>
     <string name="mark_completed">Marcar como completada</string>
     <string name="delete_task">Eliminar tarea</string>
+    <string name="flow">Flow</string>
 </resources>

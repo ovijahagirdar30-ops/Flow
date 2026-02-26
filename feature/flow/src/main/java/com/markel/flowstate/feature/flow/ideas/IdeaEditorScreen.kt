@@ -1,9 +1,5 @@
 package com.markel.flowstate.feature.flow.ideas
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -50,7 +46,6 @@ import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
 import com.markel.flowstate.feature.flow.ideas.components.IDEA_COLOR_TRANSPARENT
 import com.markel.flowstate.feature.flow.ideas.components.IdeaColorPicker
 import com.markel.flowstate.feature.flow.ideas.components.resolveIdeaColor
-import com.markel.flowstate.feature.flow.tasks.components.Icon
 import com.markel.flowstate.feature.tasks.R
 
 /**

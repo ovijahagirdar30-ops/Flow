@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.markel.flowstate.core.designsystem.ui.TaskSharedKeys
+import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
 import com.markel.flowstate.feature.flow.tasks.TaskEditorViewModel
 import com.markel.flowstate.feature.flow.tasks.components.TaskEditorSheetContent
 import com.markel.flowstate.feature.flow.tasks.components.TaskEditorTopBar
@@ -40,6 +42,9 @@ fun TaskEditorScreen(
     val editor by viewModel.editor.collectAsStateWithLifecycle()
 
     Scaffold(
+        modifier = Modifier.sharedDetailBounds(
+            key = TaskSharedKeys.container(taskId)
+        ),
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             TaskEditorTopBar(
