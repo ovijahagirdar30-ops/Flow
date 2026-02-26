@@ -1,5 +1,9 @@
 package com.markel.flowstate.feature.flow.components
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.markel.flowstate.core.designsystem.ui.IdeaSharedKeys
+import com.markel.flowstate.core.designsystem.ui.sharedCardBounds
 import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.Priority
@@ -43,8 +49,7 @@ fun TaskGridCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(modifier = Modifier
             .fillMaxWidth()
@@ -114,6 +119,7 @@ fun IdeaGridCard(
         colors = CardDefaults.cardColors(containerColor = cardColor),
         modifier = Modifier
             .fillMaxWidth()
+            .sharedCardBounds(key = IdeaSharedKeys.container(idea.id), shape = shape)
             .then(
                 if (isTransparent) Modifier.border(
                     width = 1.dp,

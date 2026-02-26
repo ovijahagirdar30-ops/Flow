@@ -1,5 +1,9 @@
 package com.markel.flowstate.feature.flow.ideas
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -41,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.markel.flowstate.core.designsystem.ui.IdeaSharedKeys
+import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
 import com.markel.flowstate.feature.flow.ideas.components.IDEA_COLOR_TRANSPARENT
 import com.markel.flowstate.feature.flow.ideas.components.IdeaColorPicker
 import com.markel.flowstate.feature.flow.ideas.components.resolveIdeaColor
@@ -84,6 +90,11 @@ fun IdeaEditorScreen(
     var showColorSheet by remember { mutableStateOf(false) }
 
     Scaffold(
+        modifier = Modifier
+            .then(
+                if (ideaId != null) Modifier.sharedDetailBounds(IdeaSharedKeys.container(ideaId))
+                        else Modifier
+            ),
         contentWindowInsets = WindowInsets(0.dp),
         containerColor = cardColor,
         topBar = {
