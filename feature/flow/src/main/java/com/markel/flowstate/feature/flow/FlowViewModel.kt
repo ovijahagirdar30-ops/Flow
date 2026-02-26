@@ -2,6 +2,7 @@ package com.markel.flowstate.feature.flow
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.IdeaRepository
@@ -38,16 +39,23 @@ class FlowViewModel @Inject constructor(
     private val ideaRepository: IdeaRepository,
     private val checkListRepository: CheckListRepository,
     private val toggleTaskUseCase: ToggleTaskUseCase,
-    private val deleteTaskUseCase: DeleteTaskUseCase
+    private val deleteTaskUseCase: DeleteTaskUseCase,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     // ── View state ───────────────────────────────────────────────────────
 
-    private val _isGridView = MutableStateFlow(false)
-    val isGridView: StateFlow<Boolean> = _isGridView.asStateFlow()
+    val isGridView: StateFlow<Boolean?> = userPreferencesRepository.isGridView
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = null
+        )
 
     fun toggleView() {
-        _isGridView.value = !_isGridView.value
+        viewModelScope.launch {
+            userPreferencesRepository.setGridView(!(isGridView.value ?: false))
+        }
     }
 
     // ── Unified Grid state ─────────────────────────────────────────────
@@ -69,31 +77,4 @@ class FlowViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = FlowUiState.Loading
     )
-
-    // ── Delegation to TaskRepository (logic lives in TaskViewModel) ───────────
-    // FlowViewModel only needs these operations for the grid cards
-
-    fun deleteTask(task: Task) {
-        viewModelScope.launch { deleteTaskUseCase(task) }
-    }
-
-    fun toggleTaskDone(task: Task) {
-        viewModelScope.launch { toggleTaskUseCase(task) }
-    }
-
-    // ── Ideas ─────────────────────────────────────────────────────────────────
-
-    fun addIdea(title: String, content: String, color: Long) {
-        if (title.isBlank()) return
-        viewModelScope.launch {
-            ideaRepository.upsertIdea(Idea(title = title, content = content, color = color))
-        }
-    }
-
-    fun deleteIdea(idea: Idea) {
-        viewModelScope.launch { ideaRepository.deleteIdea(idea) }
-    }
-
-    // ── CheckLists ────────────────────────────────────────────────────────────
-    // Add CheckList operations here when you implement its sheet
 }

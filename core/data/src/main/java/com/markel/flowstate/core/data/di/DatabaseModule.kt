@@ -1,7 +1,9 @@
 package com.markel.flowstate.core.data.di
 
 import android.app.Application
+import android.content.Context
 import androidx.room.Room
+import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.data.local.CheckListDao
 import com.markel.flowstate.core.data.local.FlowStateDatabase
 import com.markel.flowstate.core.data.local.IdeaDao
@@ -9,6 +11,7 @@ import com.markel.flowstate.core.data.local.TaskDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -45,4 +48,10 @@ object DatabaseModule {
     fun provideCheckListDao(db: FlowStateDatabase): CheckListDao{
         return db.checkListDao
     }
+
+    @Provides
+    @Singleton
+    fun provideUserPreferencesRepository(
+        @ApplicationContext context: Context
+    ): UserPreferencesRepository = UserPreferencesRepository(context)
 }

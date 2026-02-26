@@ -33,6 +33,7 @@ fun FlowScreen(
     onNavigateToNewIdea: () -> Unit
 ) {
     val isGridView by flowViewModel.isGridView.collectAsStateWithLifecycle()
+    if (isGridView == null) return
     val flowUiState by flowViewModel.flowUiState.collectAsStateWithLifecycle()
 
     var isFabExpanded by remember { mutableStateOf(false) }
@@ -60,7 +61,7 @@ fun FlowScreen(
             Column(modifier = Modifier.padding(paddingValues)) {
                 DynamicHeader(
                     isMinimized = isHeaderMinimized,
-                    isGridView = isGridView,
+                    isGridView = isGridView!!,
                     onToggleView = { flowViewModel.toggleView() }
                 )
 
@@ -69,7 +70,7 @@ fun FlowScreen(
                     transitionSpec = { fadeIn(tween(280)) togetherWith fadeOut(tween(200)) },
                     label = "flow_view_transition"
                 ) { showGrid ->
-                    if (showGrid) {
+                    if (showGrid == true) {
                         GridView(
                             uiState = flowUiState,
                             onScrolled = { isHeaderMinimized = true },
