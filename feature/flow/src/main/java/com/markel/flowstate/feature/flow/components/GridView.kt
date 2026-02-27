@@ -1,5 +1,6 @@
 package com.markel.flowstate.feature.flow.components
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,24 +10,31 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.FlowUiState
-import com.markel.flowstate.feature.flow.WorkspaceItem
+import com.markel.flowstate.feature.flow.GridItem
 import com.markel.flowstate.feature.flow.tasks.components.EmptyStateView
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyStaggeredGridState
 
 @Composable
 fun GridView(
     uiState: FlowUiState,
     onScrolled: () -> Unit,
     onTaskClick: (Task) -> Unit,
-    onIdeaClick: (Idea) -> Unit
+    onIdeaClick: (Idea) -> Unit,
+    onReorder: (fromIndex: Int, toIndex: Int) -> Unit,
+    onDragEnd: () -> Unit
 ) {
     val gridState = rememberLazyStaggeredGridState()
     LaunchedEffect(gridState) {
@@ -40,6 +48,13 @@ fun GridView(
             if (uiState.items.isEmpty()) {
                 EmptyStateView()
             } else {
+                val reorderState = rememberReorderableLazyStaggeredGridState(gridState) { from, to ->
+                    onReorder(from.index, to.index)
+                }
+                LaunchedEffect(reorderState.isAnyItemDragging) {
+                    // When is false, the user has dropped the item and now we can update de db
+                    if (!reorderState.isAnyItemDragging) onDragEnd()
+                }
                 LazyVerticalStaggeredGrid(
                     columns = StaggeredGridCells.Fixed(2),
                     state = gridState,
@@ -54,25 +69,43 @@ fun GridView(
                         items = uiState.items,
                         key = { item ->
                             when (item) {
-                                is WorkspaceItem.TaskItem      -> "task_${item.task.id}"
-                                is WorkspaceItem.IdeaItem      -> "idea_${item.idea.id}"
-                                is WorkspaceItem.CheckListItem -> "cl_${item.checkList.id}"
+                                is GridItem.TaskItem -> "task_${item.task.id}"
+                                is GridItem.IdeaItem -> "idea_${item.idea.id}"
+                                is GridItem.CheckListItem -> "cl_${item.checkList.id}"
                             }
                         }
                     ) { item ->
-                        when (item) {
-                            is WorkspaceItem.TaskItem ->
-                                TaskGridCard(
-                                    task = item.task,
-                                    onClick = { onTaskClick(item.task) }
-                                )
-                            is WorkspaceItem.IdeaItem ->
-                                IdeaGridCard(
-                                    idea = item.idea,
-                                    onClick = { onIdeaClick(item.idea) }
-                                )
-                            is WorkspaceItem.CheckListItem ->
-                                CheckListGridCard(checkList = item.checkList)
+                        val itemKey = when (item) {
+                            is GridItem.TaskItem -> "task_${item.task.id}"
+                            is GridItem.IdeaItem -> "idea_${item.idea.id}"
+                            is GridItem.CheckListItem -> "cl_${item.checkList.id}"
+                        }
+                        ReorderableItem(reorderState, key = itemKey) { isDragging ->
+                            val elevation by animateDpAsState(
+                                targetValue = if (isDragging) 8.dp else 0.dp,
+                                label = "drag_elevation"
+                            )
+                            Box(Modifier.shadow(elevation, RoundedCornerShape(12.dp))) {
+                                when (item) {
+                                    is GridItem.TaskItem ->
+                                        TaskGridCard(
+                                            task = item.task,
+                                            onClick = { onTaskClick(item.task) },
+                                            modifier = Modifier.longPressDraggableHandle()
+                                        )
+                                    is GridItem.IdeaItem ->
+                                        IdeaGridCard(
+                                            idea = item.idea,
+                                            onClick = { onIdeaClick(item.idea) },
+                                            modifier = Modifier.longPressDraggableHandle()
+                                        )
+                                    is GridItem.CheckListItem ->
+                                        CheckListGridCard(
+                                            checkList = item.checkList,
+                                            modifier = Modifier.longPressDraggableHandle()
+                                        )
+                                }
+                            }
                         }
                     }
                 }

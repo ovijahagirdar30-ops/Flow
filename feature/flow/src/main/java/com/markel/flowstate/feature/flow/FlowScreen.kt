@@ -74,21 +74,17 @@ fun FlowScreen(
                         GridView(
                             uiState = flowUiState,
                             onScrolled = { isHeaderMinimized = true },
-                            onTaskClick = { clickedTask ->
-                                onNavigateToTaskEditor(clickedTask.id)
-                            },
-                            onIdeaClick = { clickedIdea ->
-                                onNavigateToIdeaEditor(clickedIdea.id)
-                            }
+                            onTaskClick = { onNavigateToTaskEditor(it.id) },
+                            onIdeaClick = { onNavigateToIdeaEditor(it.id) },
+                            onReorder = { from, to -> flowViewModel.onGridReorder(from, to) },
+                            onDragEnd = { flowViewModel.onGridDragEnd() }
                         )
                     } else {
                         // TaskScreen manages all of the internal states still (FAB, sheets, editor)
                         TaskScreen(
                             viewModel = taskViewModel,
                             onScrolled = { isHeaderMinimized = true },
-                            onTaskClick = { clickedTask ->
-                                onNavigateToTaskEditor(clickedTask.id)
-                            }
+                            onTaskClick = { onNavigateToTaskEditor(it.id) }
                         )
                     }
                 }

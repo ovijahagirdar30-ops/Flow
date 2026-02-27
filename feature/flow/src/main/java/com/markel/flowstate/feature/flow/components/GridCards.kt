@@ -29,7 +29,8 @@ import com.markel.flowstate.feature.flow.tasks.util.asColor
 @Composable
 fun TaskGridCard(
     task: Task,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val priorityColor = task.priority.asColor()
     val shape = RoundedCornerShape(12.dp)
@@ -40,7 +41,7 @@ fun TaskGridCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
         ),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .sharedCardBounds(
                 key = TaskSharedKeys.container(task.id),
@@ -101,7 +102,8 @@ fun TaskGridCard(
 @Composable
 fun IdeaGridCard(
     idea: Idea,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val resolvedColor = idea.color.resolveIdeaColor()
     val isTransparent = resolvedColor == IDEA_COLOR_TRANSPARENT
@@ -112,7 +114,7 @@ fun IdeaGridCard(
         onClick = onClick,
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .sharedCardBounds(key = IdeaSharedKeys.container(idea.id), shape = shape)
             .then(
@@ -147,13 +149,16 @@ fun IdeaGridCard(
 // ── CheckList ─────────────────────────────────────────────────────────────────
 
 @Composable
-fun CheckListGridCard(checkList: CheckList) {
+fun CheckListGridCard(
+    checkList: CheckList,
+    modifier: Modifier = Modifier
+) {
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(

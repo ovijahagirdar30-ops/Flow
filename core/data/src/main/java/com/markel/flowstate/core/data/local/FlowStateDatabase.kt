@@ -12,8 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * and which version of the database we are using.
  */
 @Database(
-    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class ], // List of all tables
-    version = 8,
+    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, GridOrderEntity::class ], // List of all tables
+    version = 9,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -22,6 +22,7 @@ abstract class FlowStateDatabase : RoomDatabase() {
     abstract val taskDao: TaskDao
     abstract val ideaDao: IdeaDao
     abstract val checkListDao: CheckListDao
+    abstract val gridOrderDao: GridOrderDao
 
     // Room will use this to create the DB instance.
     companion object {
@@ -66,6 +67,18 @@ abstract class FlowStateDatabase : RoomDatabase() {
         val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE ideas ADD COLUMN title TEXT NOT NULL DEFAULT ''")
+            }
+        }
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `grid_order` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `itemId` INTEGER NOT NULL,
+                        `itemType` TEXT NOT NULL,
+                        `position` INTEGER NOT NULL
+                    )
+                """.trimIndent())
             }
         }
     }
