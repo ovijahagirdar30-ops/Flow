@@ -11,9 +11,9 @@
 > This project is actively being developed and may have bugs. We welcome contributions from the community!
 
 ## Screenshots
-| ![Image 1](screenshots/home_light.png) |   ![Image 2](screenshots/home_dark.png)   |
-|:--------------------------------------:|:-----------------------------------------:|
-| ![Image 3](screenshots/edit_task.png)  | ![Image 4](screenshots/calendar_view.png) |
+| ![Image 1](screenshots/home_dark.png)  |   ![Image 2](screenshots/home_light.png)   |
+|:--------------------------------------:|:------------------------------------------:|
+| ![Image 3](screenshots/edit_light.png) | ![Image 4](screenshots/calendar_night.png) |
 
 ## Features
 
@@ -94,12 +94,10 @@ We welcome contributions! Here's how you can help:
 2. **Create a feature branch**
    ```bash
    git checkout -b feature/amazing-feature
-  
 3. **Make your changes**
 
   - Write tests when possible
   - Update documentation when possible
-
 4. **Commit your changes**
    ```bash
    git commit -m 'Add some amazing feature'
@@ -114,8 +112,8 @@ FlowState follows **Clean Architecture** with a clear separation of concerns:
 
 ```text
 UI Layer (Presentation)
-├── ViewModels (TaskViewModel)
-├── Composable Screens (TaskScreen)
+├── ViewModels
+├── Composable Screens
 └── UI State Management
 
 Domain Layer (Business Logic)
