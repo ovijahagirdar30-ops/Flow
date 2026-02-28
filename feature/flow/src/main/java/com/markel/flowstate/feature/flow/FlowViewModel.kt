@@ -103,7 +103,7 @@ class FlowViewModel @Inject constructor(
                 .filter { (it.id to GridItemType.CHECKLIST) !in orderedKeys }
                 .forEach { add(GridItem.CheckListItem(it)) }
         }
-        FlowUiState.Success(orderedItems + newItems)
+        FlowUiState.Success(newItems + orderedItems)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

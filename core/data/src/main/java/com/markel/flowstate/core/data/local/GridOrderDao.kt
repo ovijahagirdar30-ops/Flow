@@ -30,4 +30,7 @@ interface GridOrderDao {
 
     @Insert
     suspend fun insertAll(entities: List<GridOrderEntity>)
+
+    @Query("UPDATE grid_order SET position = position + 1")
+    suspend fun incrementAllPositions()
 }

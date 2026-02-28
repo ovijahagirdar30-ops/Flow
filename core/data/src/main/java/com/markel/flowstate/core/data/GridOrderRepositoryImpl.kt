@@ -21,7 +21,8 @@ class GridOrderRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addEntry(itemId: Int, itemType: GridItemType) {
-        dao.upsert(GridOrderEntity(itemId = itemId, itemType = itemType.name, position = Int.MIN_VALUE))
+        dao.incrementAllPositions()
+        dao.upsert(GridOrderEntity(itemId = itemId, itemType = itemType.name, position = 0))
     }
 
     override suspend fun removeEntry(itemId: Int, itemType: GridItemType) {
