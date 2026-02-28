@@ -1,6 +1,7 @@
 package com.markel.flowstate.feature.flow.components
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,7 +19,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.FlowUiState
@@ -81,11 +84,18 @@ fun GridView(
                             is GridItem.CheckListItem -> "cl_${item.checkList.id}"
                         }
                         ReorderableItem(reorderState, key = itemKey) { isDragging ->
-                            val elevation by animateDpAsState(
-                                targetValue = if (isDragging) 8.dp else 0.dp,
-                                label = "drag_elevation"
+                            val scale by animateFloatAsState(
+                                targetValue = if (isDragging) 1.05f else 1.0f,
+                                label = "drag_scale"
                             )
-                            Box(Modifier.shadow(elevation, RoundedCornerShape(12.dp))) {
+                            Box(Modifier
+                                .graphicsLayer {
+                                    scaleX = scale
+                                    scaleY = scale
+                                    alpha = if (isDragging) 0.9f else 1.0f
+                                }
+                                .zIndex(if (isDragging) 1f else 0f)
+                            ) {
                                 when (item) {
                                     is GridItem.TaskItem ->
                                         TaskGridCard(
