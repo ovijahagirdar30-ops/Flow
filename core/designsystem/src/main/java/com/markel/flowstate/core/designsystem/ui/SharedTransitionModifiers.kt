@@ -28,7 +28,7 @@ fun Modifier.sharedCardBounds(key: Any, shape: RoundedCornerShape = RoundedCorne
         sharedBounds(
             sharedContentState = rememberSharedContentState(key = key),
             animatedVisibilityScope = animatedVisibility,
-            resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
+            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds() ,
             clipInOverlayDuringTransition = OverlayClip(shape),
             enter = fadeIn(tween(durationMillis = 160)),
             exit  = fadeOut(tween(durationMillis = 80)),
@@ -53,7 +53,7 @@ fun Modifier.sharedDetailBounds(key: Any): Modifier {
         sharedBounds(
             sharedContentState = rememberSharedContentState(key = key),
             animatedVisibilityScope = animatedVisibility,
-            resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
+            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds(),
             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp)),
             enter = fadeIn(tween(durationMillis = 220, delayMillis = 50, easing = FastOutSlowInEasing)),
             exit  = fadeOut(tween(durationMillis = 100)),

@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -111,7 +108,7 @@ fun IdeaEditorScreen(
                         viewModel.closeAndSave()
                         onBack()
                     }) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(ImageVector.vectorResource(R.drawable.arrow_back_24px), contentDescription = "Back")
                     }
                 },
                 title = {},
@@ -129,7 +126,7 @@ fun IdeaEditorScreen(
                             onBack()
                         }) {
                             Icon(
-                                imageVector = Icons.Rounded.Delete,
+                                imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
                                 contentDescription = "Delete idea",
                                 tint = onCardColor.copy(alpha = 0.8f)
                             )

@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,7 +53,7 @@ fun ExpandableFabMenu(
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 FabOption(stringResource(R.string.checklist), ImageVector.vectorResource(R.drawable.check_box_24px), MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, onCheckListClick)
                 FabOption(stringResource(R.string.idea), ImageVector.vectorResource(R.drawable.lightbulb_24px), MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, onIdeaClick)
-                FabOption(stringResource(R.string.task), Icons.Default.Check, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer, onTaskClick)
+                FabOption(stringResource(R.string.task), ImageVector.vectorResource(R.drawable.check_24px), MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer, onTaskClick)
             }
         }
 
@@ -65,7 +62,7 @@ fun ExpandableFabMenu(
             containerColor = MaterialTheme.colorScheme.tertiary,
             shape = RoundedCornerShape(16.dp)
         ) {
-            Icon(Icons.Default.Add, "Menu", modifier = Modifier.rotate(rotation))
+            Icon(ImageVector.vectorResource(R.drawable.add_24px), "Menu", modifier = Modifier.rotate(rotation))
         }
     }
 }

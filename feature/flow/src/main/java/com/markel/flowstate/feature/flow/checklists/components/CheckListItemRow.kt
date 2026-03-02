@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
@@ -29,10 +27,13 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.markel.flowstate.feature.tasks.R
 
 // ── Real item row ──────────────────────────────────────────────────────────────
 
@@ -103,7 +104,7 @@ fun CheckListItemRow(
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        Icons.Rounded.Close,
+                        ImageVector.vectorResource(R.drawable.close_24px),
                         contentDescription = "Delete item",
                         tint = onCardColor.copy(alpha = 0.4f),
                         modifier = Modifier.size(24.dp)

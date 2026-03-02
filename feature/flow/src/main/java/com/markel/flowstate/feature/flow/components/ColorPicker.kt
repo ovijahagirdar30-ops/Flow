@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -22,7 +20,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import com.markel.flowstate.feature.tasks.R
 
 /** Sentinel value used as the default "no color" selection. */
 
@@ -124,7 +125,7 @@ fun ColorPicker(
             ) {
                 if (isSelected && !isTransparent) {
                     Icon(
-                        imageVector = Icons.Rounded.Check,
+                        imageVector = ImageVector.vectorResource(R.drawable.check_24px),
                         contentDescription = null,
                         tint = Color.Black.copy(alpha = 0.45f),
                         modifier = Modifier.size(16.dp)

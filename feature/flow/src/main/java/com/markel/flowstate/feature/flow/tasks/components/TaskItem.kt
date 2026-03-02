@@ -27,8 +27,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -213,7 +211,7 @@ fun DeleteSwipeBackground(
     ) {
         if (isDeleteDirection) {
             Icon(
-                imageVector = Icons.Default.Delete,
+                imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
                 contentDescription = "Delete",
                 tint = MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier.graphicsLayer {

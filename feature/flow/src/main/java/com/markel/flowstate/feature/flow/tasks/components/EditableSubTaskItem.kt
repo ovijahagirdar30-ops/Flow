@@ -19,9 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -165,7 +162,7 @@ fun EditableSubTaskItem(
                         if (isExpanded) {
                             IconButton(onClick = { onExpandChange(false) }) {
                                 Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    imageVector = ImageVector.vectorResource(R.drawable.arrow_back_24px),
                                     contentDescription = "Cancel edit",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -293,7 +290,7 @@ fun EditableSubTaskItem(
                                     modifier = Modifier.size(40.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Delete,
+                                        imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
                                         contentDescription = "Delete",
                                         modifier = Modifier.size(22.dp)
                                     )

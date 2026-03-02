@@ -3,11 +3,6 @@ package com.markel.flowstate.feature.flow.tasks.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,7 +45,7 @@ fun TaskEditorTopBar(
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                    imageVector = ImageVector.vectorResource(R.drawable.arrow_back_24px),
                     contentDescription = "Close"
                 )
             }
@@ -90,7 +85,7 @@ fun TaskEditorTopBar(
             Box {
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(
-                        imageVector = Icons.Default.MoreVert,
+                        imageVector = ImageVector.vectorResource(R.drawable.more_vert_24px),
                         contentDescription = "More options"
                     )
                 }
@@ -103,7 +98,7 @@ fun TaskEditorTopBar(
                         text = { Text(if (isDone) stringResource(R.string.mark_pending) else stringResource(R.string.mark_completed)) },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.Check,
+                                imageVector = ImageVector.vectorResource(R.drawable.check_24px),
                                 contentDescription = null
                             )
                         },
@@ -116,7 +111,7 @@ fun TaskEditorTopBar(
                         text = { Text(stringResource(R.string.delete_task))},
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.Delete,
+                                imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
                                 contentDescription = null
                             )
                         },
