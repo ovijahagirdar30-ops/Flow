@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.markel.flowstate.feature.flow.checklists.components.CheckListItemRow
+import com.markel.flowstate.feature.flow.checklists.components.GhostItemRow
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
 import com.markel.flowstate.feature.flow.components.ColorPicker
 import com.markel.flowstate.feature.flow.components.resolveIdeaColor
@@ -210,124 +212,6 @@ fun CheckListEditorScreen(
                     selectedColor = editorState.color,
                     onColorSelected = { viewModel.updateColor(it) }
                 )
-            }
-        }
-    }
-}
-
-// ── Ghost row ──────────────────────────────────────────────────────────────────
-// Looks exactly like a real item row but is just a clickable placeholder.
-// Tapping it calls onClick which adds a real item and requests focus on it.
-
-@Composable
-private fun GhostItemRow(
-    onCardColor: Color,
-    onClick: () -> Unit
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            )
-    ) {
-        Box(
-            modifier = Modifier.size(48.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Add,
-                contentDescription = null,
-                tint = onCardColor.copy(alpha = 0.4f),
-                modifier = Modifier.size(32.dp)
-            )
-        }
-        Text(
-            text = stringResource(R.string.list_element),
-            fontSize = 17.sp,
-            color = onCardColor.copy(alpha = 0.4f)
-        )
-    }
-}
-
-// ── Real item row ──────────────────────────────────────────────────────────────
-
-@Composable
-private fun CheckListItemRow(
-    text: String,
-    isDone: Boolean,
-    requestFocusOnAppear: Boolean,
-    onFocusConsumed: () -> Unit,
-    onTextChange: (String) -> Unit,
-    onToggle: () -> Unit,
-    onDelete: () -> Unit,
-    onAddNext: () -> Unit,
-    onCardColor: Color
-) {
-    val focusRequester = remember { FocusRequester() }
-    var isFocused by remember { mutableStateOf(false) }
-
-    // Request focus when this item is newly added
-    LaunchedEffect(requestFocusOnAppear) {
-        if (requestFocusOnAppear) {
-            try {
-                focusRequester.requestFocus()
-            } catch (_: Exception) {
-            }
-            onFocusConsumed()
-        }
-    }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Checkbox(
-            checked = isDone,
-            onCheckedChange = { onToggle() },
-            colors = CheckboxDefaults.colors(
-                checkedColor = onCardColor.copy(alpha = 0.75f),
-                uncheckedColor = onCardColor.copy(alpha = 0.7f),
-                checkmarkColor = MaterialTheme.colorScheme.surface
-            )
-        )
-
-        BasicTextField(
-            value = text,
-            onValueChange = onTextChange,
-            textStyle = TextStyle(
-                fontSize = 17.sp,
-                color = if (isDone) onCardColor.copy(alpha = 0.45f) else onCardColor,
-            ),
-            cursorBrush = SolidColor(onCardColor),
-            keyboardOptions = KeyboardOptions( imeAction = ImeAction.Next ),
-            keyboardActions = KeyboardActions( onNext = { onAddNext() } ),
-            modifier = Modifier
-                .weight(1f)
-                .focusRequester(focusRequester)
-                .onFocusChanged{ isFocused = it.isFocused }
-        )
-
-        Box(modifier = Modifier.size(36.dp), contentAlignment = Alignment.Center) {
-            androidx.compose.animation.AnimatedVisibility(
-                visible = isFocused,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        Icons.Rounded.Close,
-                        contentDescription = "Delete item",
-                        tint = onCardColor.copy(alpha = 0.4f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
             }
         }
     }

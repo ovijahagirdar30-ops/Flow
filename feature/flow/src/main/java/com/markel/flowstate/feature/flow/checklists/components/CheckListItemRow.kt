@@ -1,0 +1,115 @@
+package com.markel.flowstate.feature.flow.checklists.components
+
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+// ── Real item row ──────────────────────────────────────────────────────────────
+
+@Composable
+fun CheckListItemRow(
+    text: String,
+    isDone: Boolean,
+    requestFocusOnAppear: Boolean,
+    onFocusConsumed: () -> Unit,
+    onTextChange: (String) -> Unit,
+    onToggle: () -> Unit,
+    onDelete: () -> Unit,
+    onAddNext: () -> Unit,
+    onCardColor: Color
+) {
+    val focusRequester = remember { FocusRequester() }
+    var isFocused by remember { mutableStateOf(false) }
+
+    // Request focus when this item is newly added
+    LaunchedEffect(requestFocusOnAppear) {
+        if (requestFocusOnAppear) {
+            try {
+                focusRequester.requestFocus()
+            } catch (_: Exception) {
+            }
+            onFocusConsumed()
+        }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Checkbox(
+            checked = isDone,
+            onCheckedChange = { onToggle() },
+            colors = CheckboxDefaults.colors(
+                checkedColor = onCardColor.copy(alpha = 0.75f),
+                uncheckedColor = onCardColor.copy(alpha = 0.7f),
+                checkmarkColor = MaterialTheme.colorScheme.surface
+            )
+        )
+
+        BasicTextField(
+            value = text,
+            onValueChange = onTextChange,
+            textStyle = TextStyle(
+                fontSize = 17.sp,
+                color = if (isDone) onCardColor.copy(alpha = 0.45f) else onCardColor,
+            ),
+            cursorBrush = SolidColor(onCardColor),
+            keyboardOptions = KeyboardOptions( imeAction = ImeAction.Next ),
+            keyboardActions = KeyboardActions( onNext = { onAddNext() } ),
+            modifier = Modifier
+                .weight(1f)
+                .focusRequester(focusRequester)
+                .onFocusChanged{ isFocused = it.isFocused }
+        )
+
+        Box(modifier = Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isFocused,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        Icons.Rounded.Close,
+                        contentDescription = "Delete item",
+                        tint = onCardColor.copy(alpha = 0.4f),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
