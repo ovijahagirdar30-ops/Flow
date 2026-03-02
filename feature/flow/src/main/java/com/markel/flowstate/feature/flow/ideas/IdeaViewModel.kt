@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.IdeaRepository
-import com.markel.flowstate.feature.flow.ideas.components.IDEA_COLOR_TRANSPARENT
+import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +17,7 @@ data class IdeaEditorState(
     val idea: Idea? = null,
     val title: String = "",
     val content: String = "",
-    val color: Long = IDEA_COLOR_TRANSPARENT // default: no background color
+    val color: Long = COLOR_TRANSPARENT // default: no background color
 )
 
 @HiltViewModel

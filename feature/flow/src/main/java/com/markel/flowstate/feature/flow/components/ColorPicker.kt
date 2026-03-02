@@ -1,4 +1,4 @@
-package com.markel.flowstate.feature.flow.ideas.components
+package com.markel.flowstate.feature.flow.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 
 /** Sentinel value used as the default "no color" selection. */
 
-const val IDEA_COLOR_TRANSPARENT = 0x00000000L
+const val COLOR_TRANSPARENT = 0x00000000L
 
 /**
  * Pastel palette for light theme and their darker (but still pastel) counterparts for dark theme.
@@ -53,7 +53,7 @@ private val ideaColorPairs: List<Pair<Long, Long>> = listOf(
  */
 @Composable
 fun Long.resolveIdeaColor(): Long {
-    if (this == IDEA_COLOR_TRANSPARENT) return IDEA_COLOR_TRANSPARENT
+    if (this == COLOR_TRANSPARENT) return COLOR_TRANSPARENT
     val dark = isSystemInDarkTheme()
     val pair = ideaColorPairs.find { it.first == this || it.second == this }
     return when {
@@ -69,10 +69,10 @@ fun Long.resolveIdeaColor(): Long {
  * then call [resolveIdeaColor] at render time.
  */
 
-val ideaColorPalette: List<Long> = listOf(IDEA_COLOR_TRANSPARENT) + ideaColorPairs.map { it.first }
+val ideaColorPalette: List<Long> = listOf(COLOR_TRANSPARENT) + ideaColorPairs.map { it.first }
 
 @Composable
-fun IdeaColorPicker(
+fun ColorPicker(
     selectedColor: Long,
     onColorSelected: (Long) -> Unit,
     modifier: Modifier = Modifier
@@ -84,7 +84,7 @@ fun IdeaColorPicker(
     ) {
         items(ideaColorPalette) { colorLong ->
             val isSelected = colorLong == selectedColor
-            val isTransparent = colorLong == IDEA_COLOR_TRANSPARENT
+            val isTransparent = colorLong == COLOR_TRANSPARENT
             val resolvedColor = colorLong.resolveIdeaColor()
             val animatedBorderColor by animateColorAsState(
                 targetValue = if (isSelected) MaterialTheme.colorScheme.primary

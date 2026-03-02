@@ -45,9 +45,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.designsystem.ui.IdeaSharedKeys
 import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
-import com.markel.flowstate.feature.flow.ideas.components.IDEA_COLOR_TRANSPARENT
-import com.markel.flowstate.feature.flow.ideas.components.IdeaColorPicker
-import com.markel.flowstate.feature.flow.ideas.components.resolveIdeaColor
+import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
+import com.markel.flowstate.feature.flow.components.ColorPicker
+import com.markel.flowstate.feature.flow.components.resolveIdeaColor
 import com.markel.flowstate.feature.tasks.R
 
 /**
@@ -81,7 +81,7 @@ fun IdeaEditorScreen(
     }
     
     val resolvedColor = editorState.color.resolveIdeaColor()
-    val cardColor = if (resolvedColor == IDEA_COLOR_TRANSPARENT)
+    val cardColor = if (resolvedColor == COLOR_TRANSPARENT)
         MaterialTheme.colorScheme.surface
     else
         Color(resolvedColor)
@@ -223,7 +223,7 @@ fun IdeaEditorScreen(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
                 )
                 Spacer(Modifier.height(8.dp))
-                IdeaColorPicker(
+                ColorPicker(
                     selectedColor = editorState.color,
                     onColorSelected = { viewModel.updateColor(it) }
                 )

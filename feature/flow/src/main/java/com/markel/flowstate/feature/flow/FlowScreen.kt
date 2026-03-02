@@ -30,7 +30,8 @@ fun FlowScreen(
     // Nvigation Callbacks to detail screens (edition)
     onNavigateToTaskEditor: (taskId: Int) -> Unit,
     onNavigateToIdeaEditor: (ideaId: Int) -> Unit,
-    onNavigateToNewIdea: () -> Unit
+    onNavigateToNewIdea: () -> Unit,
+    onNavigateToCheckListEditor: (checkListId: Int?) -> Unit
 ) {
     val isGridView by flowViewModel.isGridView.collectAsStateWithLifecycle()
     if (isGridView == null) return
@@ -53,7 +54,8 @@ fun FlowScreen(
                         expanded = isFabExpanded,
                         onToggle = { isFabExpanded = !isFabExpanded },
                         onTaskClick = { isFabExpanded = false; showCreationSheet = true },
-                        onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea() }
+                        onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea() },
+                        onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null) }
                     )
                 }
             }
@@ -76,6 +78,7 @@ fun FlowScreen(
                             onScrolled = { isHeaderMinimized = true },
                             onTaskClick = { onNavigateToTaskEditor(it.id) },
                             onIdeaClick = { onNavigateToIdeaEditor(it.id) },
+                            onCheckListClick = { onNavigateToCheckListEditor(it.id) },
                             onReorder = { from, to -> flowViewModel.onGridReorder(from, to) },
                             onDragEnd = { flowViewModel.onGridDragEnd() }
                         )

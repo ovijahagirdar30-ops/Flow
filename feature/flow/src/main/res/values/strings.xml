@@ -31,4 +31,7 @@
     <string name="mark_completed">Mark as completed</string>
     <string name="delete_task">Delete task</string>
     <string name="flow">Flow</string>
+    <string name="checklist">Checklist</string>
+    <string name="more">more</string>
+    <string name="list_element">List element...</string>
 </resources>

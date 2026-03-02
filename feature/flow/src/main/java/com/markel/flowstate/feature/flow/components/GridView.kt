@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.FlowUiState
@@ -36,6 +37,7 @@ fun GridView(
     onScrolled: () -> Unit,
     onTaskClick: (Task) -> Unit,
     onIdeaClick: (Idea) -> Unit,
+    onCheckListClick: (CheckList) -> Unit,
     onReorder: (fromIndex: Int, toIndex: Int) -> Unit,
     onDragEnd: () -> Unit
 ) {
@@ -112,6 +114,7 @@ fun GridView(
                                     is GridItem.CheckListItem ->
                                         CheckListGridCard(
                                             checkList = item.checkList,
+                                            onClick = { onCheckListClick(item.checkList) },
                                             modifier = Modifier.longPressDraggableHandle()
                                         )
                                 }

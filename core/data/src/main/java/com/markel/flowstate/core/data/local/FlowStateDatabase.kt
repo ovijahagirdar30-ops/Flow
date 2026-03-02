@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, GridOrderEntity::class ], // List of all tables
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -79,6 +79,12 @@ abstract class FlowStateDatabase : RoomDatabase() {
                         `position` INTEGER NOT NULL
                     )
                 """.trimIndent())
+            }
+        }
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE checklists ADD COLUMN color INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

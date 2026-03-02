@@ -37,7 +37,8 @@ fun ExpandableFabMenu(
     expanded: Boolean,
     onToggle: () -> Unit,
     onTaskClick: () -> Unit,
-    onIdeaClick: () -> Unit
+    onIdeaClick: () -> Unit,
+    onCheckListClick: () -> Unit
 ) {
     val rotation by animateFloatAsState(
         targetValue = if (expanded) 135f else 0f, label = "rotation"
@@ -53,6 +54,7 @@ fun ExpandableFabMenu(
             exit = fadeOut() + shrinkVertically()
         ) {
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                FabOption(stringResource(R.string.checklist), ImageVector.vectorResource(R.drawable.check_box_24px), MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, onCheckListClick)
                 FabOption(stringResource(R.string.idea), ImageVector.vectorResource(R.drawable.lightbulb_24px), MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, onIdeaClick)
                 FabOption(stringResource(R.string.task), Icons.Default.Check, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer, onTaskClick)
             }

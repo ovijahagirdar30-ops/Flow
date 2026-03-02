@@ -34,6 +34,7 @@ import com.markel.flowstate.feature.calendar.CalendarScreen
 import com.markel.flowstate.feature.calendar.CalendarViewModel
 import com.markel.flowstate.feature.flow.FlowScreen
 import com.markel.flowstate.feature.flow.FlowViewModel
+import com.markel.flowstate.feature.flow.checklists.CheckListEditorScreen
 import com.markel.flowstate.feature.flow.ideas.IdeaEditorScreen
 import com.markel.flowstate.feature.flow.tasks.components.TaskEditorScreen
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
@@ -112,6 +113,9 @@ class MainActivity : ComponentActivity() {
                                             },
                                             onNavigateToNewIdea = {
                                                 navController.navigate(Screen.Detail.newIdea())
+                                            },
+                                            onNavigateToCheckListEditor = { checkListId ->
+                                                navController.navigate(Screen.Detail.checkListEditor(checkListId))
                                             }
                                         )
                                     }
@@ -147,7 +151,16 @@ class MainActivity : ComponentActivity() {
                                             ideaId = ideaIdArg?.toIntOrNull(), // null = new idea
                                             onBack = { navController.popBackStack() }
                                         )
-                                        }
+                                    }
+                                }
+                                composable(Screen.Detail.CHECKLIST_EDITOR) { backStackEntry ->
+                                    val checkListIdArg = backStackEntry.arguments?.getString("checkListId")
+                                    CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                        CheckListEditorScreen(
+                                            checkListId = checkListIdArg?.toIntOrNull(), // null = new checklist
+                                            onBack = { navController.popBackStack() }
+                                        )
+                                    }
                                 }
                             }
                         }
