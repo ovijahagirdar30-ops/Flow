@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
@@ -48,17 +49,6 @@ fun FlowScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             contentWindowInsets = WindowInsets(0.dp),  // To avoid big gaps of surface at the top & bottom
-            floatingActionButton = {
-                AnimatedVisibility(!showCreationSheet) {
-                    ExpandableFabMenu(
-                        expanded = isFabExpanded,
-                        onToggle = { isFabExpanded = !isFabExpanded },
-                        onTaskClick = { isFabExpanded = false; showCreationSheet = true },
-                        onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea() },
-                        onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null) }
-                    )
-                }
-            }
         ) { paddingValues ->
             Column(modifier = Modifier.padding(paddingValues)) {
                 DynamicHeader(
@@ -120,6 +110,21 @@ fun FlowScreen(
                     }
                 )
             }
+        }
+        AnimatedVisibility(
+            visible = !showCreationSheet,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 2.dp, bottom = 4.dp)
+                .zIndex(1f)
+        ) {
+            ExpandableFabMenu(
+                expanded = isFabExpanded,
+                onToggle = { isFabExpanded = !isFabExpanded },
+                onTaskClick = { isFabExpanded = false; showCreationSheet = true },
+                onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea() },
+                onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null) }
+            )
         }
     }
 }
