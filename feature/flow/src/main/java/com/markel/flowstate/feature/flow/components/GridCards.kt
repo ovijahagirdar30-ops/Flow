@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.markel.flowstate.core.designsystem.ui.CheckListSharedKeys
 import com.markel.flowstate.core.designsystem.ui.IdeaSharedKeys
 import com.markel.flowstate.core.designsystem.ui.TaskSharedKeys
 import com.markel.flowstate.core.designsystem.ui.sharedCardBounds
@@ -168,6 +169,10 @@ fun CheckListGridCard(
         colors = CardDefaults.cardColors(containerColor = cardColor),
         modifier = modifier
             .fillMaxWidth()
+            .sharedCardBounds(
+                key = CheckListSharedKeys.container(checkList.id),
+                shape = shape
+            )
             .then(
                 if (isTransparent) Modifier.border(
                     width = 1.dp,

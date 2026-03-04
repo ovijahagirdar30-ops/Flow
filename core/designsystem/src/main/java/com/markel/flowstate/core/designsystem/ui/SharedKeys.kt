@@ -7,3 +7,7 @@ object IdeaSharedKeys {
 object TaskSharedKeys {
     fun container(taskId: Int) = "task_container_$taskId"
 }
+
+object CheckListSharedKeys {
+    fun container(checkListId: Int) = "checklist_container_$checkListId"
+}
