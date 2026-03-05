@@ -162,7 +162,6 @@ fun CheckListGridCard(
     val cardColor = if (isTransparent) Color.Transparent else Color(resolvedColor)
     val shape = RoundedCornerShape(12.dp)
 
-
     Card(
         shape = shape,
         onClick = onClick,
@@ -189,31 +188,28 @@ fun CheckListGridCard(
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(Modifier.height(6.dp))
-            val visibleItems = checkList.items.take(5)
+            val pendingItems = checkList.items.filter { !it.isDone }
+            val visibleItems = pendingItems.take(5)
             visibleItems.forEach { item ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(vertical = 1.dp)
                 ) {
-                    MiniCheckbox(checked = item.isDone)
+                    MiniCheckbox(checked = false)
                     Spacer(Modifier.width(6.dp))
                     Text(
                         text = item.text,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (item.isDone)
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-                        else
-                            MaterialTheme.colorScheme.onSurface,
-                        textDecoration = if (item.isDone) TextDecoration.LineThrough else TextDecoration.None,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
             }
-            if (checkList.items.size > 5) {
+            if (pendingItems.size > 5) {
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    text = "+${checkList.items.size - 5} " + stringResource(com.markel.flowstate.feature.tasks.R.string.more),
+                    text = "+${pendingItems.size - 5} " + stringResource(com.markel.flowstate.feature.tasks.R.string.more),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
@@ -243,7 +239,7 @@ private fun MiniCheckbox(checked: Boolean) {
     ) {
         if (checked) {
             Icon(
-                imageVector = ImageVector.vectorResource(R.drawable.add_24px),
+                imageVector = ImageVector.vectorResource(R.drawable.check_24px),
                 contentDescription = null,
                 modifier = Modifier
                     .size(10.dp)

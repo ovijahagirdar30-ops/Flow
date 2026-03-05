@@ -34,4 +34,8 @@
     <string name="checklist">Lista</string>
     <string name="more">más</string>
     <string name="list_element">Elemento de la lista...</string>
+    <plurals name="completed_items">
+        <item quantity="one">%d completado</item>
+        <item quantity="other">%d completados</item>
+    </plurals>
 </resources>

@@ -1,16 +1,27 @@
 package com.markel.flowstate.feature.flow.checklists
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
@@ -63,6 +74,19 @@ fun CheckListEditorScreen(
     var showColorSheet by remember { mutableStateOf(false) }
     // Tracks which item id should steal focus (set after addItem())
     var pendingFocusId by remember { mutableStateOf<String?>(null) }
+
+    // Controls whether the completed section is expanded
+    var completedExpanded by remember { mutableStateOf(false) }
+
+    // Split items into pending and completed
+    val pendingItems = editorState.items.filter { !it.isDone }
+    val completedItems = editorState.items.filter { it.isDone }
+
+    // Animate the chevron rotation
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (completedExpanded) 180f else 0f,
+        label = "chevron_rotation"
+    )
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
@@ -147,8 +171,8 @@ fun CheckListEditorScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // Checklist items
-            editorState.items.forEachIndexed { index, item ->
+            // Pending items
+            pendingItems.forEachIndexed { index, item ->
                 val requestFocus = pendingFocusId == item.id
                 CheckListItemRow(
                     text = item.text,
@@ -173,6 +197,70 @@ fun CheckListEditorScreen(
                     pendingFocusId = newId
                 }
             )
+
+            // ── Completed section ──────────────────────────────────────────────
+            if (completedItems.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { completedExpanded = !completedExpanded }
+                        )
+                        .padding(vertical = 12.dp)
+                ) {
+                    Text(
+                        text = pluralStringResource(
+                            id = R.plurals.completed_items,
+                            count = completedItems.size,
+                            completedItems.size
+                        ),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = onCardColor.copy(alpha = 0.6f),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.expand_more_40px),
+                        contentDescription = if (completedExpanded) "Collapse" else "Expand",
+                        tint = onCardColor.copy(alpha = 0.45f),
+                        modifier = Modifier
+                            .size(20.dp)
+                            .rotate(chevronRotation)
+                    )
+                }
+
+                // Animated completed items list
+                AnimatedVisibility(
+                    visible = completedExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column {
+                        completedItems.forEach { item ->
+                            CheckListItemRow(
+                                text = item.text,
+                                isDone = item.isDone,
+                                requestFocusOnAppear = false,
+                                onFocusConsumed = {},
+                                onTextChange = { viewModel.updateItemText(item.id, it) },
+                                onToggle = { viewModel.toggleItem(item.id) },
+                                onDelete = { viewModel.removeItem(item.id) },
+                                onAddNext = {
+                                    val newId = viewModel.addItem()
+                                    pendingFocusId = newId
+                                },
+                                onCardColor = onCardColor
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(Modifier.height(40.dp))
         }
     }
