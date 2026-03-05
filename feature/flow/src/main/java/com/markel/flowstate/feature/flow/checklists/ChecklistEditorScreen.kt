@@ -10,6 +10,9 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
@@ -38,6 +41,8 @@ import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
 import com.markel.flowstate.feature.flow.components.ColorPicker
 import com.markel.flowstate.feature.flow.components.resolveIdeaColor
 import com.markel.flowstate.feature.tasks.R
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 /**
  * Full screen for checklist editing/creation.
@@ -88,6 +93,13 @@ fun CheckListEditorScreen(
         label = "chevron_rotation"
     )
 
+    // LazyColumn state shared between reorderable and the list itself
+    val listState = rememberLazyListState()
+    val reorderableState = rememberReorderableLazyListState(listState) { from, to ->
+        // Offset by 1 because index 0 is the title header item
+        viewModel.reorderPendingItems(from.index - 1, to.index - 1)
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         modifier = Modifier.sharedDetailBounds(
@@ -135,133 +147,144 @@ fun CheckListEditorScreen(
             )
         }
     ) { innerPadding ->
-        Column(
+        LazyColumn(
+            state = listState,
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .imePadding()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .imePadding(),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
         ) {
             // Title field
-            BasicTextField(
-                value = editorState.title,
-                onValueChange = { viewModel.updateTitle(it) },
-                textStyle = TextStyle(
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = onCardColor
-                ),
-                cursorBrush = SolidColor(onCardColor),
-                decorationBox = { inner ->
-                    Box {
-                        if (editorState.title.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.title),
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = onCardColor.copy(alpha = 0.4f)
-                            )
+            item(key = "title") {
+                BasicTextField(
+                    value = editorState.title,
+                    onValueChange = { viewModel.updateTitle(it) },
+                    textStyle = TextStyle(
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = onCardColor
+                    ),
+                    cursorBrush = SolidColor(onCardColor),
+                    decorationBox = { inner ->
+                        Box {
+                            if (editorState.title.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.title),
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = onCardColor.copy(alpha = 0.4f)
+                                )
+                            }
+                            inner()
                         }
-                        inner()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(20.dp))
+            }
 
-            Spacer(Modifier.height(20.dp))
-
-            // Pending items
-            pendingItems.forEachIndexed { index, item ->
-                val requestFocus = pendingFocusId == item.id
-                CheckListItemRow(
-                    text = item.text,
-                    isDone = item.isDone,
-                    requestFocusOnAppear = requestFocus,
-                    onFocusConsumed = { if (requestFocus) pendingFocusId = null },
-                    onTextChange = { viewModel.updateItemText(item.id, it) },
-                    onToggle = { viewModel.toggleItem(item.id) },
-                    onDelete = { viewModel.removeItem(item.id) },
-                    onAddNext = {
+            items(pendingItems, key = { it.id }) { item ->
+                // Pending items
+                ReorderableItem(reorderableState, key = item.id) { isDragging ->
+                    val requestFocus = pendingFocusId == item.id
+                    CheckListItemRow(
+                        text = item.text,
+                        isDone = item.isDone,
+                        requestFocusOnAppear = requestFocus,
+                        onFocusConsumed = { if (requestFocus) pendingFocusId = null },
+                        onTextChange = { viewModel.updateItemText(item.id, it) },
+                        onToggle = { viewModel.toggleItem(item.id) },
+                        onDelete = { viewModel.removeItem(item.id) },
+                        onAddNext = {
+                            val newId = viewModel.addItem()
+                            pendingFocusId = newId
+                        },
+                        onCardColor = onCardColor,
+                        scope = this
+                    )
+                }
+            }
+            item(key = "ghost") {
+                // Ghost row — always visible at the bottom, tapping it creates a real item
+                GhostItemRow(
+                    onCardColor = onCardColor,
+                    onClick = {
                         val newId = viewModel.addItem()
                         pendingFocusId = newId
-                    },
-                    onCardColor = onCardColor
+                    }
                 )
             }
-            // Ghost row — always visible at the bottom, tapping it creates a real item
-            GhostItemRow(
-                onCardColor = onCardColor,
-                onClick = {
-                    val newId = viewModel.addItem()
-                    pendingFocusId = newId
-                }
-            )
 
             // ── Completed section ──────────────────────────────────────────────
             if (completedItems.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
+                item(key = "completed") {
+                    Spacer(Modifier.height(8.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { completedExpanded = !completedExpanded }
-                        )
-                        .padding(vertical = 12.dp)
-                ) {
-                    Text(
-                        text = pluralStringResource(
-                            id = R.plurals.completed_items,
-                            count = completedItems.size,
-                            completedItems.size
-                        ),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = onCardColor.copy(alpha = 0.6f),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Icon(
-                        imageVector = ImageVector.vectorResource(R.drawable.expand_more_40px),
-                        contentDescription = if (completedExpanded) "Collapse" else "Expand",
-                        tint = onCardColor.copy(alpha = 0.45f),
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .size(20.dp)
-                            .rotate(chevronRotation)
-                    )
-                }
-
-                // Animated completed items list
-                AnimatedVisibility(
-                    visible = completedExpanded,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    Column {
-                        completedItems.forEach { item ->
-                            CheckListItemRow(
-                                text = item.text,
-                                isDone = item.isDone,
-                                requestFocusOnAppear = false,
-                                onFocusConsumed = {},
-                                onTextChange = { viewModel.updateItemText(item.id, it) },
-                                onToggle = { viewModel.toggleItem(item.id) },
-                                onDelete = { viewModel.removeItem(item.id) },
-                                onAddNext = {
-                                    val newId = viewModel.addItem()
-                                    pendingFocusId = newId
-                                },
-                                onCardColor = onCardColor
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { completedExpanded = !completedExpanded }
                             )
+                            .padding(vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = pluralStringResource(
+                                id = R.plurals.completed_items,
+                                count = completedItems.size,
+                                completedItems.size
+                            ),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = onCardColor.copy(alpha = 0.6f),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.expand_more_40px),
+                            contentDescription = if (completedExpanded) "Collapse" else "Expand",
+                            tint = onCardColor.copy(alpha = 0.45f),
+                            modifier = Modifier
+                                .size(20.dp)
+                                .rotate(chevronRotation)
+                        )
+                    }
+
+                    // Animated completed items list
+                    AnimatedVisibility(
+                        visible = completedExpanded,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Column {
+                            completedItems.forEach { item ->
+                                CheckListItemRow(
+                                    text = item.text,
+                                    isDone = item.isDone,
+                                    requestFocusOnAppear = false,
+                                    onFocusConsumed = {},
+                                    onTextChange = { viewModel.updateItemText(item.id, it) },
+                                    onToggle = { viewModel.toggleItem(item.id) },
+                                    onDelete = { viewModel.removeItem(item.id) },
+                                    onAddNext = {
+                                        val newId = viewModel.addItem()
+                                        pendingFocusId = newId
+                                    },
+                                    onCardColor = onCardColor,
+                                    scope = null
+                                )
+                            }
                         }
                     }
                 }
             }
+            item(key = "bottom_spacer") {
+                Spacer(Modifier.height(40.dp))
+            }
 
-            Spacer(Modifier.height(40.dp))
         }
     }
 

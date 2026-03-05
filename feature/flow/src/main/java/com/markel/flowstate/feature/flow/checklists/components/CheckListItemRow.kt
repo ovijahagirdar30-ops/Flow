@@ -4,6 +4,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.markel.flowstate.feature.tasks.R
+import sh.calvin.reorderable.ReorderableCollectionItemScope
 
 // ── Real item row ──────────────────────────────────────────────────────────────
 
@@ -47,7 +49,8 @@ fun CheckListItemRow(
     onToggle: () -> Unit,
     onDelete: () -> Unit,
     onAddNext: () -> Unit,
-    onCardColor: Color
+    onCardColor: Color,
+    scope: ReorderableCollectionItemScope?
 ) {
     val focusRequester = remember { FocusRequester() }
     var isFocused by remember { mutableStateOf(false) }
@@ -67,6 +70,23 @@ fun CheckListItemRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
     ) {
+
+        // Drag handle — only shown for pending (reorderable) items
+        if (scope != null) {
+            with(scope) {
+                Icon(
+                    imageVector = ImageVector.vectorResource(R.drawable.drag_handle_24px),
+                    contentDescription = "Reorder item",
+                    tint = onCardColor.copy(alpha = 0.75f),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .draggableHandle()
+                )
+            }
+        } else {
+            Spacer(modifier = Modifier.size(36.dp))
+        }
+
         Checkbox(
             checked = isDone,
             onCheckedChange = { onToggle() },

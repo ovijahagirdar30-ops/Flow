@@ -120,12 +120,15 @@ class CheckListViewModel @Inject constructor(
         }
     }
 
-    fun reorderItems(fromIndex: Int, toIndex: Int) {
+    fun reorderPendingItems(fromIndex: Int, toIndex: Int) {
         _editor.update { state ->
-            val mutable = state.items.toMutableList()
-            val item = mutable.removeAt(fromIndex)
-            mutable.add(toIndex, item)
-            state.copy(items = mutable.mapIndexed { i, it -> it.copy(position = i) })
+            val pending = state.items.filter { !it.isDone }.toMutableList()
+            val completed = state.items.filter { it.isDone }
+            val moved = pending.removeAt(fromIndex)
+            pending.add(toIndex, moved)
+            // Rebuild full list: reordered pending first, then completed unchanged
+            val merged = (pending + completed).mapIndexed { i, item -> item.copy(position = i) }
+            state.copy(items = merged)
         }
     }
 }
