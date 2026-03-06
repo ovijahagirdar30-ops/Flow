@@ -6,9 +6,12 @@ import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.IdeaRepository
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -20,12 +23,24 @@ data class IdeaEditorState(
     val color: Long = COLOR_TRANSPARENT // default: no background color
 )
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class IdeaEditorViewModel @Inject constructor(
     private val ideaRepository: IdeaRepository
 ) : ViewModel() {
     private val _editor = MutableStateFlow(IdeaEditorState())
     val editor: StateFlow<IdeaEditorState> = _editor.asStateFlow()
+
+    init {
+        // Autosave: debounce of 800ms
+        // drop(1) to drop the initial state when opening the editor
+        viewModelScope.launch {
+            _editor
+                .drop(1)
+                .debounce(800)
+                .collect { state -> persistIfNeeded(state) }
+        }
+    }
 
     // ── Open / Close ──────────────────────────────────────────────────────────
 
@@ -51,39 +66,14 @@ class IdeaEditorViewModel @Inject constructor(
     fun loadIdeaForEditing(ideaId: Int) {
         viewModelScope.launch {
             val idea = ideaRepository.getIdeaById(ideaId)
-            if (idea != null) {
-                openExisting(idea)
-            }
-            // If the idea does not exist, the editor remains in an empty state (new idea)
+            if (idea != null) openExisting(idea)
         }
     }
 
-
     fun closeAndSave() {
-        val state = _editor.value
         viewModelScope.launch {
-            val existingIdea = state.idea
-            if (existingIdea != null) {
-                // Editing — update in place
-                ideaRepository.upsertIdea(
-                    existingIdea.copy(
-                        title = state.title,
-                        content = state.content,
-                        color = state.color
-                    )
-                )
-            } else if (state.title.isNotBlank() || state.content.isNotBlank()) {
-                // Creating — only persist if non-empty
-                ideaRepository.upsertIdea(
-                    Idea(
-                        title = state.title,
-                        content = state.content,
-                        color = state.color,
-                        createdAt = System.currentTimeMillis()
-                    )
-                )
-            }
-            _editor.value = IdeaEditorState() // reset / close
+            persistIfNeeded(_editor.value)
+            _editor.value = IdeaEditorState()  // reset
         }
     }
 
@@ -107,5 +97,30 @@ class IdeaEditorViewModel @Inject constructor(
             _editor.value = IdeaEditorState()
         }
     }
+
+    // ── Internal ──────────────────────────────────────────────────────────────
+
+    private suspend fun persistIfNeeded(state: IdeaEditorState) {
+        val existing = state.idea
+        if (existing != null) {
+            ideaRepository.upsertIdea(
+                existing.copy(
+                    title = state.title,
+                    content = state.content,
+                    color = state.color
+                )
+            )
+        } else if (state.title.isNotBlank() || state.content.isNotBlank()) {
+            ideaRepository.upsertIdea(
+                Idea(
+                    title = state.title,
+                    content = state.content,
+                    color = state.color,
+                    createdAt = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
 
 }
