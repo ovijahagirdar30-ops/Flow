@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,8 +25,13 @@ import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.Task
+import com.markel.flowstate.feature.flow.tasks.components.formatDate
+import com.markel.flowstate.feature.flow.tasks.components.isDateOverdue
 import com.markel.flowstate.feature.flow.tasks.util.asColor
 import com.markel.flowstate.feature.tasks.R
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // ── Task ─────────────────────────────────────────────────────────────────────
 
@@ -95,6 +101,67 @@ fun TaskGridCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+
+                // Footer: dueDate and pending subtasks
+                val total = task.subTasks.size
+                val completed = task.subTasks.count { it.isDone }
+                val hasSubTasks = total > 0 && completed < total
+                val hasDueDate = task.dueDate != null
+
+                if (hasDueDate || hasSubTasks) {
+                    Spacer(Modifier.height(8.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (hasDueDate) {
+                            val isOverdue = isDateOverdue(task.dueDate!!)
+                            val dateColor = if (isOverdue)
+                                MaterialTheme.colorScheme.error
+                            else
+                                MaterialTheme.colorScheme.tertiary
+
+                            Icon(
+                                imageVector = ImageVector.vectorResource(R.drawable.event_24px),
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = dateColor
+                            )
+                            Text(
+                                text = formatDate(task.dueDate),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = dateColor
+                            )
+                        }
+
+                        if (hasDueDate && hasSubTasks) {
+                            Text(
+                                text = " ",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            )
+                        }
+
+                        if (hasSubTasks) {
+                            val subtaskColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                            Icon(
+                                imageVector = ImageVector.vectorResource(R.drawable.subtask_24px),
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = subtaskColor
+                            )
+                            Text(
+                                text = "$completed/$total",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = subtaskColor
+                            )
+                        }
+
+                    }
+                }
+
             }
         }
     }
