@@ -7,9 +7,12 @@ import com.markel.flowstate.core.domain.CheckListItem
 import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,6 +26,7 @@ data class CheckListEditorState(
     val items: List<CheckListItem> = emptyList()
 )
 
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class CheckListViewModel @Inject constructor(
     private val checkListRepository: CheckListRepository
@@ -30,6 +34,16 @@ class CheckListViewModel @Inject constructor(
 
     private val _editor = MutableStateFlow(CheckListEditorState())
     val editor: StateFlow<CheckListEditorState> = _editor.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _editor
+                .drop(1)
+                .debounce(800)
+                .collect { state -> persistIfNeeded(state) }
+        }
+    }
+
 
     // ── Open / Close ──────────────────────────────────────────────────────────
 
@@ -51,27 +65,8 @@ class CheckListViewModel @Inject constructor(
     }
 
     fun closeAndSave() {
-        val state = _editor.value
-        val itemsToSave = state.items.filter { it.text.isNotBlank() }.mapIndexed { i, item -> item.copy(position = i) }
         viewModelScope.launch {
-            val existing = state.checkList
-            if (existing != null) {
-                checkListRepository.upsertList(
-                    existing.copy(
-                        title = state.title,
-                        color = state.color,
-                        items = itemsToSave
-                    )
-                )
-            } else if (state.title.isNotBlank() || itemsToSave.isNotEmpty()) {
-                checkListRepository.upsertList(
-                    CheckList(
-                        title = state.title,
-                        color = state.color,
-                        items = itemsToSave
-                    )
-                )
-            }
+            persistIfNeeded(_editor.value)
             _editor.value = CheckListEditorState()
         }
     }
@@ -131,4 +126,45 @@ class CheckListViewModel @Inject constructor(
             state.copy(items = merged)
         }
     }
+
+
+    // ── Internal ──────────────────────────────────────────────────────────────
+
+    private suspend fun persistIfNeeded(state: CheckListEditorState) {
+        val itemsToSave = state.items
+            .filter { it.text.isNotBlank() }
+            .mapIndexed { i, item -> item.copy(position = i) }
+
+        val existing = state.checkList
+        if (existing != null) {
+            checkListRepository.upsertList(
+                existing.copy(
+                    title = state.title,
+                    color = state.color,
+                    items = itemsToSave
+                )
+            )
+        } else if (state.title.isNotBlank() || itemsToSave.isNotEmpty()) {
+            // First save of a new checklist — upsert and capture the assigned ID
+            val newList = CheckList(
+                title = state.title,
+                color = state.color,
+                items = itemsToSave
+            )
+            val assignedId = checkListRepository.upsertList(newList)
+
+            // Update in-memory state so future saves use the real id (no duplicates)
+            _editor.update { current ->
+                current.copy(
+                    checkList = CheckList(
+                        id = assignedId,
+                        title = current.title,
+                        color = current.color,
+                        items = itemsToSave
+                    )
+                )
+            }
+        }
+    }
+
 }

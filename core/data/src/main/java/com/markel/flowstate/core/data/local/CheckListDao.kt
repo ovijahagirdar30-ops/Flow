@@ -22,7 +22,7 @@ interface CheckListDao {
     suspend fun deleteListEntity(list: CheckListEntity)
 
     @Transaction
-    suspend fun upsertFullList(list: CheckListEntity, items: List<CheckListItemEntity>) {
+    suspend fun upsertFullList(list: CheckListEntity, items: List<CheckListItemEntity>): Int  {
         // We save/update the parent
         val listId = upsertListEntity(list).toInt()
 
@@ -35,5 +35,7 @@ interface CheckListDao {
         // Insert new subitems
         val itemsWithId = items.map { it.copy(listId = finalId) }
         insertListItems(itemsWithId)
+
+        return finalId
     }
 }

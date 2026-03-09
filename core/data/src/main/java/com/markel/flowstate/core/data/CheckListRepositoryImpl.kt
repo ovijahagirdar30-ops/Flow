@@ -17,15 +17,9 @@ class CheckListRepositoryImpl @Inject constructor(
     override fun getLists(): Flow<List<CheckList>> =
         checkListDao.getListsWithItems().map { list -> list.map { it.toDomain() } }
 
-    override suspend fun upsertList(list: CheckList) {
-        checkListDao.upsertFullList(
-            list.toEntity(),
-            list.items.map { it.toEntity(list.id) }
-        )
-    }
+    override suspend fun upsertList(list: CheckList): Int = checkListDao.upsertFullList(list.toEntity(), list.items.map { it.toEntity(list.id) })
 
-    override suspend fun deleteList(list: CheckList) =
-        checkListDao.deleteListEntity(list.toEntity())
+    override suspend fun deleteList(list: CheckList) = checkListDao.deleteListEntity(list.toEntity())
 
     // Mappers
     private fun CheckListWithItems.toDomain() = CheckList(
