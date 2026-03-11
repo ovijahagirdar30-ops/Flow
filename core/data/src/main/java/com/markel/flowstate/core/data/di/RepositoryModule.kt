@@ -2,10 +2,12 @@ package com.markel.flowstate.core.data.di
 
 import com.markel.flowstate.core.data.CheckListRepositoryImpl
 import com.markel.flowstate.core.data.GridOrderRepositoryImpl
+import com.markel.flowstate.core.data.HabitRepositoryImpl
 import com.markel.flowstate.core.data.IdeaRepositoryImpl
 import com.markel.flowstate.core.data.TaskRepositoryImpl
 import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.core.domain.GridOrderRepository
+import com.markel.flowstate.core.domain.HabitRepository
 import com.markel.flowstate.core.domain.IdeaRepository
 import com.markel.flowstate.core.domain.TaskRepository
 import dagger.Binds
@@ -37,4 +39,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindGridOrderRepository(impl: GridOrderRepositoryImpl): GridOrderRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindHabitRepository(impl: HabitRepositoryImpl): HabitRepository
 }

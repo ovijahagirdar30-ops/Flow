@@ -19,6 +19,7 @@
             <option value="$PROJECT_DIR$/feature" />
             <option value="$PROJECT_DIR$/feature/calendar" />
             <option value="$PROJECT_DIR$/feature/flow" />
+            <option value="$PROJECT_DIR$/feature/habits" />
           </set>
         </option>
       </GradleProjectSettings>
