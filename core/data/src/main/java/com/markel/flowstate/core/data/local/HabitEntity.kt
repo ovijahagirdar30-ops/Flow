@@ -23,6 +23,9 @@ data class HabitEntity(
             childColumns = ["habitId"],
             onDelete = androidx.room.ForeignKey.CASCADE
         )
+    ],
+    indices = [
+        androidx.room.Index(value = ["habitId"])
     ]
 )
 data class HabitEntryEntity(
@@ -31,3 +34,5 @@ data class HabitEntryEntity(
     val habitId: Int,
     val completedAt: Long
 )
+
+data class HabitEntryFlatEntity(val habitId: Int, val epochDay: Long)

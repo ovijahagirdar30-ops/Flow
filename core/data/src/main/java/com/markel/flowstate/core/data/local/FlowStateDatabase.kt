@@ -12,7 +12,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * and which version of the database we are using.
  */
 @Database(
-    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, GridOrderEntity::class, HabitEntryEntity::class ], // List of all tables
+    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, GridOrderEntity::class, HabitEntity::class, HabitEntryEntity::class ], // List of all tables
     version = 11,
     exportSchema = true
 )
@@ -92,24 +92,24 @@ abstract class FlowStateDatabase : RoomDatabase() {
         val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
-            CREATE TABLE IF NOT EXISTS `habits` (
-                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                `name` TEXT NOT NULL,
-                `iconName` TEXT NOT NULL DEFAULT 'self_improvement',
-                `colorArgb` INTEGER NOT NULL DEFAULT -10185078,
-                `frequency` TEXT NOT NULL DEFAULT 'DAILY',
-                `createdAt` INTEGER NOT NULL
-            )
-        """.trimIndent())
-                db.execSQL("""
-            CREATE TABLE IF NOT EXISTS `habit_entries` (
-                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                `habitId` INTEGER NOT NULL,
-                `completedAt` INTEGER NOT NULL,
-                FOREIGN KEY(`habitId`) REFERENCES `habits`(`id`) ON DELETE CASCADE
-            )
-        """.trimIndent())
-                db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_entries_habitId` ON `habit_entries` (`habitId`)")
+                    CREATE TABLE IF NOT EXISTS `habits` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `iconName` TEXT NOT NULL DEFAULT 'self_improvement',
+                        `colorArgb` INTEGER NOT NULL DEFAULT -10185078,
+                        `frequency` TEXT NOT NULL DEFAULT 'DAILY',
+                        `createdAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                        db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `habit_entries` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `habitId` INTEGER NOT NULL,
+                        `completedAt` INTEGER NOT NULL,
+                        FOREIGN KEY(`habitId`) REFERENCES `habits`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                        db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_entries_habitId` ON `habit_entries` (`habitId`)")
             }
         }
     }

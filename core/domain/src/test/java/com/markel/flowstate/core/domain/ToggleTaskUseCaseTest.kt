@@ -1,6 +1,6 @@
 package com.markel.flowstate.core.domain
 
-import com.markel.flowstate.core.domain.usecase.ToggleTaskUseCase
+import com.markel.flowstate.core.domain.usecase.tasks.ToggleTaskUseCase
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest

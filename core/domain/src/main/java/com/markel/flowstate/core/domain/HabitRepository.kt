@@ -9,4 +9,5 @@ interface HabitRepository {
     suspend fun insertHabit(habit: Habit)
     suspend fun deleteHabit(habit: Habit)
     suspend fun toggleEntry(habitId: Int, date: LocalDate)
+    fun getAllEntries(): Flow<List<HabitEntryFlat>>
 }

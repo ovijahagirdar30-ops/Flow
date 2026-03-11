@@ -18,3 +18,5 @@ data class HabitWithStatus(
     val isCompletedToday: Boolean,
     val streak: Int = 0
 )
+
+data class HabitEntryFlat(val habitId: Int, val epochDay: Long)

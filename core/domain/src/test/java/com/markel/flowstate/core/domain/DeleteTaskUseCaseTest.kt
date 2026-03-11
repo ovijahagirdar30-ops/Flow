@@ -1,6 +1,6 @@
 package com.markel.flowstate.core.domain
 
-import com.markel.flowstate.core.domain.usecase.DeleteTaskUseCase
+import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest

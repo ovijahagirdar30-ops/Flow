@@ -38,4 +38,7 @@ interface HabitDao {
             insertEntry(HabitEntryEntity(habitId = habitId, completedAt = epochDay))
         }
     }
+
+    @Query("SELECT habitId, completedAt as epochDay FROM habit_entries")
+    fun getAllEntries(): Flow<List<HabitEntryFlatEntity>>
 }

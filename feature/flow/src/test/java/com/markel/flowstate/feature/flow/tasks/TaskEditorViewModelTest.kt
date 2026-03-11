@@ -4,8 +4,8 @@ import app.cash.turbine.test
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
-import com.markel.flowstate.core.domain.usecase.DeleteTaskUseCase
-import com.markel.flowstate.core.domain.usecase.ToggleTaskUseCase
+import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
+import com.markel.flowstate.core.domain.usecase.tasks.ToggleTaskUseCase
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coVerify
 import io.mockk.every

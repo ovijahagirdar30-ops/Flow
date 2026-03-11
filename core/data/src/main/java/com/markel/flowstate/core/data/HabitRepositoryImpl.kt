@@ -5,6 +5,7 @@ import com.markel.flowstate.core.data.local.HabitEntity
 import com.markel.flowstate.core.data.local.HabitEntryEntity
 import com.markel.flowstate.core.data.local.HabitWithEntries
 import com.markel.flowstate.core.domain.Habit
+import com.markel.flowstate.core.domain.HabitEntryFlat
 import com.markel.flowstate.core.domain.HabitFrequency
 import com.markel.flowstate.core.domain.HabitRepository
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +33,11 @@ class HabitRepositoryImpl @Inject constructor(
 
     override suspend fun toggleEntry(habitId: Int, date: LocalDate) =
         dao.toggleEntry(habitId, date.toEpochDay())
+
+    override fun getAllEntries(): Flow<List<HabitEntryFlat>> =
+        dao.getAllEntries().map { list ->
+            list.map { HabitEntryFlat(it.habitId, it.epochDay) }
+        }
 
     // --- Mappers ---
 
