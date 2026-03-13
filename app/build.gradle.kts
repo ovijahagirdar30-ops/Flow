@@ -44,9 +44,11 @@ android {
 }
 
 dependencies {
+
+    // Modules
     implementation(project(":feature:flow"))
-    // Módulos propios
     implementation(project(":feature:calendar"))
+    implementation(project(":feature:habits"))
     implementation(project(":core:data"))
     implementation(project(":core:domain"))
     implementation(project(":core:designsystem"))

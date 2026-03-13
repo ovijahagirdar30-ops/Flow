@@ -22,7 +22,8 @@ mockk = "1.13.8"
 coroutines-test = "1.9.0"
 turbine = "1.0.0"
 datastore = "1.2.0"
-material3ExpressiveAlpha = "1.5.0-alpha15"  # Keep the alpha until the FAB menus is stable (BOM update would be necessary)
+material3ExpressiveAlpha = "1.5.0-alpha15"  # Keep the alpha until the FAB menu is stable (BOM update would be necessary)
+foundation = "1.10.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -57,6 +58,7 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines-test" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

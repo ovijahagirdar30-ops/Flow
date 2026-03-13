@@ -1,0 +1,17 @@
+<resources>
+    <string name="add_habit_dialog_title">Nuevo hábito</string>
+    <string name="add_habit_name_label">Nombre</string>
+    <string name="add_habit_color_label">Color</string>
+    <string name="add_habit_create_button">Crear</string>
+    <string name="add_habit_cancel_button">Cancelar</string>
+
+    <!-- HabitEmptyState strings -->
+    <string name="habit_empty_state_description">Pulsa + para crear tu primer hábito</string>
+
+    <!-- HabitCard strings -->
+    <string name="delete_habit_dialog_title">Delete habit</string>
+    <string name="delete_habit_dialog_message">Delete \"%1$s\"? Your history will be lost</string>
+    <string name="delete_habit_confirm_button">Delete</string>
+    <string name="delete_habit_cancel_button">Cancel</string>
+    <string name="habit_empty_state_title">You don\'t have habits yet</string>
+</resources>

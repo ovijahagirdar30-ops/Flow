@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_habit_dialog_title">New habit</string>
+    <string name="add_habit_name_label">Name</string>
+    <string name="add_habit_color_label">Color</string>
+    <string name="add_habit_create_button">Create</string>
+    <string name="add_habit_cancel_button">Cancel</string>
+    <string name="delete_habit_cancel_button">Cancel</string>
+    <string name="habit_empty_state_title">You don\'t have habits yet</string>
+    <string name="habit_empty_state_description">Press + to create your next habit</string>
+    <string name="delete_habit_dialog_title">Delete habit</string>
+    <string name="delete_habit_dialog_message">Delete \"%1$s\"? Your history will be lost</string>
+    <string name="delete_habit_confirm_button">Delete</string>
+</resources>

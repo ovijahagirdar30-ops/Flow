@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_habit_dialog_title">Nuevo hábito</string>
+    <string name="add_habit_name_label">Nombre</string>
+    <string name="add_habit_color_label">Color</string>
+    <string name="add_habit_create_button">Crear</string>
+    <string name="add_habit_cancel_button">Cancelar</string>
+    <string name="delete_habit_cancel_button">Cancelar</string>
+    <string name="habit_empty_state_title">Aún no tienes hábitos</string>
+    <string name="habit_empty_state_description">Pulsa + para crear tu primer hábito</string>
+    <string name="delete_habit_dialog_title">Eliminar hábito</string>
+    <string name="delete_habit_dialog_message">"¿Eliminar \"%1$s\"? Se perderá todo su historial.     "</string>
+    <string name="delete_habit_confirm_button">Eliminar</string>
+</resources>
