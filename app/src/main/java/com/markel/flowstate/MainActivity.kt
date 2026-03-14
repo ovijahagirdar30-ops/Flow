@@ -35,6 +35,7 @@ import com.markel.flowstate.feature.flow.ideas.IdeaEditorScreen
 import com.markel.flowstate.feature.flow.tasks.components.TaskEditorScreen
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import com.markel.flowstate.feature.habits.HabitScreen
+import com.markel.flowstate.feature.habits.details.HabitDetailScreen
 import com.markel.flowstate.navigation.Screen
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -123,7 +124,11 @@ class MainActivity : ComponentActivity() {
                                 }
                                 composable(Screen.Habits.route) {
                                     // Temporarily a placeholder
-                                    HabitScreen()
+                                    HabitScreen(
+                                        onNavigateToDetail = { habitId ->
+                                            navController.navigate(Screen.Detail.habitDetail(habitId))
+                                        }
+                                    )
                                 }
                                 composable(Screen.Mood.route) {
                                     PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.mood))
@@ -158,6 +163,13 @@ class MainActivity : ComponentActivity() {
                                             onBack = { navController.popBackStack() }
                                         )
                                     }
+                                }
+                                composable(Screen.Detail.HABIT_DETAIL) { backStackEntry ->
+                                    val habitId = backStackEntry.arguments?.getString("habitId")?.toIntOrNull() ?: return@composable
+                                    HabitDetailScreen(
+                                        habitId = habitId,
+                                        onBack = { navController.popBackStack() }
+                                    )
                                 }
                             }
                         }

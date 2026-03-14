@@ -11,4 +11,18 @@
     <string name="delete_habit_dialog_title">Eliminar hábito</string>
     <string name="delete_habit_dialog_message">"¿Eliminar \"%1$s\"? Se perderá todo su historial.     "</string>
     <string name="delete_habit_confirm_button">Eliminar</string>
+    <string name="habit_detail_since">Desde el %1$s · %2$d días completados</string>
+    <string name="habit_detail_streak_current">Racha actual</string>
+    <string name="habit_detail_streak_best">Mejor racha</string>
+    <string name="habit_detail_section_history">Historial</string>
+    <string name="habit_detail_section_weekly">Semana (%1$s)</string>
+    <string name="habit_detail_section_weekly_empty">Semana</string>
+    <string name="habit_detail_section_radar">Constancia por día</string>
+    <string name="habit_detail_this_week">esta semana</string>
+    <string name="habit_detail_no_data">Sin datos todavía</string>
+    <string name="habit_detail_pct_month">Este mes</string>
+    <string name="habit_detail_pct_3months">3 meses</string>
+    <string name="habit_detail_pct_year">Este año</string>
+    <string name="weekly_bars_8">8 semanas</string>
+    <string name="weekly_bars_16">16 semanas</string>
 </resources>

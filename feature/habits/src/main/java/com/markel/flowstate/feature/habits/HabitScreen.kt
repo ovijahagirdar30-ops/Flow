@@ -20,7 +20,8 @@ import com.markel.flowstate.core.designsystem.R as DesignR
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HabitScreen(
-    viewModel: HabitViewModel = hiltViewModel()
+    viewModel: HabitViewModel = hiltViewModel(),
+    onNavigateToDetail: (habitId: Int) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -49,7 +50,8 @@ fun HabitScreen(
                                 onToggleDay = { date ->
                                     viewModel.toggleHabitOnDate(habitWithStatus.habit.id, date)
                                 },
-                                onDelete = { viewModel.deleteHabit(habitWithStatus.habit) }
+                                onDelete = { viewModel.deleteHabit(habitWithStatus.habit) },
+                                onNavigateToDetail = { onNavigateToDetail(habitWithStatus.habit.id) }
                             )
                         }
                     }

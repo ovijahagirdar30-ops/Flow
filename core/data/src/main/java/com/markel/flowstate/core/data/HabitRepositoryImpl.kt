@@ -25,6 +25,9 @@ class HabitRepositoryImpl @Inject constructor(
             entries.map { LocalDate.ofEpochDay(it.completedAt) }
         }
 
+    override suspend fun getHabitById(id: Int): Habit? =
+        dao.getHabitById(id)?.toDomain()
+
     override suspend fun insertHabit(habit: Habit) =
         dao.insertHabit(habit.toEntity()).let { Unit }
 
