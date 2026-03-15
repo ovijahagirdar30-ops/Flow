@@ -1,5 +1,9 @@
 package com.markel.flowstate.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +24,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -53,17 +58,21 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
             modifier = Modifier.height(barHeight)
         ) {
             bottomNavItems.forEach { screen ->
+                val selected = currentRoute == screen.route
                 val label = stringResource(screen.labelRes)
                 NavigationBarItem(
                     icon = {
-                        if (screen == Screen.Calendar) {
-                            DynamicCalendarIcon()
-                        }
-                        else
-                            Icon(imageVector = ImageVector.vectorResource(screen.iconRes), contentDescription = label)
+                        Icon(imageVector = ImageVector.vectorResource(screen.iconRes), contentDescription = label)
                     },
-                    label = if (!isLandscape) { { Text(label) } } else null,  // Hide labels in landscape mode
-                    selected = currentRoute == screen.route,
+                    label = if (!isLandscape) {
+                        {
+                            Text(
+                                text = label,
+                                fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold
+                            )
+                        }
+                    } else null,
+                    selected = selected,
                     onClick = {
                         // Navigate to the new screen
                         navController.navigate(screen.route) {
