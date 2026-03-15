@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_habit_dialog_title">Nuevo hábito</string>
+    <string name="add_habit_name_label">Nombre</string>
+    <string name="add_habit_color_label">Color</string>
+    <string name="add_habit_create_button">Crear</string>
+    <string name="add_habit_cancel_button">Cancelar</string>
+    <string name="habit">Hábitos</string>
+    <string name="delete_habit_cancel_button">Cancelar</string>
+    <string name="habit_empty_state_title">Aún no tienes hábitos</string>
+    <string name="habit_empty_state_description">Pulsa + para crear tu primer hábito</string>
+    <string name="delete_habit_dialog_title">Eliminar hábito</string>
+    <string name="delete_habit_dialog_message">"¿Eliminar \"%1$s\"? Se perderá todo su historial.     "</string>
+    <string name="delete_habit_confirm_button">Eliminar</string>
+    <string name="habit_detail_since">Desde el %1$s · %2$d días completados</string>
+    <string name="habit_detail_streak_current">Racha actual</string>
+    <string name="habit_detail_streak_best">Mejor racha</string>
+    <string name="habit_detail_section_history">Historial</string>
+    <string name="habit_detail_section_weekly">Semana (%1$s)</string>
+    <string name="habit_detail_section_weekly_empty">Semana</string>
+    <string name="habit_detail_section_radar">Constancia por día</string>
+    <string name="habit_detail_this_week">esta semana</string>
+    <string name="habit_detail_no_data">Sin datos todavía</string>
+    <string name="habit_detail_pct_month">Este mes</string>
+    <string name="habit_detail_pct_3months">3 meses</string>
+    <string name="habit_detail_pct_year">Este año</string>
+    <string name="weekly_bars_8">8 semanas</string>
+    <string name="weekly_bars_16">16 semanas</string>
+    <string-array name="motivational_keywords">
+        <item>Constancia.</item>
+        <item>Hoy.</item>
+        <item>Un paso.</item>
+        <item>Lo pequeño,</item>
+        <item>Sin excusas.</item>
+        <item>Tú puedes.</item>
+        <item>Sigue.</item>
+    </string-array>
+    <string-array name="motivational_rests">
+        <item>Es el secreto del progreso</item>
+        <item>Es el mejor día para avanzar</item>
+        <item>Cada día te acerca más</item>
+        <item>repetido, se vuelve grande</item>
+        <item>Solo un hábito a la vez</item>
+        <item>Ya lo has hecho antes</item>
+        <item>El progreso no se detiene</item>
+    </string-array>
+</resources>

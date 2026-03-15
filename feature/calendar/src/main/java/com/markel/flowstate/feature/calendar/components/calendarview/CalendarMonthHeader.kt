@@ -23,6 +23,7 @@ import com.markel.flowstate.feature.calendar.R
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 @Composable
 fun CalendarMonthHeader(
@@ -56,7 +57,7 @@ fun CalendarMonthHeader(
         }
 
         Text(
-            text = displayMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.uppercase() } + " " + displayMonth.year,
+            text = displayMonth.month.getDisplayName(TextStyle.FULL, LocalLocale.current.platformLocale).replaceFirstChar { it.uppercase() } + " " + displayMonth.year,
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
         )
 

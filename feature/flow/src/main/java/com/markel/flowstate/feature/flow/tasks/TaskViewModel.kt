@@ -6,8 +6,8 @@ import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
-import com.markel.flowstate.core.domain.usecase.DeleteTaskUseCase
-import com.markel.flowstate.core.domain.usecase.ToggleTaskUseCase
+import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
+import com.markel.flowstate.core.domain.usecase.tasks.ToggleTaskUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

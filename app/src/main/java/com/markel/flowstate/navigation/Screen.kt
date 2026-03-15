@@ -14,10 +14,12 @@ sealed class Screen(val route: String, @StringRes val labelRes: Int, val iconRes
         const val TASK_EDITOR = "task_editor/{taskId}"
         const val IDEA_EDITOR = "idea_editor/{ideaId}" // ideaId = "new" for creation
         const val CHECKLIST_EDITOR = "checklist_editor/{checkListId}"
+        const val HABIT_DETAIL = "habit_detail/{habitId}"
         fun taskEditor(taskId: Int) = "task_editor/$taskId"
         fun ideaEditor(ideaId: Int) = "idea_editor/$ideaId"
         fun newIdea() = "idea_editor/new"
         fun checkListEditor(checkListId: Int?) =
             "checklist_editor/${checkListId ?: "new"}"
+        fun habitDetail(habitId: Int) = "habit_detail/$habitId"
     }
 }

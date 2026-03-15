@@ -9,7 +9,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,19 +24,18 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.markel.flowstate.components.FlowBottomBar
 import com.markel.flowstate.components.PlaceholderScreen
-import com.markel.flowstate.feature.flow.tasks.TaskScreen
-import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.core.designsystem.theme.FlowStateTheme
 import com.markel.flowstate.core.designsystem.ui.LocalAnimatedVisibilityScope
 import com.markel.flowstate.core.designsystem.ui.LocalSharedTransitionScope
 import com.markel.flowstate.feature.calendar.CalendarScreen
 import com.markel.flowstate.feature.calendar.CalendarViewModel
 import com.markel.flowstate.feature.flow.FlowScreen
-import com.markel.flowstate.feature.flow.FlowViewModel
 import com.markel.flowstate.feature.flow.checklists.CheckListEditorScreen
 import com.markel.flowstate.feature.flow.ideas.IdeaEditorScreen
 import com.markel.flowstate.feature.flow.tasks.components.TaskEditorScreen
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
+import com.markel.flowstate.feature.habits.HabitScreen
+import com.markel.flowstate.feature.habits.details.HabitDetailScreen
 import com.markel.flowstate.navigation.Screen
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -126,7 +124,11 @@ class MainActivity : ComponentActivity() {
                                 }
                                 composable(Screen.Habits.route) {
                                     // Temporarily a placeholder
-                                    PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.habits))
+                                    HabitScreen(
+                                        onNavigateToDetail = { habitId ->
+                                            navController.navigate(Screen.Detail.habitDetail(habitId))
+                                        }
+                                    )
                                 }
                                 composable(Screen.Mood.route) {
                                     PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.mood))
@@ -161,6 +163,13 @@ class MainActivity : ComponentActivity() {
                                             onBack = { navController.popBackStack() }
                                         )
                                     }
+                                }
+                                composable(Screen.Detail.HABIT_DETAIL) { backStackEntry ->
+                                    val habitId = backStackEntry.arguments?.getString("habitId")?.toIntOrNull() ?: return@composable
+                                    HabitDetailScreen(
+                                        habitId = habitId,
+                                        onBack = { navController.popBackStack() }
+                                    )
                                 }
                             }
                         }

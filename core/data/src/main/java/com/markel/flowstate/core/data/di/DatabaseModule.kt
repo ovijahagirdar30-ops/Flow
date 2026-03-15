@@ -7,6 +7,7 @@ import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.data.local.CheckListDao
 import com.markel.flowstate.core.data.local.FlowStateDatabase
 import com.markel.flowstate.core.data.local.GridOrderDao
+import com.markel.flowstate.core.data.local.HabitDao
 import com.markel.flowstate.core.data.local.IdeaDao
 import com.markel.flowstate.core.data.local.TaskDao
 import dagger.Module
@@ -29,7 +30,7 @@ object DatabaseModule {
             FlowStateDatabase.DATABASE_NAME
         )
             .addMigrations(FlowStateDatabase.MIGRATION_5_6, FlowStateDatabase.MIGRATION_6_7, FlowStateDatabase.MIGRATION_7_8, FlowStateDatabase.MIGRATION_8_9,
-                FlowStateDatabase.MIGRATION_9_10)
+                FlowStateDatabase.MIGRATION_9_10, FlowStateDatabase.MIGRATION_10_11)
             .build()
     }
 
@@ -62,4 +63,8 @@ object DatabaseModule {
     fun provideUserPreferencesRepository(
         @ApplicationContext context: Context
     ): UserPreferencesRepository = UserPreferencesRepository(context)
+
+    @Provides
+    @Singleton
+    fun provideHabitDao(db: FlowStateDatabase): HabitDao = db.habitDao
 }
