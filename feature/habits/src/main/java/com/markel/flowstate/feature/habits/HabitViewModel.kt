@@ -42,7 +42,16 @@ class HabitViewModel @Inject constructor(
             .groupBy({ it.habitId }, { it.epochDay })
             .mapValues { it.value.toSet() }
 
-        HabitUiState.Success(habits, weekEntriesByHabit, showDialog)
+        HabitUiState.Success(
+            habits = habits,
+            weekEntriesByHabit = weekEntriesByHabit,
+            showAddDialog = showDialog,
+            completedToday = habits.count { hw ->
+                LocalDate.now().toEpochDay() in (weekEntriesByHabit[hw.habit.id] ?: emptySet())
+            },
+            totalHabits = habits.size,
+            motivationalMessageIndex = LocalDate.now().dayOfYear % 7
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

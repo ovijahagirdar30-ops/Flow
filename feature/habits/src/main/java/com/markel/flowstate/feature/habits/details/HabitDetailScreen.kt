@@ -301,5 +301,6 @@ fun HabitDetailScreen(
                 )
             }
         }
+        Spacer(Modifier.height(4.dp))
     }
 }

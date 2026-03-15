@@ -4,6 +4,7 @@
     <string name="add_habit_color_label">Color</string>
     <string name="add_habit_create_button">Create</string>
     <string name="add_habit_cancel_button">Cancel</string>
+    <string name="habit">Habits</string>
 
     <!-- HabitEmptyState strings -->
     <string name="habit_empty_state_description">Press + to create your next habit</string>
@@ -29,4 +30,23 @@
     <string name="habit_detail_pct_year">This year</string>
     <string name="weekly_bars_8">8 weeks</string>
     <string name="weekly_bars_16">16 weeks</string>
+
+    <string-array name="motivational_keywords">
+        <item>Consistency.</item>
+        <item>Today.</item>
+        <item>One step.</item>
+        <item>Small things,</item>
+        <item>No excuses.</item>
+        <item>You can.</item>
+        <item>Keep going.</item>
+    </string-array>
+    <string-array name="motivational_rests">
+        <item>Is the secret to progress</item>
+        <item>Is the best day to move forward</item>
+        <item>Gets you closer every day</item>
+        <item>repeated, become great</item>
+        <item>Just one habit at a time</item>
+        <item>You\'ve done it before</item>
+        <item>Progress never stops</item>
+    </string-array>
 </resources>

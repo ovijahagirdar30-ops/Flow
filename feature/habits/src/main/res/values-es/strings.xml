@@ -5,6 +5,7 @@
     <string name="add_habit_color_label">Color</string>
     <string name="add_habit_create_button">Crear</string>
     <string name="add_habit_cancel_button">Cancelar</string>
+    <string name="habit">Hábitos</string>
     <string name="delete_habit_cancel_button">Cancelar</string>
     <string name="habit_empty_state_title">Aún no tienes hábitos</string>
     <string name="habit_empty_state_description">Pulsa + para crear tu primer hábito</string>
@@ -25,4 +26,22 @@
     <string name="habit_detail_pct_year">Este año</string>
     <string name="weekly_bars_8">8 semanas</string>
     <string name="weekly_bars_16">16 semanas</string>
+    <string-array name="motivational_keywords">
+        <item>Constancia.</item>
+        <item>Hoy.</item>
+        <item>Un paso.</item>
+        <item>Lo pequeño,</item>
+        <item>Sin excusas.</item>
+        <item>Tú puedes.</item>
+        <item>Sigue.</item>
+    </string-array>
+    <string-array name="motivational_rests">
+        <item>Es el secreto del progreso</item>
+        <item>Es el mejor día para avanzar</item>
+        <item>Cada día te acerca más</item>
+        <item>repetido, se vuelve grande</item>
+        <item>Solo un hábito a la vez</item>
+        <item>Ya lo has hecho antes</item>
+        <item>El progreso no se detiene</item>
+    </string-array>
 </resources>
