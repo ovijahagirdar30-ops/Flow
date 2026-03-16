@@ -1,10 +1,15 @@
 package com.markel.flowstate.feature.flow.tasks.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilledIconButton
@@ -38,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -97,22 +104,50 @@ fun EditableSubTaskItem(
                         },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     leadingContent = {
-                        Icon(
-                            imageVector = if (subTask.isDone)
-                                ImageVector.vectorResource(R.drawable.radio_button_checked_24px)
-                            else
-                                ImageVector.vectorResource(R.drawable.radio_button_unchecked_24px),
-                            contentDescription = null,
-                            tint = if (subTask.isDone) {
-                                MaterialTheme.colorScheme.tertiary
-                            } else
-                                editedPriority.asColor()
-                            ,
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .clickable { onCheckedChange() }
+                        val borderBaseColor = if (editedPriority == Priority.NOTHING)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        else
+                            editedPriority.asColor()
+                        val checkBgColor by animateColorAsState(
+                            targetValue = if (subTask.isDone) MaterialTheme.colorScheme.tertiary else Color.Transparent,
+                            animationSpec = spring(),
+                            label = "check_bg"
                         )
+                        val checkBorderColor by animateColorAsState(
+                            targetValue = if (subTask.isDone) MaterialTheme.colorScheme.tertiary else borderBaseColor,
+                            animationSpec = spring(),
+                            label = "check_border"
+                        )
+                        val checkScale by animateFloatAsState(
+                            targetValue = if (subTask.isDone) 1f else 0f,
+                            animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
+                            label = "check_scale"
+                        )
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(21.dp)
+                                .clip(RoundedCornerShape(7.dp))
+                                .background(checkBgColor)
+                                .border(1.5.dp, checkBorderColor, RoundedCornerShape(7.dp))
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                    onClick = onCheckedChange
+                                )
+                        ) {
+                            if (checkScale > 0f) {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.check_24px),
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .scale(checkScale)
+                                )
+                            }
+
+                        }
                     },
                     headlineContent = {
                         if (isExpanded) {

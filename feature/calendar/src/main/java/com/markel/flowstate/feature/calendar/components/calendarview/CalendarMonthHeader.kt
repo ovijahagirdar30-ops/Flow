@@ -58,7 +58,7 @@ fun CalendarMonthHeader(
 
         Text(
             text = displayMonth.month.getDisplayName(TextStyle.FULL, LocalLocale.current.platformLocale).replaceFirstChar { it.uppercase() } + " " + displayMonth.year,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold)
         )
 
         // Today button

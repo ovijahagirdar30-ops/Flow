@@ -14,7 +14,7 @@ class IdeaRepositoryImpl @Inject constructor(
     override fun getIdeas(): Flow<List<Idea>> =
         ideaDao.getIdeas().map { entities -> entities.map { it.toDomain() } }
 
-    override suspend fun upsertIdea(idea: Idea) = ideaDao.upsertIdea(idea.toEntity())
+    override suspend fun upsertIdea(idea: Idea): Long = ideaDao.upsertIdea(idea.toEntity())
 
     override suspend fun deleteIdea(idea: Idea) = ideaDao.deleteIdea(idea.toEntity())
 

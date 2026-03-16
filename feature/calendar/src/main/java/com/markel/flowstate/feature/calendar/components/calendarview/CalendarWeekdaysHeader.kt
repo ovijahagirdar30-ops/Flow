@@ -1,7 +1,9 @@
 package com.markel.flowstate.feature.calendar.components.calendarview
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -11,6 +13,8 @@ import androidx.compose.ui.text.style.TextAlign
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.format.TextStyle
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun CalendarWeekdaysHeader(){
@@ -19,11 +23,12 @@ fun CalendarWeekdaysHeader(){
         for (day in daysOfWeek) {
             Text(
                 modifier = Modifier.weight(1f),
-                text = day.getDisplayName(TextStyle.SHORT, Locale.getDefault()).uppercase(),
+                text = day.getDisplayName(TextStyle.SHORT, LocalLocale.current.platformLocale).uppercase(),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
             )
         }
+        Spacer(Modifier.height(6.dp))
     }
 }

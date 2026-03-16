@@ -111,7 +111,7 @@ fun HabitMonthCalendar(
                                 if (showNumbers) {
                                     Text(
                                         text = day.toString(),
-                                        fontSize = 10.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                                         color = when {
                                             isDone && !isFuture -> Color.White

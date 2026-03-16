@@ -9,7 +9,7 @@ interface IdeaDao {
     fun getIdeas(): Flow<List<IdeaEntity>>
 
     @Upsert
-    suspend fun upsertIdea(idea: IdeaEntity)
+    suspend fun upsertIdea(idea: IdeaEntity): Long
 
     @Delete
     suspend fun deleteIdea(idea: IdeaEntity)

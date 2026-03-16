@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,7 +52,7 @@ fun DayCell(
     ) {
         Box(modifier = Modifier
             .size(38.dp)
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(10.dp))
             .background(
                 color = when {
                     showSelection -> MaterialTheme.colorScheme.tertiary
@@ -67,7 +68,7 @@ fun DayCell(
                 modifier = Modifier.align(Alignment.Center),
                 text = day.date.dayOfMonth.toString(),
                 color = textColor,
-                fontSize = 15.sp,
+                fontSize = 16.sp,
                 fontWeight = if (showSelection || isToday) FontWeight.Bold else FontWeight.Normal
             )
 
