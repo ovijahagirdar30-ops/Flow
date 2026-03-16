@@ -111,7 +111,7 @@ class IdeaEditorViewModel @Inject constructor(
                 )
             )
         } else if (state.title.isNotBlank() || state.content.isNotBlank()) {
-            ideaRepository.upsertIdea(
+            val insertedId = ideaRepository.upsertIdea(
                 Idea(
                     title = state.title,
                     content = state.content,
@@ -119,6 +119,14 @@ class IdeaEditorViewModel @Inject constructor(
                     createdAt = System.currentTimeMillis()
                 )
             )
+            // Save the reference with the ID so subsequent autosaves don't create duplicates (existing != null)
+            _editor.update { it.copy(idea = Idea(
+                id = insertedId.toInt(),
+                title = state.title,
+                content = state.content,
+                color = state.color,
+                createdAt = System.currentTimeMillis()
+            )) }
         }
     }
 
