@@ -62,16 +62,13 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
                 val label = stringResource(screen.labelRes)
                 NavigationBarItem(
                     icon = {
-                        Icon(imageVector = ImageVector.vectorResource(screen.iconRes), contentDescription = label)
+                        val iconDrawable = if (selected) screen.iconSelectedRes else screen.iconRes
+                        Icon(
+                            imageVector = ImageVector.vectorResource(iconDrawable),
+                            contentDescription = label
+                        )
                     },
-                    label = if (!isLandscape) {
-                        {
-                            Text(
-                                text = label,
-                                fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold
-                            )
-                        }
-                    } else null,
+                    label = if (!isLandscape) { { Text(label) } } else null,
                     selected = selected,
                     onClick = {
                         // Navigate to the new screen

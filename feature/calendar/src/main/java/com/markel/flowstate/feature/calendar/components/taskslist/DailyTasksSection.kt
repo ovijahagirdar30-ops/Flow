@@ -36,7 +36,7 @@ fun DailyTasksSection(
 
     if (tasks.isEmpty()) {
         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-            Text(stringResource(R.string.noth_new), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.noth_new), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
         }
     } else {
         LazyColumn(

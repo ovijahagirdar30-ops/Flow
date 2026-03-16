@@ -4,11 +4,36 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.markel.flowstate.R
 
-sealed class Screen(val route: String, @StringRes val labelRes: Int, val iconRes: Int) {
-    object Tasks : Screen("tasks", com.markel.flowstate.feature.tasks.R.string.flow, R.drawable.task_alt_24px)
-    object Calendar : Screen("calendar", com.markel.flowstate.feature.tasks.R.string.calendar, R.drawable.calendar_month_24px)
-    object Habits : Screen("habits", com.markel.flowstate.feature.tasks.R.string.habits, R.drawable.analytics_24px)
-    object Mood : Screen("mood", com.markel.flowstate.feature.tasks.R.string.mood, R.drawable.self_improvement_24px)
+sealed class Screen(
+    val route: String,
+    @StringRes val labelRes: Int,
+    @DrawableRes val iconRes: Int,
+    @DrawableRes val iconSelectedRes: Int
+) {
+    object Tasks : Screen(
+        route = "tasks",
+        labelRes = com.markel.flowstate.feature.tasks.R.string.flow,
+        iconRes = R.drawable.task_alt_out_24px,
+        iconSelectedRes = R.drawable.task_alt_24px
+    )
+    object Calendar : Screen(
+        route = "calendar",
+        labelRes = com.markel.flowstate.feature.tasks.R.string.calendar,
+        iconRes = R.drawable.calendar_month_out_24px,
+        iconSelectedRes = R.drawable.calendar_month_24px
+    )
+    object Habits : Screen(
+        route = "habits",
+        labelRes = com.markel.flowstate.feature.tasks.R.string.habits,
+        iconRes = R.drawable.analytics_out_24px,
+        iconSelectedRes = R.drawable.analytics_24px
+    )
+    object Mood : Screen(
+        route = "mood",
+        labelRes = com.markel.flowstate.feature.tasks.R.string.mood,
+        iconRes = R.drawable.self_improvement_24px,
+        iconSelectedRes = R.drawable.self_improvement_24px
+    )
 
     object Detail {
         const val TASK_EDITOR = "task_editor/{taskId}"
