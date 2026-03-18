@@ -31,7 +31,6 @@ fun RadarChart(
     val textMeasurer = rememberTextMeasurer()
     val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val labelColorStrong = habitColor
 
     val maxVal = dayOfWeekCompletions.values.maxOrNull()?.takeIf { it > 0 } ?: 1
     val values = (1..7).map { dow ->
@@ -98,16 +97,16 @@ fun RadarChart(
             val dayMeasured = textMeasurer.measure(
                 dayLabel,
                 TextStyle(
-                    fontSize = 11.sp,
+                    fontSize = 14.sp,
                     fontWeight = if (isStrong) FontWeight.Medium else FontWeight.Normal,
-                    color = if (isStrong) labelColorStrong else labelColor
+                    color = if (isStrong) habitColor else labelColor
                 )
             )
             val pctMeasured = textMeasurer.measure(
                 pctLabel,
                 TextStyle(
-                    fontSize = 9.sp,
-                    color = if (isStrong) labelColorStrong.copy(alpha = 0.7f)
+                    fontSize = 12.sp,
+                    color = if (isStrong) habitColor.copy(alpha = 0.7f)
                     else labelColor.copy(alpha = 0.6f)
                 )
             )

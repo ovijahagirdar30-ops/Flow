@@ -1,4 +1,4 @@
-package com.markel.flowstate.feature.habits.details
+package com.markel.flowstate.feature.habits
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
@@ -7,6 +7,9 @@ import com.markel.flowstate.core.domain.HabitRepository
 import com.markel.flowstate.core.domain.usecase.habits.GetHabitByIdUseCase
 import com.markel.flowstate.core.domain.usecase.habits.ToggleHabitEntryUseCase
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
+import com.markel.flowstate.feature.habits.details.CalendarViewMode
+import com.markel.flowstate.feature.habits.details.HabitDetailViewModel
+import com.markel.flowstate.feature.habits.details.WeeklyBarsMode
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
