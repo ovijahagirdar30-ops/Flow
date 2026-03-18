@@ -52,124 +52,148 @@ private val routesWithBottomBar = bottomNavItems.map { it.route }.toSet()
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            FlowStateTheme {
-                // Check Orientation
-                val configuration = LocalConfiguration.current
-                val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            val mainViewModel: MainViewModel = hiltViewModel()
+            val startDestination by mainViewModel.startDestination.collectAsState()
+            splashScreen.setKeepOnScreenCondition {
+                startDestination == null
+            }
 
-                HandleSystemBars(isLandscape)
-                // Compose navigation controller
-                val navController = rememberNavController()
-                // The bottom bar is controlled BY ROUTE, not by manual state
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
-                // We show the bottom bar only if the current route is one of the main tabs
-                val isBottomBarVisible = currentRoute in routesWithBottomBar
+            if (startDestination != null) {
+                FlowStateTheme {
+                    // Check Orientation
+                    val configuration = LocalConfiguration.current
+                    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-                SharedTransitionLayout {
-                    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
-                        Scaffold(
-                            modifier = Modifier.fillMaxSize(),
-                            bottomBar = {
-                                if (isBottomBarVisible) {
-                                    FlowBottomBar(
-                                        navController = navController,
-                                        isLandscape = isLandscape
-                                    )
-                                }
-                            },
-                            contentWindowInsets = WindowInsets(0.dp)
-                        ) { innerPadding ->
-                            // Navigation host: decides which screen to show
-                            // based on the route
-                            NavHost(
-                                navController = navController,
-                                startDestination = Screen.Tasks.route,
-                                modifier = Modifier.padding(innerPadding)
-                            ) {
-                                // --- Main tabs ---
-                                composable(Screen.Tasks.route) {
-                                    CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                        FlowScreen(
-                                            onNavigateToTaskEditor = { taskId ->
+                    HandleSystemBars(isLandscape)
+                    // Compose navigation controller
+                    val navController = rememberNavController()
+                    // The bottom bar is controlled BY ROUTE, not by manual state
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentRoute = navBackStackEntry?.destination?.route
+                    // We show the bottom bar only if the current route is one of the main tabs
+                    val isBottomBarVisible = currentRoute in routesWithBottomBar
+                    LaunchedEffect(currentRoute) {
+                        if (isBottomBarVisible && currentRoute != null) {
+                            mainViewModel.saveLastTab(currentRoute)
+                        }
+                    }
+
+                    SharedTransitionLayout {
+                        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+                            Scaffold(
+                                modifier = Modifier.fillMaxSize(),
+                                bottomBar = {
+                                    if (isBottomBarVisible) {
+                                        FlowBottomBar(
+                                            navController = navController,
+                                            isLandscape = isLandscape
+                                        )
+                                    }
+                                },
+                                contentWindowInsets = WindowInsets(0.dp)
+                            ) { innerPadding ->
+                                // Navigation host: decides which screen to show
+                                // based on the route
+                                NavHost(
+                                    navController = navController,
+                                    startDestination = startDestination!!,
+                                    modifier = Modifier.padding(innerPadding)
+                                ) {
+                                    // --- Main tabs ---
+                                    composable(Screen.Tasks.route) {
+                                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                            FlowScreen(
+                                                onNavigateToTaskEditor = { taskId ->
+                                                    navController.navigate(
+                                                        Screen.Detail.taskEditor(
+                                                            taskId
+                                                        )
+                                                    )
+                                                },
+                                                onNavigateToIdeaEditor = { ideaId ->
+                                                    navController.navigate(
+                                                        Screen.Detail.ideaEditor(
+                                                            ideaId
+                                                        )
+                                                    )
+                                                },
+                                                onNavigateToNewIdea = {
+                                                    navController.navigate(Screen.Detail.newIdea())
+                                                },
+                                                onNavigateToCheckListEditor = { checkListId ->
+                                                    navController.navigate(
+                                                        Screen.Detail.checkListEditor(
+                                                            checkListId
+                                                        )
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    }
+                                    composable(Screen.Calendar.route) {
+                                        val calendarViewModel: CalendarViewModel = hiltViewModel()
+                                        CalendarScreen(viewModel = calendarViewModel)
+                                    }
+                                    composable(Screen.Habits.route) {
+                                        // Temporarily a placeholder
+                                        HabitScreen(
+                                            onNavigateToDetail = { habitId ->
                                                 navController.navigate(
-                                                    Screen.Detail.taskEditor(
-                                                        taskId
+                                                    Screen.Detail.habitDetail(
+                                                        habitId
                                                     )
                                                 )
-                                            },
-                                            onNavigateToIdeaEditor = { ideaId ->
-                                                navController.navigate(
-                                                    Screen.Detail.ideaEditor(
-                                                        ideaId
-                                                    )
-                                                )
-                                            },
-                                            onNavigateToNewIdea = {
-                                                navController.navigate(Screen.Detail.newIdea())
-                                            },
-                                            onNavigateToCheckListEditor = { checkListId ->
-                                                navController.navigate(Screen.Detail.checkListEditor(checkListId))
                                             }
                                         )
                                     }
-                                }
-                                composable(Screen.Calendar.route) {
-                                    val calendarViewModel: CalendarViewModel = hiltViewModel()
-                                    CalendarScreen(viewModel = calendarViewModel)
-                                }
-                                composable(Screen.Habits.route) {
-                                    // Temporarily a placeholder
-                                    HabitScreen(
-                                        onNavigateToDetail = { habitId ->
-                                            navController.navigate(Screen.Detail.habitDetail(habitId))
-                                        }
-                                    )
-                                }
-                                composable(Screen.Mood.route) {
-                                    PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.mood))
-                                }
+                                    composable(Screen.Mood.route) {
+                                        PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.mood))
+                                    }
 
-                                // ── Detail screens (without bottom bar) ─────────────
-                                composable(Screen.Detail.TASK_EDITOR) { backStackEntry ->
-                                    val taskId = backStackEntry.arguments
-                                        ?.getString("taskId")
-                                        ?.toIntOrNull() ?: return@composable
-                                    CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                        TaskEditorScreen(
-                                            taskId = taskId,
+                                    // ── Detail screens (without bottom bar) ─────────────
+                                    composable(Screen.Detail.TASK_EDITOR) { backStackEntry ->
+                                        val taskId = backStackEntry.arguments
+                                            ?.getString("taskId")
+                                            ?.toIntOrNull() ?: return@composable
+                                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                            TaskEditorScreen(
+                                                taskId = taskId,
+                                                onBack = { navController.popBackStack() }
+                                            )
+                                        }
+                                    }
+                                    composable(Screen.Detail.IDEA_EDITOR) { backStackEntry ->
+                                        val ideaIdArg =
+                                            backStackEntry.arguments?.getString("ideaId")
+                                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                            IdeaEditorScreen(
+                                                ideaId = ideaIdArg?.toIntOrNull(), // null = new idea
+                                                onBack = { navController.popBackStack() }
+                                            )
+                                        }
+                                    }
+                                    composable(Screen.Detail.CHECKLIST_EDITOR) { backStackEntry ->
+                                        val checkListIdArg =
+                                            backStackEntry.arguments?.getString("checkListId")
+                                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                                            CheckListEditorScreen(
+                                                checkListId = checkListIdArg?.toIntOrNull(), // null = new checklist
+                                                onBack = { navController.popBackStack() }
+                                            )
+                                        }
+                                    }
+                                    composable(Screen.Detail.HABIT_DETAIL) { backStackEntry ->
+                                        val habitId = backStackEntry.arguments?.getString("habitId")
+                                            ?.toIntOrNull() ?: return@composable
+                                        HabitDetailScreen(
+                                            habitId = habitId,
                                             onBack = { navController.popBackStack() }
                                         )
                                     }
-                                }
-                                composable(Screen.Detail.IDEA_EDITOR) { backStackEntry ->
-                                    val ideaIdArg = backStackEntry.arguments?.getString("ideaId")
-                                    CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                        IdeaEditorScreen(
-                                            ideaId = ideaIdArg?.toIntOrNull(), // null = new idea
-                                            onBack = { navController.popBackStack() }
-                                        )
-                                    }
-                                }
-                                composable(Screen.Detail.CHECKLIST_EDITOR) { backStackEntry ->
-                                    val checkListIdArg = backStackEntry.arguments?.getString("checkListId")
-                                    CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                        CheckListEditorScreen(
-                                            checkListId = checkListIdArg?.toIntOrNull(), // null = new checklist
-                                            onBack = { navController.popBackStack() }
-                                        )
-                                    }
-                                }
-                                composable(Screen.Detail.HABIT_DETAIL) { backStackEntry ->
-                                    val habitId = backStackEntry.arguments?.getString("habitId")?.toIntOrNull() ?: return@composable
-                                    HabitDetailScreen(
-                                        habitId = habitId,
-                                        onBack = { navController.popBackStack() }
-                                    )
                                 }
                             }
                         }
