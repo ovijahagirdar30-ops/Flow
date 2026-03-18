@@ -33,21 +33,16 @@ class HabitViewModel @Inject constructor(
         habitRepository.getAllEntries(),
         _showAddDialog
     ) { habits, allEntries, showDialog ->
-        val today = LocalDate.now()
-        val weekStart = today.with(java.time.DayOfWeek.MONDAY)
-        val weekDays = (0..6).map { weekStart.plusDays(it.toLong()).toEpochDay() }.toSet()
-
-        val weekEntriesByHabit = allEntries
-            .filter { it.epochDay in weekDays }
+        val allEntriesByHabit = allEntries
             .groupBy({ it.habitId }, { it.epochDay })
             .mapValues { it.value.toSet() }
 
         HabitUiState.Success(
             habits = habits,
-            weekEntriesByHabit = weekEntriesByHabit,
+            weekEntriesByHabit = allEntriesByHabit,
             showAddDialog = showDialog,
             completedToday = habits.count { hw ->
-                LocalDate.now().toEpochDay() in (weekEntriesByHabit[hw.habit.id] ?: emptySet())
+                LocalDate.now().toEpochDay() in (allEntriesByHabit[hw.habit.id] ?: emptySet())
             },
             totalHabits = habits.size,
             motivationalMessageIndex = LocalDate.now().dayOfYear % 7

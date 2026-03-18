@@ -124,7 +124,7 @@ fun HabitCard(
 
             // ── WeekCalendar ────────────────────────
             WeekCalendar(
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
                 state = weekState,
                 dayContent = { weekDay ->
                     val date = weekDay.date
@@ -139,7 +139,7 @@ fun HabitCard(
                     val cornerStart by animateDpAsState(
                         targetValue = when {
                             isDone && donePrev -> 0.dp
-                            else               -> 20.dp
+                            else -> 20.dp
                         },
                         animationSpec = spring(stiffness = 400f),
                         label = "corner_start_${date.dayOfMonth}"
@@ -147,7 +147,7 @@ fun HabitCard(
                     val cornerEnd by animateDpAsState(
                         targetValue = when {
                             isDone && doneNext -> 0.dp
-                            else               -> 20.dp
+                            else -> 20.dp
                         },
                         animationSpec = spring(stiffness = 400f),
                         label = "corner_end_${date.dayOfMonth}"
@@ -185,7 +185,7 @@ fun HabitCard(
                         ) {
                             Text(
                                 text = date.dayOfMonth.toString(),
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                                 color = when {
                                     isDone && !isFuture -> Color.White
@@ -196,9 +196,9 @@ fun HabitCard(
                             )
                             Text(
                                 text = date.dayOfWeek
-                                    .getDisplayName(java.time.format.TextStyle.NARROW, LocalLocale.current.platformLocale)
+                                    .getDisplayName(java.time.format.TextStyle.SHORT, LocalLocale.current.platformLocale)
                                     .uppercase(),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelMedium,
                                 fontSize = 10.sp,
                                 color = when {
                                     isDone && !isFuture -> Color.White.copy(alpha = 0.8f)
