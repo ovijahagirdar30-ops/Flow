@@ -11,9 +11,15 @@
 > This project is actively being developed and may have bugs. We welcome contributions from the community!
 
 ## Screenshots
-| ![Image 1](screenshots/home_dark.png)  |   ![Image 2](screenshots/home_light.png)   |
-|:--------------------------------------:|:------------------------------------------:|
-| ![Image 3](screenshots/edit_light.png) | ![Image 4](screenshots/calendar_night.png) |
+
+<div align="center">
+  <img src="screenshots/home_dark.png" width="31%" />
+  <img src="screenshots/home_light.png" width="31%" />
+  <img src="screenshots/calendar_night.png" width="31%" />
+  <br>
+  <img src="screenshots/habits_prev.png" width="31%" />
+  <img src="screenshots/habits_details.png" width="31%" />
+</div>
 
 ## Features
 
