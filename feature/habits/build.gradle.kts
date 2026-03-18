@@ -59,4 +59,8 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+
+    testImplementation(project(":core:testing"))
+    testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
 }
