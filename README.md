@@ -33,10 +33,9 @@
 - **Material 3**: Modern design with dynamic colors
 - **Task Scheduling**: Add due dates
 - **Calendar** view
+- **Habit Tracking**: Build daily routines and track streaks
 
 ### In Development
-- **Overall visual improvements**: Improve the main visual aesthetics of the app
-- **Habit Tracking**: Build daily routines and track streaks
 - **Reminders**
 - **Mood Tracking**: Log daily emotions and view trends
 - **Widgets**: Home screen widgets for quick access
