@@ -199,7 +199,7 @@ fun IdeaGridCard(
             Text(
                 text = idea.title,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                maxLines = 2,
+                maxLines = 6,
                 overflow = TextOverflow.Ellipsis
             )
             if (idea.content.isNotBlank()) {
@@ -251,7 +251,7 @@ fun CheckListGridCard(
             Text(
                 text = checkList.title,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(Modifier.height(6.dp))

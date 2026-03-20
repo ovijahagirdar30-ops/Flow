@@ -57,7 +57,7 @@ fun GridView(
                     onReorder(from.index, to.index)
                 }
                 LaunchedEffect(reorderState.isAnyItemDragging) {
-                    // When is false, the user has dropped the item and now we can update de db
+                    // When is false, the user has dropped the item, and now we can update de db
                     if (!reorderState.isAnyItemDragging) onDragEnd()
                 }
                 LazyVerticalStaggeredGrid(
@@ -67,8 +67,8 @@ fun GridView(
                         .fillMaxSize()
                         .padding(horizontal = 12.dp),
                     contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalItemSpacing = 8.dp
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalItemSpacing = 9.dp
                 ) {
                     items(
                         items = uiState.items,
