@@ -200,47 +200,53 @@ fun TaskEditorSheetContent(
 
         // list of subtasks
         if (visibleSubTasks.isNotEmpty()) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column {
-                    visibleSubTasks.forEachIndexed { index, subTask ->
-                        EditableSubTaskItem(
-                            subTask = subTask,
-                            isExpanded = expandedSubTaskId == subTask.id,
-                            onExpandChange = { shouldExpand ->
-                                expandedSubTaskId = if (shouldExpand) subTask.id else null
-                            },
-                            onUpdate = { updatedSubTask ->
-                                val realIndex = subTasks.indexOfFirst { it.id == updatedSubTask.id }
-                                if (realIndex != -1) {
-                                    subTasks[realIndex] = updatedSubTask
-                                }
-                            },
-                            onCheckedChange = {
-                                // We need to find the index in the REAL list, not the visible list
-                                val realIndex = subTasks.indexOfFirst { it.id == subTask.id }
-                                if (realIndex != -1) {
-                                    subTasks[realIndex] = subTask.copy(isDone = !subTask.isDone)
-                                }
-                            },
-                            onDelete = {
-                                val realIndex = subTasks.indexOfFirst { it.id == subTask.id }
-                                if (realIndex != -1) {
-                                    subTasks.removeAt(realIndex)
-                                }
-                                // Close expansion if this was the expanded item
-                                if (expandedSubTaskId == subTask.id) {
-                                    expandedSubTaskId = null
-                                }
-                            }
+            Column (
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ){
+                visibleSubTasks.forEachIndexed { index, subTask ->
+                    val isFirst = index == 0
+                    val isLast = index == visibleSubTasks.lastIndex
+                    val isSingle = visibleSubTasks.size == 1
+                    val shape = when {
+                        isSingle -> RoundedCornerShape(16.dp)
+                        isFirst  -> RoundedCornerShape(
+                            topStart = 16.dp, topEnd = 16.dp,
+                            bottomStart = 4.dp, bottomEnd = 4.dp
                         )
-                        if (index < visibleSubTasks.lastIndex) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        }
+                        isLast   -> RoundedCornerShape(
+                            topStart = 4.dp, topEnd = 4.dp,
+                            bottomStart = 16.dp, bottomEnd = 16.dp
+                        )
+                        else -> RoundedCornerShape(4.dp)
                     }
+
+                    EditableSubTaskItem(
+                        subTask = subTask,
+                        isExpanded = expandedSubTaskId == subTask.id,
+                        itemShape = shape,
+                        onExpandChange = { shouldExpand ->
+                            expandedSubTaskId = if (shouldExpand) subTask.id else null
+                        },
+                        onUpdate = { updatedSubTask ->
+                            val realIndex = subTasks.indexOfFirst { it.id == updatedSubTask.id }
+                            if (realIndex != -1) {
+                                subTasks[realIndex] = updatedSubTask
+                            }
+                        },
+                        onCheckedChange = {
+                            // We need to find the index in the REAL list, not the visible list
+                            val realIndex = subTasks.indexOfFirst { it.id == subTask.id }
+                            if (realIndex != -1) {
+                                subTasks[realIndex] = subTask.copy(isDone = !subTask.isDone)
+                            }
+                        },
+                        onDelete = {
+                            val realIndex = subTasks.indexOfFirst { it.id == subTask.id }
+                            if (realIndex != -1) subTasks.removeAt(realIndex)
+                            // Close expansion if this was the expanded item
+                            if (expandedSubTaskId == subTask.id) expandedSubTaskId = null
+                        }
+                    )
                 }
             }
         }
