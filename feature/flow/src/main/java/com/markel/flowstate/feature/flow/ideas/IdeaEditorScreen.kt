@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -152,6 +154,9 @@ fun IdeaEditorScreen(
                     fontWeight = FontWeight.SemiBold,
                     color = onCardColor
                 ),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences
+                ),
                 cursorBrush = SolidColor(onCardColor),
                 decorationBox = { inner ->
                     Box {
@@ -178,6 +183,9 @@ fun IdeaEditorScreen(
                     fontSize = 16.sp,
                     lineHeight = 24.sp,
                     color = onCardColor.copy(alpha = 0.85f)
+                ),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences
                 ),
                 cursorBrush = SolidColor(onCardColor),
                 decorationBox = { inner ->

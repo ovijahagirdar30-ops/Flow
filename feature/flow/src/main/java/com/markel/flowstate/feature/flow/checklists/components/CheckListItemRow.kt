@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.markel.flowstate.feature.tasks.R
@@ -105,7 +106,10 @@ fun CheckListItemRow(
                 color = if (isDone) onCardColor.copy(alpha = 0.45f) else onCardColor,
             ),
             cursorBrush = SolidColor(onCardColor),
-            keyboardOptions = KeyboardOptions( imeAction = ImeAction.Next ),
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Next,
+                capitalization = KeyboardCapitalization.Sentences
+            ),
             keyboardActions = KeyboardActions( onNext = { onAddNext() } ),
             modifier = Modifier
                 .weight(1f)
