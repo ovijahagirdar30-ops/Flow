@@ -147,19 +147,20 @@ fun <T> SwipeToDeleteContainer(
     onDelete: () -> Unit,
     content: @Composable (T) -> Unit
 ) {
-    val threshold = 0.35f
-    lateinit var dismissState: SwipeToDismissBoxState
-    dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart && dismissState.progress >= threshold) {
-                onDelete()
-                true
-            } else false
-        }
+    val dismissState = rememberSwipeToDismissBoxState(
+        positionalThreshold = { totalDistance -> totalDistance * 0.35f }
     )
+
+    LaunchedEffect(dismissState.settledValue) {
+        if (dismissState.settledValue == SwipeToDismissBoxValue.EndToStart) {
+            onDelete()
+        }
+    }
 
     SwipeToDismissBox(
         state = dismissState,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = true,
         backgroundContent = { DeleteSwipeBackground(dismissState) },
         content = { content(item) }
     )
