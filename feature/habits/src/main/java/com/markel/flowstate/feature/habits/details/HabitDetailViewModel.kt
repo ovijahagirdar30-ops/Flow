@@ -3,6 +3,7 @@ package com.markel.flowstate.feature.habits.details
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.domain.HabitRepository
 import com.markel.flowstate.core.domain.usecase.habits.GetHabitByIdUseCase
 import com.markel.flowstate.core.domain.usecase.habits.ToggleHabitEntryUseCase
@@ -22,7 +23,8 @@ class HabitDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getHabitById: GetHabitByIdUseCase,
     private val habitRepository: HabitRepository,
-    private val toggleEntry: ToggleHabitEntryUseCase
+    private val toggleEntry: ToggleHabitEntryUseCase,
+    private val userPreferences: UserPreferencesRepository
 ) : ViewModel() {
 
     private val habitId: Int = checkNotNull(savedStateHandle.get<String>("habitId")).toInt()
@@ -30,6 +32,14 @@ class HabitDetailViewModel @Inject constructor(
     val uiState: StateFlow<HabitDetailUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            userPreferences.calendarViewMode.collect { raw ->
+                val mode = raw?.let { runCatching { CalendarViewMode.valueOf(it) }.getOrNull() }
+                    ?: CalendarViewMode.ONE_MONTH
+                _uiState.update { it.copy(viewMode = mode) }
+            }
+        }
+
         viewModelScope.launch {
             val habit = getHabitById(habitId) ?: return@launch
             habitRepository.getEntriesForHabit(habitId).collect { entries ->
@@ -56,6 +66,9 @@ class HabitDetailViewModel @Inject constructor(
                 CalendarViewMode.ONE_YEAR     -> CalendarViewMode.ONE_MONTH
             }
             state.copy(viewMode = next)
+        }
+        viewModelScope.launch {
+            userPreferences.saveCalendarViewMode(_uiState.value.viewMode.name)
         }
     }
 

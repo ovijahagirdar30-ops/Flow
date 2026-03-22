@@ -20,12 +20,16 @@ class UserPreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val IS_GRID_VIEW = booleanPreferencesKey("is_grid_view")
+    val isGridView: Flow<Boolean> = context.dataStore.data
+        .map { preferences -> preferences[IS_GRID_VIEW] ?: false }
     val lastTabRoute: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[stringPreferencesKey("last_tab_route")]
     }
+    private val CALENDAR_VIEW_MODE = stringPreferencesKey("calendar_view_mode")
 
-    val isGridView: Flow<Boolean> = context.dataStore.data
-        .map { preferences -> preferences[IS_GRID_VIEW] ?: false }
+    val calendarViewMode: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[CALENDAR_VIEW_MODE]
+    }
 
     suspend fun setGridView(isGrid: Boolean) {
         context.dataStore.edit { preferences ->
@@ -37,5 +41,9 @@ class UserPreferencesRepository @Inject constructor(
         context.dataStore.edit { preferences ->
             preferences[stringPreferencesKey("last_tab_route")] = route
         }
+    }
+
+    suspend fun saveCalendarViewMode(mode: String) {
+        context.dataStore.edit { it[CALENDAR_VIEW_MODE] = mode }
     }
 }
