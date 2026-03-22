@@ -27,14 +27,22 @@ private val habitColors = listOf(
 @Composable
 fun AddHabitDialog(
     onDismiss: () -> Unit,
-    onConfirm: (name: String, icon: String, colorArgb: Int) -> Unit
+    onConfirm: (name: String, icon: String, colorArgb: Int) -> Unit,
+    initialName: String = "",
+    initialColor: Color? = null
 ) {
-    var name by remember { mutableStateOf("") }
-    var selectedColor by remember { mutableStateOf(habitColors.first()) }
+    val isEditMode = initialName.isNotEmpty() || initialColor != null
+    var name by remember { mutableStateOf(initialName) }
+    var selectedColor by remember { mutableStateOf( initialColor?.let { ic -> habitColors.firstOrNull { it == ic } } ?: habitColors.first()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.add_habit_dialog_title)) },
+        title = { Text(
+            stringResource(
+                if (isEditMode) R.string.edit_habit_dialog_title
+                else R.string.add_habit_dialog_title
+            )
+        ) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
@@ -79,7 +87,12 @@ fun AddHabitDialog(
             TextButton(
                 onClick = { onConfirm(name, "self_improvement", selectedColor.toArgb()) },
                 enabled = name.isNotBlank()
-            ) { Text(stringResource(R.string.add_habit_create_button)) }
+            ) { Text(
+                stringResource(
+                    if (isEditMode) R.string.edit_habit_save_button
+                    else R.string.add_habit_create_button
+                )
+            ) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.add_habit_cancel_button)) }

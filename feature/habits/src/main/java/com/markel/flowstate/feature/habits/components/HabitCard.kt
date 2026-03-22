@@ -36,6 +36,7 @@ fun HabitCard(
     weekEntries: Set<Long>,
     onToggleDay: (LocalDate) -> Unit,
     onDelete: () -> Unit,
+    onEdit: (name: String, colorArgb: Int) -> Unit,
     onNavigateToDetail: (() -> Unit)? = null
 ) {
     val habit = habitWithStatus.habit
@@ -66,6 +67,8 @@ fun HabitCard(
     )
 
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showEditDialog   by remember { mutableStateOf(false) }
+    var menuExpanded     by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -79,6 +82,19 @@ fun HabitCard(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.delete_habit_cancel_button)) }
+            }
+        )
+    }
+
+    // ── Edit dialog (reuses AddHabitDialog in edit mode) ─────────────────────
+    if (showEditDialog) {
+        AddHabitDialog(
+            initialName = habit.name,
+            initialColor = habitColor,
+            onDismiss = { showEditDialog = false },
+            onConfirm = { name, _, colorArgb ->
+                onEdit(name, colorArgb)
+                showEditDialog = false
             }
         )
     }
@@ -113,12 +129,37 @@ fun HabitCard(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = { showDeleteDialog = true }) {
-                    Text(
-                        "···",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 18.sp
-                    )
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Text(
+                            "···",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 18.sp
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.habit_menu_edit)) },
+                            onClick = {
+                                menuExpanded  = false
+                                showEditDialog = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(stringResource(R.string.delete_habit_confirm_button),)
+                            },
+                            onClick = {
+                                menuExpanded   = false
+                                showDeleteDialog = true
+                            }
+                        )
+                    }
                 }
             }
 

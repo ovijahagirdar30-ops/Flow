@@ -3,6 +3,7 @@ package com.markel.flowstate.feature.habits
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -69,6 +70,7 @@ fun HabitScreen(
                                         viewModel.toggleHabitOnDate(habitWithStatus.habit.id, date)
                                     },
                                     onDelete = { viewModel.deleteHabit(habitWithStatus.habit) },
+                                    onEdit = { name, colorArgb -> viewModel.editHabit(habitWithStatus.habit, name, colorArgb) },
                                     onNavigateToDetail = { onNavigateToDetail(habitWithStatus.habit.id) }
                                 )
                             }
@@ -88,7 +90,7 @@ fun HabitScreen(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 16.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(16.dp),
                     containerColor = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary
                 ) {

@@ -31,6 +31,9 @@ class HabitRepositoryImpl @Inject constructor(
     override suspend fun insertHabit(habit: Habit) =
         dao.insertHabit(habit.toEntity()).let { Unit }
 
+    override suspend fun updateHabit(habit: Habit) =
+        dao.updateHabit(habit.toEntity())
+
     override suspend fun deleteHabit(habit: Habit) =
         dao.deleteHabit(habit.toEntity())
 

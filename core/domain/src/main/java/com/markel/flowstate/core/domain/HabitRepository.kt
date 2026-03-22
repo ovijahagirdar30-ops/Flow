@@ -7,6 +7,7 @@ interface HabitRepository {
     fun getHabits(): Flow<List<Habit>>
     fun getEntriesForHabit(habitId: Int): Flow<List<LocalDate>>
     suspend fun insertHabit(habit: Habit)
+    suspend fun updateHabit(habit: Habit)
     suspend fun deleteHabit(habit: Habit)
     suspend fun toggleEntry(habitId: Int, date: LocalDate)
     fun getAllEntries(): Flow<List<HabitEntryFlat>>

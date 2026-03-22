@@ -12,6 +12,9 @@ interface HabitDao {
     @Delete
     suspend fun deleteHabit(habit: HabitEntity)
 
+    @Update
+    suspend fun updateHabit(habit: HabitEntity)
+
     @Transaction
     @Query("SELECT * FROM habits")
     fun getHabitsWithEntries(): Flow<List<HabitWithEntries>>

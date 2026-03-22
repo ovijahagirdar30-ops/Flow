@@ -14,6 +14,9 @@
     <string name="delete_habit_dialog_message">Delete \"%1$s\"? Your history will be lost</string>
     <string name="delete_habit_confirm_button">Delete</string>
     <string name="delete_habit_cancel_button">Cancel</string>
+    <string name="habit_menu_edit">Edit</string>
+    <string name="edit_habit_dialog_title">Edit habit</string>
+    <string name="edit_habit_save_button">Save</string>
     <string name="habit_empty_state_title">You don\'t have habits yet</string>
 
     <string name="habit_detail_since">Since %1$s · %2$d days completed</string>
