@@ -38,7 +38,7 @@ fun RadarChart(
     }
     val labels = (1..7).map { dow ->
         DayOfWeek.of(dow)
-            .getDisplayName(JTextStyle.NARROW, LocalLocale.current.platformLocale)
+            .getDisplayName(JTextStyle.SHORT, LocalLocale.current.platformLocale)
             .uppercase()
     }
 
