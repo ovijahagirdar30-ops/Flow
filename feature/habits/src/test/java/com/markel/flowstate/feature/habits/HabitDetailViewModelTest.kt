@@ -2,6 +2,7 @@ package com.markel.flowstate.feature.habits
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.domain.Habit
 import com.markel.flowstate.core.domain.HabitRepository
 import com.markel.flowstate.core.domain.usecase.habits.GetHabitByIdUseCase
@@ -30,6 +31,8 @@ class HabitDetailViewModelTest {
     private val habitRepository: HabitRepository = mockk(relaxed = true)
     private val getHabitById: GetHabitByIdUseCase = mockk(relaxed = true)
     private val toggleEntry: ToggleHabitEntryUseCase = mockk(relaxed = true)
+    private val userPreferences: UserPreferencesRepository = mockk(relaxed = true)
+
 
     private lateinit var viewModel: HabitDetailViewModel
 
@@ -50,7 +53,8 @@ class HabitDetailViewModelTest {
         savedStateHandle = savedStateHandle(habitId),
         getHabitById = getHabitById,
         habitRepository = habitRepository,
-        toggleEntry = toggleEntry
+        toggleEntry = toggleEntry,
+        userPreferences = userPreferences
     )
 
     // ── init / loading ────────────────────────────────────────────────────────
