@@ -118,14 +118,14 @@ fun HabitCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                HabitToggleButton(
+                MorphingCheckButton(
                     isCompleted = isCompletedToday,
-                    habitColor = habitColor,
+                    color = habitColor,
                     onClick = { onToggleDay(today) }
                 )
                 Text(
                     text = habit.name,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )

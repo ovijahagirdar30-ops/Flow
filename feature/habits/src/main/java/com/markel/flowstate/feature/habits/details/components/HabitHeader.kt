@@ -131,7 +131,7 @@ fun HabitHeader(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "$completedToday/${totalHabits}",
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     lineHeight = 11.sp
