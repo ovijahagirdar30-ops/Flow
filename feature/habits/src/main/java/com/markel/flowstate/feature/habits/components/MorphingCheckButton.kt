@@ -16,7 +16,6 @@ import androidx.compose.material3.toPath
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Outline
@@ -35,7 +34,7 @@ fun MorphingCheckButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // 1. Estados de animación
+    // Animation states
     val morphProgress by animateFloatAsState(
         targetValue = if (isCompleted) 1f else 0f,
         animationSpec = tween(600, easing = FastOutSlowInEasing),
@@ -57,10 +56,9 @@ fun MorphingCheckButton(
         label = "scale"
     )
 
-    // 2. Definición del Morph
+    // Morphing definition
     val morph = remember { Morph(MaterialShapes.Pill, MaterialShapes.SoftBurst) }
 
-    // 3. La forma personalizada
     val shape = remember(morphProgress) {
         object : Shape {
             override fun createOutline(
@@ -77,7 +75,7 @@ fun MorphingCheckButton(
         }
     }
 
-    // 4. El UI final
+    // Final "product", the shape + (icon) should be here
     Box(
         modifier = modifier
             .size(40.dp)

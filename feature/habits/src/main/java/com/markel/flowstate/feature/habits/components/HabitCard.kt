@@ -29,6 +29,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun HabitCard(
@@ -125,8 +126,10 @@ fun HabitCard(
                 )
                 Text(
                     text = habit.name,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
                 Box {
