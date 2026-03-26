@@ -70,7 +70,7 @@ fun HabitScreen(
                                         viewModel.toggleHabitOnDate(habitWithStatus.habit.id, date)
                                     },
                                     onDelete = { viewModel.deleteHabit(habitWithStatus.habit) },
-                                    onEdit = { name, colorArgb -> viewModel.editHabit(habitWithStatus.habit, name, colorArgb) },
+                                    onEdit = { name, icon, colorArgb -> viewModel.editHabit(habitWithStatus.habit, name, icon,colorArgb) },
                                     onNavigateToDetail = { onNavigateToDetail(habitWithStatus.habit.id) }
                                 )
                             }

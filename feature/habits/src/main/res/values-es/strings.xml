@@ -7,6 +7,7 @@
     <string name="add_habit_cancel_button">Cancelar</string>
     <string name="habit">Hábitos</string>
     <string name="delete_habit_cancel_button">Cancelar</string>
+    <string name="icon">Icono</string>
     <string name="habit_menu_edit">Editar</string>
     <string name="edit_habit_dialog_title">Editar hábito</string>
     <string name="edit_habit_save_button">Guardar</string>
