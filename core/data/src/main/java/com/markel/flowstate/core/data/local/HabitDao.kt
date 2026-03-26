@@ -46,5 +46,18 @@ interface HabitDao {
     }
 
     @Query("SELECT habitId, completedAt as epochDay FROM habit_entries")
-    fun getAllEntries(): Flow<List<HabitEntryFlatEntity>>
+    fun getAllEntries(): Flow<List<HabitEntryFlatEntity>>  // only the entries of boolean habits
+
+    @Query("UPDATE habits SET position = :position WHERE id = :id")
+    suspend fun updatePosition(id: Int, position: Int)
+
+    @Query("SELECT * FROM habit_numeric_entries WHERE habitId = :habitId ORDER BY epochDay DESC")
+    fun getNumericEntries(habitId: Int): Flow<List<HabitNumericEntryEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertNumericEntry(entry: HabitNumericEntryEntity)
+
+    @Query("DELETE FROM habit_numeric_entries WHERE habitId = :habitId AND epochDay = :epochDay")
+    suspend fun deleteNumericEntry(habitId: Int, epochDay: Long)
+
 }

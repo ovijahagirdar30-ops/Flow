@@ -3,11 +3,14 @@ package com.markel.flowstate.core.data
 import com.markel.flowstate.core.data.local.HabitDao
 import com.markel.flowstate.core.data.local.HabitEntity
 import com.markel.flowstate.core.data.local.HabitEntryEntity
+import com.markel.flowstate.core.data.local.HabitNumericEntryEntity
 import com.markel.flowstate.core.data.local.HabitWithEntries
 import com.markel.flowstate.core.domain.Habit
 import com.markel.flowstate.core.domain.HabitEntryFlat
 import com.markel.flowstate.core.domain.HabitFrequency
+import com.markel.flowstate.core.domain.HabitNumericEntry
 import com.markel.flowstate.core.domain.HabitRepository
+import com.markel.flowstate.core.domain.HabitType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
@@ -45,6 +48,27 @@ class HabitRepositoryImpl @Inject constructor(
             list.map { HabitEntryFlat(it.habitId, it.epochDay) }
         }
 
+    override fun getNumericEntries(habitId: Int): Flow<List<HabitNumericEntry>> =
+        dao.getNumericEntries(habitId).map { entries ->
+            entries.map { it.toDomain() }
+        }
+
+    override suspend fun logNumericEntry(habitId: Int, date: LocalDate, value: Float) =
+        dao.upsertNumericEntry(
+            HabitNumericEntryEntity(
+                habitId = habitId,
+                epochDay = date.toEpochDay(),
+                value = value
+            )
+        )
+
+    override suspend fun deleteNumericEntry(habitId: Int, date: LocalDate) =
+        dao.deleteNumericEntry(habitId, date.toEpochDay())
+
+    override suspend fun updatePositions(positions: List<Pair<Int, Int>>) {
+        positions.forEach { (id, position) -> dao.updatePosition(id, position) }
+    }
+
     // --- Mappers ---
 
     private fun HabitEntity.toDomain() = Habit(
@@ -53,7 +77,11 @@ class HabitRepositoryImpl @Inject constructor(
         iconName = iconName,
         colorArgb = colorArgb,
         frequency = HabitFrequency.valueOf(frequency),
-        createdAt = LocalDate.ofEpochDay(createdAt / 86400000)
+        createdAt = LocalDate.ofEpochDay(createdAt / 86400000),
+        habitType = HabitType.valueOf(habitType),
+        unit = unit,
+        targetValue = targetValue,
+        position = position
     )
 
     private fun Habit.toEntity() = HabitEntity(
@@ -62,6 +90,16 @@ class HabitRepositoryImpl @Inject constructor(
         iconName = iconName,
         colorArgb = colorArgb,
         frequency = frequency.name,
-        createdAt = createdAt.toEpochDay() * 86400000
+        createdAt = createdAt.toEpochDay() * 86400000,
+        habitType = habitType.name,
+        unit = unit,
+        targetValue = targetValue,
+        position = position
+    )
+
+    private fun HabitNumericEntryEntity.toDomain() = HabitNumericEntry(
+        habitId = habitId,
+        date = LocalDate.ofEpochDay(epochDay),
+        value = value
     )
 }

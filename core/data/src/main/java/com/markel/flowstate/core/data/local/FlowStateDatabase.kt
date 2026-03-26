@@ -12,8 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * and which version of the database we are using.
  */
 @Database(
-    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, GridOrderEntity::class, HabitEntity::class, HabitEntryEntity::class ], // List of all tables
-    version = 11,
+    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, GridOrderEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class ], // List of all tables
+    version = 12,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -110,6 +110,25 @@ abstract class FlowStateDatabase : RoomDatabase() {
                     )
                 """.trimIndent())
                         db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_entries_habitId` ON `habit_entries` (`habitId`)")
+            }
+        }
+
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habits ADD COLUMN habitType TEXT NOT NULL DEFAULT 'BOOLEAN'")
+                db.execSQL("ALTER TABLE habits ADD COLUMN unit TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE habits ADD COLUMN targetValue REAL DEFAULT NULL")
+                db.execSQL("ALTER TABLE habits ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `habit_numeric_entries` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `habitId` INTEGER NOT NULL,
+                `epochDay` INTEGER NOT NULL,
+                `value` REAL NOT NULL,
+                FOREIGN KEY(`habitId`) REFERENCES `habits`(`id`) ON DELETE CASCADE
+            )
+        """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_numeric_entries_habitId` ON `habit_numeric_entries` (`habitId`)")
             }
         }
     }

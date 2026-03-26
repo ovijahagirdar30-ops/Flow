@@ -11,6 +11,17 @@
     <string name="edit_habit_dialog_title">Editar hábito</string>
     <string name="edit_habit_save_button">Guardar</string>
     <string name="habit_empty_state_title">Aún no tienes hábitos</string>
+    <string name="habit_type_boolean">Simple</string>
+    <string name="habit_type_numeric">Numérico</string>
+    <string name="habit_unit_label">Unidad</string>
+    <string name="habit_target_label">Objetivo</string>
+    <string name="habit_target_optional">Opcional</string>
+    <string name="habit_target_preview">Objetivo: %1$s%2$s al día</string>
+    <string name="habit_pill_streak_days">%1$d días</string>
+    <string name="habit_input_dialog_title">Registrar %1$s</string>
+    <string name="habit_input_label_unit">Cantidad en %1$s</string>
+    <string name="habit_input_label_plain">Cantidad</string>
+    <string name="habit_input_confirm">Registrar</string>
     <string name="habit_empty_state_description">Pulsa + para crear tu primer hábito</string>
     <string name="delete_habit_dialog_title">Eliminar hábito</string>
     <string name="delete_habit_dialog_message">"¿Eliminar \"%1$s\"? Se perderá todo su historial.     "</string>
