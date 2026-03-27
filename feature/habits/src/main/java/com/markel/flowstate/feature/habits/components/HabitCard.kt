@@ -29,6 +29,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun HabitCard(
@@ -36,7 +37,7 @@ fun HabitCard(
     weekEntries: Set<Long>,
     onToggleDay: (LocalDate) -> Unit,
     onDelete: () -> Unit,
-    onEdit: (name: String, colorArgb: Int) -> Unit,
+    onEdit: (name: String, icon:String, colorArgb: Int) -> Unit,
     onNavigateToDetail: (() -> Unit)? = null
 ) {
     val habit = habitWithStatus.habit
@@ -90,10 +91,11 @@ fun HabitCard(
     if (showEditDialog) {
         AddHabitDialog(
             initialName = habit.name,
+            initialIcon = habit.iconName,
             initialColor = habitColor,
             onDismiss = { showEditDialog = false },
-            onConfirm = { name, _, colorArgb ->
-                onEdit(name, colorArgb)
+            onConfirm = { name, icon, colorArgb ->
+                onEdit(name, icon, colorArgb)
                 showEditDialog = false
             }
         )
@@ -118,15 +120,18 @@ fun HabitCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                HabitToggleButton(
+                MorphingCheckButton(
                     isCompleted = isCompletedToday,
-                    habitColor = habitColor,
+                    color = habitColor,
+                    iconName = habit.iconName,
                     onClick = { onToggleDay(today) }
                 )
                 Text(
                     text = habit.name,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
                 Box {

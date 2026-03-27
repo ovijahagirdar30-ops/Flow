@@ -139,7 +139,6 @@ class MainActivity : ComponentActivity() {
                                         CalendarScreen(viewModel = calendarViewModel)
                                     }
                                     composable(Screen.Habits.route) {
-                                        // Temporarily a placeholder
                                         HabitScreen(
                                             onNavigateToDetail = { habitId ->
                                                 navController.navigate(

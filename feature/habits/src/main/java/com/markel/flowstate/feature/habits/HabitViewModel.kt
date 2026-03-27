@@ -65,11 +65,11 @@ class HabitViewModel @Inject constructor(
         }
     }
 
-    fun editHabit(habit: Habit, newName: String, newColorArgb: Int) {
+    fun editHabit(habit: Habit, newName: String, newIcon: String, newColorArgb: Int) {
         if (newName.isBlank()) return
         viewModelScope.launch {
             habitRepository.updateHabit(
-                habit.copy(name = newName, colorArgb = newColorArgb)
+                habit.copy(name = newName, iconName = newIcon, colorArgb = newColorArgb)
             )
         }
     }
