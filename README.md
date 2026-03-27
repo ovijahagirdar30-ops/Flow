@@ -13,9 +13,9 @@
 ## Screenshots
 
 <div align="center">
-  <img src="screenshots/home_dark.png" width="31%" />
   <img src="screenshots/home_light.png" width="31%" />
-  <img src="screenshots/calendar_night.png" width="31%" />
+  <img src="screenshots/grid_light.png" width="31%" />
+  <img src="screenshots/calendar_light.png" width="31%" />
   <br>
   <img src="screenshots/habits_prev.png" width="31%" />
   <img src="screenshots/habits_details.png" width="31%" />
@@ -30,7 +30,7 @@
 - **Swipe Actions**: Swipe to delete tasks with smooth animations
 - **Drag & Drop**: Reorder tasks via intuitive drag handles
 - **Auto-save**: Changes are saved automatically when editing a task
-- **Material 3**: Modern design with dynamic colors
+- **Material 3**: Modern design
 - **Task Scheduling**: Add due dates
 - **Calendar** view
 - **Habit Tracking**: Build daily routines and track streaks
@@ -74,7 +74,7 @@ This project was mainly a way for me to learn modern **Kotlin** (coming from a J
 
     -Click the Run button
 
-## 🤝 How to Contribute
+## How to Contribute
 
 We welcome contributions! Here's how you can help:
 
