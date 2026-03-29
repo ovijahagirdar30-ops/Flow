@@ -102,7 +102,8 @@ fun AddHabitDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 textAlign = TextAlign.Center
                             ) },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            enabled = !isEditMode
                         )
                         FilterChip(
                             selected = habitType == HabitType.NUMERIC,
@@ -112,7 +113,8 @@ fun AddHabitDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 textAlign = TextAlign.Center
                             ) },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            enabled = !isEditMode
                         )
                     }
                 }
