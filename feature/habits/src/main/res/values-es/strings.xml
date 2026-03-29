@@ -19,8 +19,10 @@
     <string name="habit_target_label">Objetivo</string>
     <string name="habit_target_optional">Opcional</string>
     <string name="habit_target_preview">Objetivo: %1$s %2$s al día</string>
+    <string name="habit_target_error">El objetivo debe ser un número mayor a 0 o nulo</string>
     <string name="habit_step_label">Incremento</string>
     <string name="habit_step_explanation">Cantidad que se suma/resta con los botones +/-</string>
+    <string name="habit_step_error">El incremento debe ser un número mayor a 0</string>
     <string name="habit_clean_amount">Limpiar valor</string>
     <string name="habit_pill_streak_days">%1$d días</string>
     <string name="habit_input_dialog_title">Registrar %1$s</string>

@@ -26,8 +26,10 @@
     <string name="habit_target_label">Target</string>
     <string name="habit_target_optional">Optional</string>
     <string name="habit_target_preview">Goal: %1$s %2$s per day</string>
+    <string name="habit_target_error">The goal must be bigger than 0 or null</string>
     <string name="habit_step_label">Step</string>
     <string name="habit_step_explanation">Amount added/subtracted with the +/- buttons</string>
+    <string name="habit_step_error">The step must be bigger than 0 or null</string>
     <string name="habit_clean_amount">Clean amount</string>
     <string name="habit_pill_streak_days">%1$d days</string>
     <string name="habit_input_dialog_title">Log %1$s</string>

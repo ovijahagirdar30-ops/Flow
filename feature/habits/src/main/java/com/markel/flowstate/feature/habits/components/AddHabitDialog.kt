@@ -64,7 +64,12 @@ fun AddHabitDialog(
     var habitType by remember { mutableStateOf(initialHabitType) }
     var unit by remember { mutableStateOf(initialUnit ?: "") }
     var targetValueText by remember { mutableStateOf(initialTargetValue?.toString() ?: "") }
-    var stepText by remember { mutableStateOf(initialStep.toString()) }
+    var stepText by remember { mutableStateOf(initialStep.toString())}
+
+    val parsedTarget = targetValueText.toFloatOrNull()
+    val parsedStep = stepText.toFloatOrNull()
+    val isTargetInvalid = habitType == HabitType.NUMERIC && targetValueText.isNotBlank() && (parsedTarget == null || parsedTarget <= 0f)
+    val isStepInvalid = habitType == HabitType.NUMERIC && stepText.isNotBlank() && (parsedStep == null || parsedStep <= 0f)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -153,9 +158,17 @@ fun AddHabitDialog(
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.fillMaxWidth(),
-                            supportingText = if (unit.isNotBlank() && targetValueText.isNotBlank()) {
-                                { Text(stringResource(R.string.habit_target_preview, targetValueText, unit)) }
-                            } else null
+                            isError = isTargetInvalid,
+                            supportingText = {
+                                when {
+                                    isTargetInvalid -> {
+                                        Text(text = stringResource(R.string.habit_target_error))
+                                    }
+                                    unit.isNotBlank() && targetValueText.isNotBlank() -> {
+                                        Text(stringResource(R.string.habit_target_preview, targetValueText, unit))
+                                    }
+                                }
+                            }
                         )
 
                         // Step
@@ -167,8 +180,13 @@ fun AddHabitDialog(
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.fillMaxWidth(),
+                            isError = isStepInvalid,
                             supportingText = {
-                                Text(stringResource(R.string.habit_step_explanation))
+                                if (isStepInvalid) {
+                                    Text(text = stringResource(R.string.habit_step_error))
+                                } else {
+                                    Text(stringResource(R.string.habit_step_explanation))
+                                }
                             }
                         )
                     }
@@ -256,7 +274,7 @@ fun AddHabitDialog(
                         if (habitType == HabitType.NUMERIC && stepText.isNotBlank()) parsedStep else 1f
                     )
                 },
-                enabled = name.isNotBlank() && (habitType == HabitType.BOOLEAN || habitType == HabitType.NUMERIC)
+                enabled = name.isNotBlank() && (habitType == HabitType.BOOLEAN || habitType == HabitType.NUMERIC) && (!isTargetInvalid && !isStepInvalid)
             ) { Text(
                 stringResource(
                     if (isEditMode) R.string.edit_habit_save_button
