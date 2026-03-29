@@ -72,7 +72,7 @@ fun NumericWeekBar(
     )
 
     // Minimum and maximum height
-    val maxHeight = 100.dp
+    val maxHeight = 80.dp
     val minVisibleHeight = 15.dp
 
     val barHeight = if (animatedFill > 0f) {

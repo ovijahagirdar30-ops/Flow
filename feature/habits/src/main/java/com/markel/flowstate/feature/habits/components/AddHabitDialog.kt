@@ -80,7 +80,7 @@ fun AddHabitDialog(
             )
         ) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -130,7 +130,7 @@ fun AddHabitDialog(
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically()
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
                         // Unit
                         OutlinedTextField(
                             value = unit,
@@ -141,7 +141,8 @@ fun AddHabitDialog(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                 ) },
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            supportingText = { Text("") }  // Added to make the padding between all text fields the same
                         )
 
                         // Goal
@@ -235,13 +236,13 @@ fun AddHabitDialog(
                         columns = GridCells.Fixed(4),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.height(80.dp)
+                        modifier = Modifier.height(75.dp)
                     ) {
                         items(habitColors) { color ->
                             val isSelected = color == selectedColor
                             Box(
                                 modifier = Modifier
-                                    .size(32.dp)
+                                    .size(28.dp)
                                     .clip(CircleShape)
                                     .background(color)
                                     .then(

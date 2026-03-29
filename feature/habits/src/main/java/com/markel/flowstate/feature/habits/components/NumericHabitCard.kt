@@ -272,7 +272,7 @@ fun NumericHabitCard(
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                     modifier = Modifier
-                        .height(48.dp)
+                        .height(42.dp)
                         .width(120.dp)
                 ) {
                     Row(
@@ -337,7 +337,7 @@ fun NumericHabitCard(
                             contentColor = habitColor
                         ),
                         modifier = Modifier
-                            .size(width = 50.dp, height = 48.dp)
+                            .size(width = 46.dp, height = 42.dp)
                             .graphicsLayer(scaleX = decScale, scaleY = decScale),
                         shape = RoundedCornerShape(
                             topStart = CornerSize(50),
@@ -378,7 +378,7 @@ fun NumericHabitCard(
                             contentColor = habitColor
                         ),
                         modifier = Modifier
-                            .size(width = 50.dp, height = 48.dp)
+                            .size(width = 46.dp, height = 42.dp)
                             .graphicsLayer(scaleX = incScale, scaleY = incScale),
                         shape = RoundedCornerShape(
                             topStart = CornerSize(8.dp),
