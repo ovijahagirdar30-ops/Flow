@@ -9,8 +9,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -260,41 +264,19 @@ fun NumericHabitCard(
                     .fillMaxWidth()
                     .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
             ) {
-                // Decrement button
-                FilledTonalIconButton(
-                    onClick = {
-                        if (selectedDate == today) {
-                            onDecrementToday()
-                        } else {
-                            val currentVal = habitWithStatus.weekValues.getOrNull(selectedDayIndex) ?: 0f
-                            val newVal = maxOf(0f, currentVal - habit.step)
-                            onSetValue(selectedDate, if (newVal > 0f) newVal else null)
-                        }
-                    },
-                    enabled = selectedValue > 0,
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                    ),
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = ImageVector.vectorResource(R.drawable.remove_24px),
-                        contentDescription = "Decrement",
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
                 // Actual value (clickable to edit)
                 Surface(
                     onClick = { showInputDialog = true },
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .height(48.dp)
+                        .width(120.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -325,29 +307,93 @@ fun NumericHabitCard(
                         )
                     }
                 }
-
-                // Increment button
-                FilledTonalIconButton(
-                    onClick = {
-                        if (selectedDate == today) {
-                            onIncrementToday()
-                        } else {
-                            val currentVal = habitWithStatus.weekValues.getOrNull(selectedDayIndex) ?: 0f
-                            val newVal = currentVal + habit.step
-                            onSetValue(selectedDate, newVal)
-                        }
-                    },
-                    colors = IconButtonDefaults.filledTonalIconButtonColors(
-                        containerColor = habitColor.copy(alpha = 0.2f),
-                        contentColor = habitColor
-                    ),
-                    modifier = Modifier.size(40.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = ImageVector.vectorResource(R.drawable.add_24px),
-                        contentDescription = "Increment",
-                        modifier = Modifier.size(20.dp)
+                    val decInteraction = remember { MutableInteractionSource() }
+                    val isDecPressed by decInteraction.collectIsPressedAsState()
+                    val decScale by animateFloatAsState(
+                        targetValue = if (isDecPressed) 0.9f else 1f,
+                        animationSpec = spring(dampingRatio = 0.5f, stiffness = 1200f)
                     )
+
+                    // Decrement button
+                    FilledTonalIconButton(
+                        onClick = {
+                            if (selectedDate == today) {
+                                onDecrementToday()
+                            } else {
+                                val currentVal =
+                                    habitWithStatus.weekValues.getOrNull(selectedDayIndex) ?: 0f
+                                val newVal = maxOf(0f, currentVal - habit.step)
+                                onSetValue(selectedDate, if (newVal > 0f) newVal else null)
+                            }
+                        },
+                        interactionSource = decInteraction,
+                        enabled = selectedValue > 0,
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = habitColor.copy(alpha = 0.60f),
+                            contentColor = habitColor
+                        ),
+                        modifier = Modifier
+                            .size(width = 50.dp, height = 48.dp)
+                            .graphicsLayer(scaleX = decScale, scaleY = decScale),
+                        shape = RoundedCornerShape(
+                            topStart = CornerSize(50),
+                            bottomStart = CornerSize(50),
+                            topEnd = CornerSize(8.dp),
+                            bottomEnd = CornerSize(8.dp)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.remove_24px),
+                            contentDescription = "Decrement",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    val incInteraction = remember { MutableInteractionSource() }
+                    val isIncPressed by incInteraction.collectIsPressedAsState()
+                    val incScale by animateFloatAsState(
+                        targetValue = if (isIncPressed) 0.9f else 1f,
+                        animationSpec = spring(dampingRatio = 0.5f, stiffness = 1200f)
+                    )
+                    // Increment button
+                    FilledTonalIconButton(
+                        onClick = {
+                            if (selectedDate == today) {
+                                onIncrementToday()
+                            } else {
+                                val currentVal =
+                                    habitWithStatus.weekValues.getOrNull(selectedDayIndex) ?: 0f
+                                val newVal = currentVal + habit.step
+                                onSetValue(selectedDate, newVal)
+                            }
+                        },
+                        interactionSource = incInteraction,
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = habitColor.copy(alpha = 0.60f),
+                            contentColor = habitColor
+                        ),
+                        modifier = Modifier
+                            .size(width = 50.dp, height = 48.dp)
+                            .graphicsLayer(scaleX = incScale, scaleY = incScale),
+                        shape = RoundedCornerShape(
+                            topStart = CornerSize(8.dp),
+                            bottomStart = CornerSize(8.dp),
+                            topEnd = CornerSize(50),
+                            bottomEnd = CornerSize(50)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.add_24px),
+                            contentDescription = "Increment",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
 
