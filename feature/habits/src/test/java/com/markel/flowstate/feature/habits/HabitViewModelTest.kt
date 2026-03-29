@@ -53,7 +53,7 @@ class HabitViewModelTest {
         habitRepository = habitRepository,
         getHabitsWithStatus = getHabitsWithStatus,
         insertHabit = insertHabit,
-        deleteHabit = deleteHabit,
+        deleteBooleanHabit = deleteHabit,
         toggleEntry = toggleEntry
     )
 
@@ -318,7 +318,7 @@ class HabitViewModelTest {
         val date = LocalDate.now().minusDays(2)
 
         // WHEN
-        viewModel.toggleHabitOnDate(habitId = 3, date = date)
+        viewModel.toggleBooleanHabitOnDate(habitId = 3, date = date)
 
         // THEN
         coVerify { toggleEntry(3, date) }

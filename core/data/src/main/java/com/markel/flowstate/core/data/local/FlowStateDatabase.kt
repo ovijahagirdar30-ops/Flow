@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, GridOrderEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class ], // List of all tables
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -129,6 +129,12 @@ abstract class FlowStateDatabase : RoomDatabase() {
             )
         """)
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_numeric_entries_habitId` ON `habit_numeric_entries` (`habitId`)")
+            }
+        }
+
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habits ADD COLUMN step REAL NOT NULL DEFAULT 1.0")
             }
         }
     }

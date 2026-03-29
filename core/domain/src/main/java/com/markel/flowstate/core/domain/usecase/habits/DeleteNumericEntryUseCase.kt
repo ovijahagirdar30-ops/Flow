@@ -4,8 +4,10 @@ import com.markel.flowstate.core.domain.HabitRepository
 import java.time.LocalDate
 import javax.inject.Inject
 
-class InsertNumericEntryUseCase @Inject constructor(
+class DeleteNumericEntryUseCase @Inject constructor(
     private val repository: HabitRepository
 ) {
-    suspend operator fun invoke(habitId: Int, value: Float, date: LocalDate) = repository.logNumericEntry(habitId, date, value)
+    suspend operator fun invoke(habitId: Int, date: LocalDate) {
+        repository.deleteNumericEntry(habitId, date)
+    }
 }

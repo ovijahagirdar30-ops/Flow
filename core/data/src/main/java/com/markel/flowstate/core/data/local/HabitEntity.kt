@@ -17,6 +17,7 @@ data class HabitEntity(
     val habitType: String = "BOOLEAN",
     val unit: String? = null,
     val targetValue: Float? = null,
+    val step: Float = 1f,
     val position: Int = 0
 )
 

@@ -43,7 +43,7 @@ class HabitRepositoryImpl @Inject constructor(
     override suspend fun toggleEntry(habitId: Int, date: LocalDate) =
         dao.toggleEntry(habitId, date.toEpochDay())
 
-    override fun getAllEntries(): Flow<List<HabitEntryFlat>> =
+    override fun getAllEntries(): Flow<List<HabitEntryFlat>> =  // boolean habits only
         dao.getAllEntries().map { list ->
             list.map { HabitEntryFlat(it.habitId, it.epochDay) }
         }
@@ -81,6 +81,7 @@ class HabitRepositoryImpl @Inject constructor(
         habitType = HabitType.valueOf(habitType),
         unit = unit,
         targetValue = targetValue,
+        step = step,
         position = position
     )
 
@@ -94,6 +95,7 @@ class HabitRepositoryImpl @Inject constructor(
         habitType = habitType.name,
         unit = unit,
         targetValue = targetValue,
+        step = step,
         position = position
     )
 

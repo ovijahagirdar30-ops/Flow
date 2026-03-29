@@ -14,11 +14,14 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.feature.habits.components.AddHabitDialog
 import com.markel.flowstate.feature.habits.components.HabitCard
 import com.markel.flowstate.feature.habits.components.HabitEmptyState
+import com.markel.flowstate.feature.habits.components.NumericHabitCard
 import com.markel.flowstate.feature.habits.details.components.HabitHeader
 import com.markel.flowstate.feature.habits.details.components.MotivationalMessage
+import java.time.LocalDate
 import com.markel.flowstate.core.designsystem.R as DesignR
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,17 +65,88 @@ fun HabitScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(state.habits, key = { it.habit.id }) { habitWithStatus ->
-                                HabitCard(
-                                    habitWithStatus = habitWithStatus,
-                                    weekEntries = state.weekEntriesByHabit[habitWithStatus.habit.id]
-                                        ?: emptySet(),
-                                    onToggleDay = { date ->
-                                        viewModel.toggleHabitOnDate(habitWithStatus.habit.id, date)
-                                    },
-                                    onDelete = { viewModel.deleteHabit(habitWithStatus.habit) },
-                                    onEdit = { name, icon, colorArgb -> viewModel.editHabit(habitWithStatus.habit, name, icon,colorArgb) },
-                                    onNavigateToDetail = { onNavigateToDetail(habitWithStatus.habit.id) }
-                                )
+                                when (habitWithStatus.habit.habitType) {
+                                    HabitType.BOOLEAN -> {
+                                        HabitCard(
+                                            habitWithStatus = habitWithStatus,
+                                            weekEntries = state.weekEntriesByHabit[habitWithStatus.habit.id]
+                                                ?: emptySet(),
+                                            onToggleDay = { date ->
+                                                viewModel.toggleBooleanHabitOnDate(
+                                                    habitWithStatus.habit.id,
+                                                    date
+                                                )
+                                            },
+                                            onDelete = { viewModel.deleteHabit(habitWithStatus.habit) },
+                                            onEdit = { name, icon, colorArgb ->
+                                                viewModel.editHabit(
+                                                    habitWithStatus.habit,
+                                                    name,
+                                                    icon,
+                                                    colorArgb
+                                                )
+                                            },
+                                            onNavigateToDetail = {
+                                                onNavigateToDetail(
+                                                    habitWithStatus.habit.id
+                                                )
+                                            }
+                                        )
+                                    }
+
+                                    HabitType.NUMERIC -> {
+                                        NumericHabitCard(
+                                            habitWithStatus = habitWithStatus,
+                                            onIncrementToday = {
+                                                viewModel.incrementNumericHabit(
+                                                    habitId = habitWithStatus.habit.id,
+                                                    date = LocalDate.now(),
+                                                    currentValue = habitWithStatus.todayValue,
+                                                    step = habitWithStatus.habit.step
+                                                )
+                                            },
+                                            onDecrementToday = {
+                                                viewModel.decrementNumericHabit(
+                                                    habitId = habitWithStatus.habit.id,
+                                                    date = LocalDate.now(),
+                                                    currentValue = habitWithStatus.todayValue,
+                                                    step = habitWithStatus.habit.step
+                                                )
+                                            },
+                                            onSetValue = { date, value ->
+                                                if (value != null) {
+                                                    viewModel.setNumericValue(
+                                                        habitId = habitWithStatus.habit.id,
+                                                        date = date,
+                                                        value = value
+                                                    )
+                                                } else {
+                                                    viewModel.deleteNumericEntry(
+                                                        habitId = habitWithStatus.habit.id,
+                                                        date = date
+                                                    )
+                                                }
+                                            },
+                                            onDelete = { viewModel.deleteHabit(habitWithStatus.habit) },
+                                            onEdit = { name, icon, colorArgb, unit, targetValue, step ->
+                                                viewModel.editHabit(
+                                                    habitWithStatus.habit,
+                                                    name,
+                                                    icon,
+                                                    colorArgb,
+                                                    unit,
+                                                    targetValue,
+                                                    step
+                                                )
+                                            },
+                                            onNavigateToDetail = {
+                                                onNavigateToDetail(
+                                                    habitWithStatus.habit.id
+                                                )
+                                            }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -81,7 +155,7 @@ fun HabitScreen(
                 if (state.showAddDialog) {
                     AddHabitDialog(
                         onDismiss = { viewModel.hideAddDialog() },
-                        onConfirm = { name, icon, color -> viewModel.addHabit(name, icon, color) }
+                        onConfirm = { name, icon, color,habitType, unit, targetValue, step -> viewModel.addHabit(name, icon, color, habitType, unit, targetValue, step) }
                     )
                 }
 
