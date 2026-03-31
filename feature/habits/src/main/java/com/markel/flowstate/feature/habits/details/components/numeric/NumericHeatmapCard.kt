@@ -191,7 +191,7 @@ fun NumericHeatmapCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Menos",
+                text = stringResource(R.string.habit_heatmap_less),
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -204,12 +204,12 @@ fun NumericHeatmapCard(
                             .size(12.dp)
                             .clip(RoundedCornerShape(2.dp))
                             .background(getHeatmapColor(step, isFuture = false)
-                        )
+                            )
                     )
                 }
             }
             Text(
-                text = "Más",
+                text = stringResource(R.string.habit_heatmap_more),
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

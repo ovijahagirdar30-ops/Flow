@@ -164,8 +164,8 @@ class HabitViewModel @Inject constructor(
                     name = newName,
                     iconName = newIcon,
                     colorArgb = newColorArgb,
-                    unit = newUnit ?: habit.unit,
-                    targetValue = newTargetValue ?: habit.targetValue,
+                    unit = newUnit,
+                    targetValue = newTargetValue,
                     step = newStep ?: habit.step
                 )
             )
