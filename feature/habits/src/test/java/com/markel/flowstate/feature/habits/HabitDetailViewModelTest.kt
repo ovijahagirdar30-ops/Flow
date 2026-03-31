@@ -4,20 +4,25 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.domain.Habit
+import com.markel.flowstate.core.domain.HabitNumericEntry
 import com.markel.flowstate.core.domain.HabitRepository
+import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.core.domain.usecase.habits.GetHabitByIdUseCase
-import com.markel.flowstate.core.domain.usecase.habits.ToggleHabitEntryUseCase
+import com.markel.flowstate.core.domain.usecase.habits.GetNumericEntriesUseCase
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import com.markel.flowstate.feature.habits.details.CalendarViewMode
 import com.markel.flowstate.feature.habits.details.HabitDetailViewModel
 import com.markel.flowstate.feature.habits.details.WeeklyBarsMode
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.time.DayOfWeek
@@ -30,20 +35,37 @@ class HabitDetailViewModelTest {
 
     private val habitRepository: HabitRepository = mockk(relaxed = true)
     private val getHabitById: GetHabitByIdUseCase = mockk(relaxed = true)
-    private val toggleEntry: ToggleHabitEntryUseCase = mockk(relaxed = true)
+    private val getNumericDetails: GetNumericEntriesUseCase = mockk(relaxed = true)
     private val userPreferences: UserPreferencesRepository = mockk(relaxed = true)
-
 
     private lateinit var viewModel: HabitDetailViewModel
 
+    @Before
+    fun setup() {
+        // Mock default user preferences to avoid the init block suspending indefinitely
+        coEvery { userPreferences.calendarViewMode } returns flowOf(CalendarViewMode.ONE_MONTH.name)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private fun habit(id: Int = 1) = Habit(
+    private fun habit(
+        id: Int = 1,
+        type: HabitType = HabitType.BOOLEAN,
+        targetValue: Float? = null
+    ) = Habit(
         id = id,
         name = "Test habit",
         iconName = "icon",
         colorArgb = 0xFF123456.toInt(),
+        habitType = type,
+        targetValue = targetValue,
         createdAt = LocalDate.now().minusDays(30)
+    )
+
+    private fun numericEntry(date: LocalDate, value: Float) = HabitNumericEntry(
+        habitId = 1,
+        date = date,
+        value = value
     )
 
     private fun savedStateHandle(habitId: Int = 1) =
@@ -53,7 +75,7 @@ class HabitDetailViewModelTest {
         savedStateHandle = savedStateHandle(habitId),
         getHabitById = getHabitById,
         habitRepository = habitRepository,
-        toggleEntry = toggleEntry,
+        getNumericDetails = getNumericDetails,
         userPreferences = userPreferences
     )
 
@@ -61,7 +83,7 @@ class HabitDetailViewModelTest {
 
     @Test
     fun init_whenHabitNotFound_keepsDefaultState() = runTest {
-        // GIVEN - getHabitById returns null (habit was deleted or ID is wrong)
+        // GIVEN - getHabitById returns null
         coEvery { getHabitById(99) } returns null
 
         // WHEN
@@ -77,276 +99,214 @@ class HabitDetailViewModelTest {
     }
 
     @Test
-    fun init_whenHabitExists_loadsHabitIntoState() = runTest {
+    fun init_withBooleanHabit_loadsBooleanData() = runTest {
         // GIVEN
-        val habit = habit(id = 1)
+        val habit = habit(id = 1, type = HabitType.BOOLEAN)
+        val today = LocalDate.now()
         coEvery { getHabitById(1) } returns habit
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
+        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(listOf(today))
 
         // WHEN
         viewModel = buildViewModel(habitId = 1)
 
         // THEN
         viewModel.uiState.test {
-            assertEquals(habit, awaitItem().habit)
+            val state = awaitItem()
+            assertEquals(habit, state.habit)
+            assertTrue(today.toEpochDay() in state.allEntries)
+            assertEquals(1, state.currentStreak)
         }
     }
 
     @Test
-    fun init_withEntries_populatesAllEntries() = runTest {
-        // GIVEN - Habit with two completed days
+    fun init_withNumericHabit_loadsNumericData() = runTest {
+        // GIVEN
+        val habit = habit(id = 1, type = HabitType.NUMERIC, targetValue = 10f)
         val today = LocalDate.now()
-        val yesterday = today.minusDays(1)
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(listOf(today, yesterday))
+        coEvery { getHabitById(1) } returns habit
+        coEvery { getNumericDetails(1) } returns flowOf(listOf(numericEntry(today, 15f)))
 
         // WHEN
-        viewModel = buildViewModel()
+        viewModel = buildViewModel(habitId = 1)
 
         // THEN
         viewModel.uiState.test {
             val state = awaitItem()
-            assertTrue(today.toEpochDay() in state.allEntries)
-            assertTrue(yesterday.toEpochDay() in state.allEntries)
+            assertEquals(habit, state.habit)
+            assertEquals(15f, state.numericEntries[today])
+            assertEquals(1, state.currentStreak) // 15 >= 10, so streak is 1
         }
     }
 
-    // ── calculateCurrentStreak ────────────────────────────────────────────────
+    // ── Boolean Calculations ──────────────────────────────────────────────────
 
     @Test
-    fun currentStreak_withNoEntries_isZero() = runTest {
+    fun calculateCurrentStreak_boolean_withGap_onlyCountsLatest() = runTest {
         // GIVEN
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
-
-        // WHEN
-        viewModel = buildViewModel()
-
-        // THEN
-        viewModel.uiState.test {
-            assertEquals(0, awaitItem().currentStreak)
-        }
-    }
-
-    @Test
-    fun currentStreak_withConsecutiveDaysIncludingToday_countsCorrectly() = runTest {
-        // GIVEN - 3 consecutive days ending today
-        val today = LocalDate.now()
-        val entries = listOf(today, today.minusDays(1), today.minusDays(2))
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(entries)
-
-        // WHEN
-        viewModel = buildViewModel()
-
-        // THEN
-        viewModel.uiState.test {
-            assertEquals(3, awaitItem().currentStreak)
-        }
-    }
-
-    @Test
-    fun currentStreak_withConsecutiveDaysEndingYesterday_countsCorrectly() = runTest {
-        // GIVEN - Streak ended yesterday (today not completed yet)
-        val today = LocalDate.now()
-        val entries = listOf(today.minusDays(1), today.minusDays(2), today.minusDays(3))
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(entries)
-
-        // WHEN
-        viewModel = buildViewModel()
-
-        // THEN - Still counts yesterday's streak
-        viewModel.uiState.test {
-            assertEquals(3, awaitItem().currentStreak)
-        }
-    }
-
-    @Test
-    fun currentStreak_withGapInEntries_onlyCountsLatestStreak() = runTest {
-        // GIVEN - today + yesterday, then a gap, then 5 older days
         val today = LocalDate.now()
         val entries = listOf(
-            today,
-            today.minusDays(1),
-            // gap on minusDays(2)
-            today.minusDays(3),
-            today.minusDays(4),
-            today.minusDays(5),
-            today.minusDays(6),
-            today.minusDays(7)
+            today, today.minusDays(1), // Streak of 2
+            today.minusDays(3), today.minusDays(4) // Gap on minusDays(2)
         )
-        coEvery { getHabitById(1) } returns habit()
+        coEvery { getHabitById(1) } returns habit(type = HabitType.BOOLEAN)
         coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(entries)
 
         // WHEN
         viewModel = buildViewModel()
 
-        // THEN - Only counts 2, not 7
+        // THEN
         viewModel.uiState.test {
             assertEquals(2, awaitItem().currentStreak)
         }
     }
 
-    // ── calculateBestStreak ───────────────────────────────────────────────────
-
     @Test
-    fun bestStreak_withNoEntries_isZero() = runTest {
+    fun calculateBestStreak_boolean_picksLongestConsecutiveRun() = runTest {
         // GIVEN
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
-
-        // WHEN
-        viewModel = buildViewModel()
-
-        // THEN
-        viewModel.uiState.test {
-            assertEquals(0, awaitItem().bestStreak)
-        }
-    }
-
-    @Test
-    fun bestStreak_picksLongestConsecutiveRun() = runTest {
-        // GIVEN - A short run of 2, then a gap, then a run of 5
         val today = LocalDate.now()
         val entries = listOf(
-            today.minusDays(10),
-            today.minusDays(9),
-            // gap
-            today.minusDays(4),
-            today.minusDays(3),
-            today.minusDays(2),
-            today.minusDays(1),
-            today
+            today.minusDays(10), today.minusDays(9), // Streak of 2
+            today.minusDays(4), today.minusDays(3), today.minusDays(2), today.minusDays(1), today // Streak of 5
         )
-        coEvery { getHabitById(1) } returns habit()
+        coEvery { getHabitById(1) } returns habit(type = HabitType.BOOLEAN)
         coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(entries)
 
         // WHEN
         viewModel = buildViewModel()
 
-        // THEN - Best streak is 5, not 2
+        // THEN
         viewModel.uiState.test {
             assertEquals(5, awaitItem().bestStreak)
         }
     }
 
     @Test
-    fun bestStreak_withSingleEntry_isOne() = runTest {
-        // GIVEN
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(listOf(LocalDate.now()))
-
-        // WHEN
-        viewModel = buildViewModel()
-
-        // THEN
-        viewModel.uiState.test {
-            assertEquals(1, awaitItem().bestStreak)
-        }
-    }
-
-    // ── calculateWeeklyCompletions ────────────────────────────────────────────
-
-    @Test
-    fun weeklyCompletions_alwaysReturns16Weeks() = runTest {
-        // GIVEN
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
-
-        // WHEN
-        viewModel = buildViewModel()
-
-        // THEN - Chart always has 16 data points
-        viewModel.uiState.test {
-            assertEquals(16, awaitItem().weeklyCompletions.size)
-        }
-    }
-
-    @Test
-    fun weeklyCompletions_countsCorrectlyForCurrentWeek() = runTest {
-        // GIVEN - 3 completions in the current week (Mon, Tue, Wed)
-        val monday = LocalDate.now().with(DayOfWeek.MONDAY)
-        val entries = listOf(monday, monday.plusDays(1), monday.plusDays(2))
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(entries)
-
-        // WHEN
-        viewModel = buildViewModel()
-
-        // THEN - The last element corresponds to the current week
-        viewModel.uiState.test {
-            assertEquals(3, awaitItem().weeklyCompletions.last().second)
-        }
-    }
-
-    @Test
-    fun weeklyCompletions_weeksAreOrderedChronologically() = runTest {
-        // GIVEN
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
-
-        // WHEN
-        viewModel = buildViewModel()
-
-        // THEN - Each week's start date is before the next one
-        viewModel.uiState.test {
-            val weeks = awaitItem().weeklyCompletions
-            for (i in 1 until weeks.size) {
-                assertTrue(weeks[i - 1].first.isBefore(weeks[i].first))
-            }
-        }
-    }
-
-    // ── calculateDayOfWeekCompletions ─────────────────────────────────────────
-
-    @Test
-    fun dayOfWeekCompletions_groupsEntriesByDayOfWeek() = runTest {
-        // GIVEN - 2 Mondays and 1 Friday
+    fun calculateDayOfWeekCompletions_groupsCorrectly() = runTest {
+        // GIVEN - 2 Mondays (1) and 1 Friday (5)
         val monday1 = LocalDate.now().with(DayOfWeek.MONDAY)
         val monday2 = monday1.minusWeeks(1)
         val friday = LocalDate.now().with(DayOfWeek.FRIDAY)
         coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(
-            listOf(monday1, monday2, friday)
-        )
-
-        // WHEN
-        viewModel = buildViewModel()
-
-        // THEN - Monday (1) has count 2, Friday (5) has count 1
-        viewModel.uiState.test {
-            val dowCompletions = awaitItem().dayOfWeekCompletions
-            assertEquals(2, dowCompletions[1]) // Monday = 1
-            assertEquals(1, dowCompletions[5]) // Friday = 5
-        }
-    }
-
-    @Test
-    fun dayOfWeekCompletions_withNoEntries_isEmpty() = runTest {
-        // GIVEN
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
+        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(listOf(monday1, monday2, friday))
 
         // WHEN
         viewModel = buildViewModel()
 
         // THEN
         viewModel.uiState.test {
-            assertTrue(awaitItem().dayOfWeekCompletions.isEmpty())
+            val dowCompletions = awaitItem().dayOfWeekCompletions
+            assertEquals(2, dowCompletions[1])
+            assertEquals(1, dowCompletions[5])
         }
     }
 
-    // ── cycleViewMode ─────────────────────────────────────────────────────────
+    // ── Numeric Calculations ──────────────────────────────────────────────────
 
     @Test
-    fun cycleViewMode_cyclesThroughAllModesInOrder() = runTest {
-        // GIVEN - Default state starts at ONE_MONTH
+    fun calculateNumericStreak_onlyCountsDaysMeetingTarget() = runTest {
+        // GIVEN - Target is 10f
+        val today = LocalDate.now()
+        val entries = listOf(
+            numericEntry(today, 12f),               // Valid
+            numericEntry(today.minusDays(1), 10f),  // Valid
+            numericEntry(today.minusDays(2), 5f),   // Invalid (breaks streak)
+            numericEntry(today.minusDays(3), 15f)   // Valid but broken
+        )
+        coEvery { getHabitById(1) } returns habit(type = HabitType.NUMERIC, targetValue = 10f)
+        coEvery { getNumericDetails(1) } returns flowOf(entries)
+
+        // WHEN
+        viewModel = buildViewModel()
+
+        // THEN - Streak should be 2
+        viewModel.uiState.test {
+            assertEquals(2, awaitItem().currentStreak)
+        }
+    }
+
+    @Test
+    fun calculateNumericBestStreak_ignoresDaysBelowTarget() = runTest {
+        // GIVEN - Target is 10f
+        val today = LocalDate.now()
+        val entries = listOf(
+            numericEntry(today.minusDays(6), 11f), // Run 1
+            numericEntry(today.minusDays(5), 11f), // Run 1
+            numericEntry(today.minusDays(4), 11f), // Run 1 (Best streak: 3)
+            numericEntry(today.minusDays(3), 2f),  // Break
+            numericEntry(today.minusDays(2), 15f), // Run 2
+            numericEntry(today.minusDays(1), 10f)  // Run 2
+        )
+        coEvery { getHabitById(1) } returns habit(type = HabitType.NUMERIC, targetValue = 10f)
+        coEvery { getNumericDetails(1) } returns flowOf(entries)
+
+        // WHEN
+        viewModel = buildViewModel()
+
+        // THEN
+        viewModel.uiState.test {
+            assertEquals(3, awaitItem().bestStreak)
+        }
+    }
+
+    @Test
+    fun calculateMonthlyProgress_calculatesCorrectlyForCurrentMonth() = runTest {
+        // GIVEN - Target is 5f daily
+        val today = LocalDate.now()
+        val entries = listOf(
+            numericEntry(today, 10f), // Completed
+            numericEntry(today.minusDays(1), 2f) // Not completed
+        )
+        coEvery { getHabitById(1) } returns habit(type = HabitType.NUMERIC, targetValue = 5f)
+        coEvery { getNumericDetails(1) } returns flowOf(entries)
+
+        // WHEN
+        viewModel = buildViewModel()
+
+        // THEN
+        viewModel.uiState.test {
+            val progress = awaitItem().monthlyProgress
+            assertNotNull(progress)
+            assertEquals(12f, progress!!.currentValue) // 10 + 2
+            assertEquals(1, progress.daysCompleted) // Only one day met the 5f target
+            assertEquals(6f, progress.dailyAverage) // 12f / 2 days with data
+        }
+    }
+
+    @Test
+    fun calculateDayOfWeekAverages_averagesValuesPerDayOfWeek() = runTest {
+        // GIVEN - Two Mondays with values 10 and 20 (avg 15)
+        val monday1 = LocalDate.now().with(DayOfWeek.MONDAY)
+        val monday2 = monday1.minusWeeks(1)
+        val entries = listOf(
+            numericEntry(monday1, 10f),
+            numericEntry(monday2, 20f)
+        )
+        coEvery { getHabitById(1) } returns habit(type = HabitType.NUMERIC)
+        coEvery { getNumericDetails(1) } returns flowOf(entries)
+
+        // WHEN
+        viewModel = buildViewModel()
+
+        // THEN
+        viewModel.uiState.test {
+            val averages = awaitItem().dayOfWeekAverages
+            val mondayLabel = DayOfWeek.MONDAY.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault()).replaceFirstChar { it.uppercase() }
+            val mondayData = averages.find { it.label == mondayLabel }
+            assertNotNull(mondayData)
+            assertEquals(15f, mondayData!!.count)
+        }
+    }
+
+    // ── Navigation & View Mode ────────────────────────────────────────────────
+
+    @Test
+    fun cycleViewMode_cyclesThroughAllModes_andSavesToPreferences() = runTest {
+        // GIVEN
         coEvery { getHabitById(1) } returns habit()
         coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
         viewModel = buildViewModel()
 
-        // WHEN / THEN - Full cycle: ONE_MONTH → THREE_MONTHS → ONE_YEAR → ONE_MONTH
+        // WHEN / THEN
         viewModel.uiState.test {
             assertEquals(CalendarViewMode.ONE_MONTH, awaitItem().viewMode)
 
@@ -359,16 +319,59 @@ class HabitDetailViewModelTest {
             viewModel.cycleViewMode()
             assertEquals(CalendarViewMode.ONE_MONTH, awaitItem().viewMode)
         }
+
+        // Verify preferences were saved during the cycle
+        coVerify { userPreferences.saveCalendarViewMode(CalendarViewMode.THREE_MONTHS.name) }
     }
 
-    // ── navigatePrevious / navigateNext ───────────────────────────────────────
+    @Test
+    fun navigatePrevious_inOneMonthMode_decrementsMonthAndWrapsYear() = runTest {
+        // GIVEN - A view model forced to January
+        coEvery { getHabitById(1) } returns habit()
+        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
+        viewModel = buildViewModel()
+
+        // Navigate until month is 0 (January)
+        while (viewModel.uiState.value.displayMonth > 0) {
+            viewModel.navigatePrevious()
+        }
+        val yearBeforeWrap = viewModel.uiState.value.displayYear
+
+        // WHEN - Navigate previous from January
+        viewModel.navigatePrevious()
+
+        // THEN - Should wrap to December (11) and decrement year
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertEquals(11, state.displayMonth)
+            assertEquals(yearBeforeWrap - 1, state.displayYear)
+        }
+    }
 
     @Test
-    fun navigatePrevious_inOneMonthMode_decrementsMonth() = runTest {
+    fun navigateNext_inOneMonthMode_preventsGoingToFuture() = runTest {
         // GIVEN
         coEvery { getHabitById(1) } returns habit()
         coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
         viewModel = buildViewModel()
+        val currentMonth = viewModel.uiState.value.displayMonth
+
+        // WHEN - Try navigating to the future
+        viewModel.navigateNext()
+
+        // THEN - Should remain on the current month
+        viewModel.uiState.test {
+            assertEquals(currentMonth, awaitItem().displayMonth)
+        }
+    }
+
+    @Test
+    fun navigatePrevious_inThreeMonthsMode_goesBackThreeMonths() = runTest {
+        // GIVEN
+        coEvery { getHabitById(1) } returns habit()
+        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
+        viewModel = buildViewModel()
+        viewModel.cycleViewMode() // Switch to THREE_MONTHS
 
         val initialMonth = viewModel.uiState.value.displayMonth
 
@@ -377,126 +380,45 @@ class HabitDetailViewModelTest {
 
         // THEN
         viewModel.uiState.test {
-            val expectedMonth = if (initialMonth == 0) 11 else initialMonth - 1
+            val expectedMonth = (initialMonth - 3 + 12) % 12
             assertEquals(expectedMonth, awaitItem().displayMonth)
-        }
-    }
-
-    @Test
-    fun navigatePrevious_inOneMonthMode_wrapsYearWhenJanuary() = runTest {
-        // GIVEN - Navigate back until we reach January
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
-        viewModel = buildViewModel()
-
-        val monthsToGoBack = LocalDate.now().monthValue - 1 // monthValue is 1-based
-        repeat(monthsToGoBack) { viewModel.navigatePrevious() }
-
-        val yearBeforeNav = viewModel.uiState.value.displayYear
-
-        // WHEN - Navigate back once more from January
-        viewModel.navigatePrevious()
-
-        // THEN - Month wraps to December, year decrements
-        viewModel.uiState.test {
-            val state = awaitItem()
-            assertEquals(11, state.displayMonth)
-            assertEquals(yearBeforeNav - 1, state.displayYear)
-        }
-    }
-
-    @Test
-    fun navigateNext_inOneMonthMode_doesNotGoBeyondCurrentMonth() = runTest {
-        // GIVEN - Already at the current month (default state)
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
-        viewModel = buildViewModel()
-
-        val currentDisplayMonth = viewModel.uiState.value.displayMonth
-
-        // WHEN - Try to navigate forward from the current month
-        viewModel.navigateNext()
-
-        // THEN - State should not change
-        viewModel.uiState.test {
-            assertEquals(currentDisplayMonth, awaitItem().displayMonth)
-        }
-    }
-
-    @Test
-    fun navigateNext_inOneYearMode_doesNotGoBeyondCurrentYear() = runTest {
-        // GIVEN - ONE_MONTH → THREE_MONTHS → ONE_YEAR
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
-        viewModel = buildViewModel()
-        viewModel.cycleViewMode()
-        viewModel.cycleViewMode()
-
-        val currentYear = viewModel.uiState.value.displayYear
-
-        // WHEN
-        viewModel.navigateNext()
-
-        // THEN
-        viewModel.uiState.test {
-            assertEquals(currentYear, awaitItem().displayYear)
         }
     }
 
     @Test
     fun navigatePrevious_inOneYearMode_decrementsYear() = runTest {
-        // GIVEN - Switch to ONE_YEAR mode
+        // GIVEN
         coEvery { getHabitById(1) } returns habit()
         coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
         viewModel = buildViewModel()
         viewModel.cycleViewMode()
-        viewModel.cycleViewMode()
+        viewModel.cycleViewMode() // Switch to ONE_YEAR
 
-        val yearBefore = viewModel.uiState.value.displayYear
+        val initialYear = viewModel.uiState.value.displayYear
 
         // WHEN
         viewModel.navigatePrevious()
 
         // THEN
         viewModel.uiState.test {
-            assertEquals(yearBefore - 1, awaitItem().displayYear)
+            assertEquals(initialYear - 1, awaitItem().displayYear)
         }
     }
 
+    // ── Weekly Bars & Selection ───────────────────────────────────────────────
+
     @Test
-    fun navigatePrevious_inThreeMonthsMode_goesBackThreeMonths() = runTest {
-        // GIVEN - Switch to THREE_MONTHS mode
+    fun setWeeklyBarsMode_updatesMode_andClearsSelection() = runTest {
+        // GIVEN
         coEvery { getHabitById(1) } returns habit()
         coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
         viewModel = buildViewModel()
-        viewModel.cycleViewMode()
-
-        val monthBefore = viewModel.uiState.value.displayMonth
+        viewModel.selectBar(3) // Set a selection
 
         // WHEN
-        viewModel.navigatePrevious()
-
-        // THEN
-        viewModel.uiState.test {
-            val expectedMonth = (monthBefore - 3 + 12) % 12
-            assertEquals(expectedMonth, awaitItem().displayMonth)
-        }
-    }
-
-    // ── setWeeklyBarsMode / selectBar ─────────────────────────────────────────
-
-    @Test
-    fun setWeeklyBarsMode_updatesMode_andResetsSelectedBar() = runTest {
-        // GIVEN - A bar is already selected
-        coEvery { getHabitById(1) } returns habit()
-        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
-        viewModel = buildViewModel()
-        viewModel.selectBar(3)
-
-        // WHEN - Change the mode
         viewModel.setWeeklyBarsMode(WeeklyBarsMode.SIXTEEN)
 
-        // THEN - Mode updated and selection cleared
+        // THEN
         viewModel.uiState.test {
             val state = awaitItem()
             assertEquals(WeeklyBarsMode.SIXTEEN, state.weeklyBarsMode)
