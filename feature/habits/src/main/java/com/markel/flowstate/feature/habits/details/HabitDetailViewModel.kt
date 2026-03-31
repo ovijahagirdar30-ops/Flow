@@ -4,8 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.domain.Habit
+import com.markel.flowstate.core.domain.HabitNumericEntry
 import com.markel.flowstate.core.domain.HabitRepository
+import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.core.domain.usecase.habits.GetHabitByIdUseCase
+import com.markel.flowstate.core.domain.usecase.habits.GetNumericEntriesUseCase
 import com.markel.flowstate.core.domain.usecase.habits.ToggleHabitEntryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,15 +19,19 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.TextStyle
 import java.time.temporal.IsoFields
+import java.util.Locale
 import javax.inject.Inject
+import kotlin.math.ceil
 
 @HiltViewModel
 class HabitDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getHabitById: GetHabitByIdUseCase,
     private val habitRepository: HabitRepository,
-    private val toggleEntry: ToggleHabitEntryUseCase,
+    private val getNumericDetails: GetNumericEntriesUseCase,
     private val userPreferences: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -42,28 +50,56 @@ class HabitDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             val habit = getHabitById(habitId) ?: return@launch
-            habitRepository.getEntriesForHabit(habitId).collect { entries ->
-                val epochDays = entries.map { it.toEpochDay() }.toSet()
-                _uiState.update { state ->
-                    state.copy(
-                        habit = habit,
-                        allEntries = epochDays,
-                        currentStreak = calculateCurrentStreak(epochDays),
-                        bestStreak = calculateBestStreak(epochDays),
-                        weeklyCompletions = calculateWeeklyCompletions(epochDays),
-                        dayOfWeekCompletions = calculateDayOfWeekCompletions(entries)
-                    )
-                }
+            _uiState.update { it.copy(habit = habit) }
+
+            if (habit.habitType == HabitType.BOOLEAN) {
+                loadBooleanHabitData()
+            } else {
+                loadNumericHabitData()
             }
         }
     }
 
+    private suspend fun loadBooleanHabitData() {
+        habitRepository.getEntriesForHabit(habitId).collect { entries ->
+            val epochDays = entries.map { it.toEpochDay() }.toSet()
+            _uiState.update { state ->
+                state.copy(
+                    allEntries = epochDays,
+                    currentStreak = calculateCurrentStreak(epochDays),
+                    bestStreak = calculateBestStreak(epochDays),
+                    weeklyCompletions = calculateWeeklyCompletions(epochDays),
+                    dayOfWeekCompletions = calculateDayOfWeekCompletions(entries)
+                )
+            }
+        }
+    }
+
+    private suspend fun loadNumericHabitData() {
+        getNumericDetails(habitId).collect { entries ->
+            val entriesMap = entries.associate { it.date to it.value }
+
+            _uiState.update { state ->
+                state.copy(
+                    numericEntries = entriesMap,
+                    dailyValues = calculateDailyValues(entries),
+                    monthlyProgress = calculateMonthlyProgress(entries, state.habit),
+                    heatmapData = calculateHeatmapData(entries),
+                    dayOfWeekAverages = calculateDayOfWeekAverages(entries),
+                    currentStreak = calculateNumericStreak(entries, state.habit?.targetValue),
+                    bestStreak = calculateNumericBestStreak(entries, state.habit?.targetValue)
+                )
+            }
+        }
+    }
+
+
     fun cycleViewMode() {
         _uiState.update { state ->
             val next = when (state.viewMode) {
-                CalendarViewMode.ONE_MONTH    -> CalendarViewMode.THREE_MONTHS
+                CalendarViewMode.ONE_MONTH -> CalendarViewMode.THREE_MONTHS
                 CalendarViewMode.THREE_MONTHS -> CalendarViewMode.ONE_YEAR
-                CalendarViewMode.ONE_YEAR     -> CalendarViewMode.ONE_MONTH
+                CalendarViewMode.ONE_YEAR -> CalendarViewMode.ONE_MONTH
             }
             state.copy(viewMode = next)
         }
@@ -135,7 +171,7 @@ class HabitDetailViewModel @Inject constructor(
         _uiState.update { it.copy(selectedBarIndex = index) }
     }
 
-    // ── Calculations ─────────────────────────────────────────────────────
+    // ── Calculations for Boolean Habits ─────────────────────────────────────────────────────
 
     private fun calculateCurrentStreak(epochDays: Set<Long>): Int {
         if (epochDays.isEmpty()) return 0
@@ -179,4 +215,143 @@ class HabitDetailViewModel @Inject constructor(
         }
         return counts
     }
+
+
+    // ── Calculations for Numeric Habits ─────────────────────────────────────
+
+    private fun calculateDailyValues(entries: List<HabitNumericEntry>): List<Pair<LocalDate, Float>> {
+        val today = LocalDate.now()
+        val days = 10
+        val entriesMap = entries.associateBy { it.date }
+
+        return (days - 1 downTo 0).map { daysAgo ->
+            val date = today.minusDays(daysAgo.toLong())
+            val value = entriesMap[date]?.value ?: 0f
+            Pair(date, value)
+        }
+    }
+
+    private fun calculateMonthlyProgress(
+        entries: List<HabitNumericEntry>,
+        habit: Habit?
+    ): MonthlyProgress? {
+        habit ?: return null
+        val now = LocalDate.now()
+        val yearMonth = YearMonth.from(now)
+        val monthStart = yearMonth.atDay(1)
+
+        val monthEntriesByDate = entries
+            .filter { it.date.year == now.year && it.date.monthValue == now.monthValue }
+            .groupBy { it.date }
+
+        val dailyValues = monthEntriesByDate.values
+            .mapNotNull { dayEntries ->
+                dayEntries.maxByOrNull { it.value }?.value
+            }
+
+        val currentValue = dailyValues.sum()
+        val daysWithData = monthEntriesByDate.size
+        val daysCompleted = monthEntriesByDate.count { (_, dayEntries) ->
+            val dailyTotal = dayEntries.sumOf { it.value.toDouble() }.toFloat()
+            dailyTotal >= (habit.targetValue ?: 0f)
+        }
+        val totalDays = yearMonth.lengthOfMonth()
+        val dailyAverage = if (daysWithData > 0) currentValue / daysWithData else 0f
+
+        val monthName = now.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
+            .replaceFirstChar { it.uppercase() }
+
+        val monthTarget = habit.targetValue?.let { it * totalDays }
+
+        val deficit = monthTarget?.let { target ->
+            val remaining = target - currentValue
+            if (remaining > 0) remaining else null
+        }
+
+        return MonthlyProgress(
+            month = monthName,
+            currentValue = currentValue,
+            targetValue = monthTarget,
+            daysCompleted = daysCompleted,
+            totalDays = totalDays,
+            dailyAverage = dailyAverage,
+            deficit = deficit
+        )
+    }
+
+    private fun calculateDayOfWeekAverages(entries: List<HabitNumericEntry>): List<ValueRange> {
+        if (entries.isEmpty()) return emptyList()
+        val daysOfWeek = DayOfWeek.entries.toTypedArray()
+
+        return daysOfWeek.map { dow ->
+            val entriesForDay = entries.filter { it.date.dayOfWeek == dow }
+            println(entriesForDay)
+            val average = if (entriesForDay.isNotEmpty()) {
+                entriesForDay.map { it.value }.average().toFloat()
+            } else 0f
+
+            val label = dow.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault())
+                .replaceFirstChar { it.uppercase() }
+
+            ValueRange(
+                label = label,
+                count = average,
+                range = average..average
+            )
+        }
+    }
+
+    private fun calculateHeatmapData(entries: List<HabitNumericEntry>): Map<LocalDate, Float> {
+        val today = LocalDate.now()
+        val weeksAgo = 17
+        val startDate = today.with(DayOfWeek.MONDAY).minusWeeks(weeksAgo.toLong())
+
+        return entries
+            .filter { !it.date.isBefore(startDate) && !it.date.isAfter(today) }
+            .associate { it.date to it.value }
+    }
+
+    private fun calculateNumericStreak(
+        entries: List<HabitNumericEntry>,
+        targetValue: Float?
+    ): Int {
+        if (entries.isEmpty()) return 0
+        val validDays = entries
+            .filter { targetValue == null || it.value >= targetValue }
+            .map { it.date.toEpochDay() }
+            .toSortedSet(reverseOrder())
+
+        var streak = 0
+        var expected = LocalDate.now().toEpochDay()
+        if (expected !in validDays) expected--
+        while (expected in validDays) {
+            streak++
+            expected--
+        }
+        return streak
+    }
+
+    private fun calculateNumericBestStreak(
+        entries: List<HabitNumericEntry>,
+        targetValue: Float?
+    ): Int {
+        if (entries.isEmpty()) return 0
+        val validDays = entries
+            .filter { targetValue == null || it.value >= targetValue }
+            .map { it.date.toEpochDay() }
+            .sorted()
+
+        if (validDays.isEmpty()) return 0
+
+        var best = 1
+        var current = 1
+        for (i in 1 until validDays.size) {
+            if (validDays[i] == validDays[i - 1] + 1) {
+                current++
+                if (current > best) best = current
+            } else current = 1
+        }
+        return best
+    }
+
 }

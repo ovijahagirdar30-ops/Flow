@@ -46,6 +46,7 @@ data class HabitEntryFlatEntity(val habitId: Int, val epochDay: Long)
 
 @Entity(
     tableName = "habit_numeric_entries",
+    primaryKeys = ["habitId", "epochDay"],
     foreignKeys = [ForeignKey(
         entity = HabitEntity::class,
         parentColumns = ["id"],
@@ -55,7 +56,6 @@ data class HabitEntryFlatEntity(val habitId: Int, val epochDay: Long)
     indices = [Index(value = ["habitId"])]
 )
 data class HabitNumericEntryEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val habitId: Int,
     val epochDay: Long,
     val value: Float

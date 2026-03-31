@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, GridOrderEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class ], // List of all tables
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -135,6 +135,36 @@ abstract class FlowStateDatabase : RoomDatabase() {
         val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE habits ADD COLUMN step REAL NOT NULL DEFAULT 1.0")
+            }
+        }
+
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create new table with the correct primary key
+                db.execSQL("""
+                    CREATE TABLE habit_numeric_entries_new (
+                        habitId INTEGER NOT NULL,
+                        epochDay INTEGER NOT NULL,
+                        value REAL NOT NULL,
+                        PRIMARY KEY(habitId, epochDay),
+                        FOREIGN KEY(habitId) REFERENCES habits(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+
+                // Insert previous data avoiding duplicates
+                // We use MAX(id) to get the most recent entry
+                db.execSQL("""
+                    INSERT OR REPLACE INTO habit_numeric_entries_new (habitId, epochDay, value)
+                    SELECT habitId, epochDay, value FROM habit_numeric_entries
+                    WHERE id IN (SELECT MAX(id) FROM habit_numeric_entries GROUP BY habitId, epochDay)
+                """.trimIndent())
+
+                // Delete the old table and rename
+                db.execSQL("DROP TABLE habit_numeric_entries")
+                db.execSQL("ALTER TABLE habit_numeric_entries_new RENAME TO habit_numeric_entries")
+
+                // Recreate the index
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_numeric_entries_habitId` ON `habit_numeric_entries` (`habitId`)")
             }
         }
     }
