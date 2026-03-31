@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 12,
-    "identityHash": "dbe9a1eab0fae99af22e4dbea646b45f",
+    "version": 14,
+    "identityHash": "35f94c158d5284e950885739b7a9b5b0",
     "entities": [
       {
         "tableName": "tasks",
@@ -445,14 +445,8 @@
       },
       {
         "tableName": "habit_numeric_entries",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `habitId` INTEGER NOT NULL, `epochDay` INTEGER NOT NULL, `value` REAL NOT NULL, FOREIGN KEY(`habitId`) REFERENCES `habits`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`habitId` INTEGER NOT NULL, `epochDay` INTEGER NOT NULL, `value` REAL NOT NULL, PRIMARY KEY(`habitId`, `epochDay`), FOREIGN KEY(`habitId`) REFERENCES `habits`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
           {
             "fieldPath": "habitId",
             "columnName": "habitId",
@@ -473,9 +467,10 @@
           }
         ],
         "primaryKey": {
-          "autoGenerate": true,
+          "autoGenerate": false,
           "columnNames": [
-            "id"
+            "habitId",
+            "epochDay"
           ]
         },
         "indices": [
@@ -506,7 +501,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'dbe9a1eab0fae99af22e4dbea646b45f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '35f94c158d5284e950885739b7a9b5b0')"
     ]
   }
 }

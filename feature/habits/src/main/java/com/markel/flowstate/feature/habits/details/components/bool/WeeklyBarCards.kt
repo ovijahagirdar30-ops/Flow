@@ -1,4 +1,4 @@
-package com.markel.flowstate.feature.habits.details.components
+package com.markel.flowstate.feature.habits.details.components.bool
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

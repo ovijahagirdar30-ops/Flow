@@ -15,6 +15,7 @@ data class Habit(
     val habitType: HabitType = HabitType.BOOLEAN,
     val unit: String? = null,
     val targetValue: Float? = null,
+    val step: Float = 1f,
     val position: Int = 0
 )
 

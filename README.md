@@ -19,6 +19,7 @@
   <br>
   <img src="screenshots/habits_prev.png" width="31%" />
   <img src="screenshots/habits_details.png" width="31%" />
+  <img src="screenshots/habits_numeric_details.png" width="31%" />
 </div>
 
 ## Features

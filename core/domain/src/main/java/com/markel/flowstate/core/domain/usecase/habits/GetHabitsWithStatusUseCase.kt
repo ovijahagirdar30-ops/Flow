@@ -97,8 +97,11 @@ class GetHabitsWithStatusUseCase @Inject constructor(
                         }
 
                         // Completed if there is a value today and is bigger than the goal (or simply have a value without goal)
-                        val isCompletedToday = todayValue != null &&
-                                (habit.targetValue == null || todayValue >= habit.targetValue)
+                        val isCompletedToday = when {
+                            todayValue == null -> false
+                            habit.targetValue != null -> todayValue >= habit.targetValue
+                            else -> todayValue > 0f
+                        }
 
                         val streak = calculateNumericStreak(entries, habit.targetValue, date)
 

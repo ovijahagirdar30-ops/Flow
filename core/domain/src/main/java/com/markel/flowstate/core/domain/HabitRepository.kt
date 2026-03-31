@@ -10,7 +10,7 @@ interface HabitRepository {
     suspend fun updateHabit(habit: Habit)
     suspend fun deleteHabit(habit: Habit)
     suspend fun toggleEntry(habitId: Int, date: LocalDate)
-    fun getAllEntries(): Flow<List<HabitEntryFlat>>
+    fun getAllEntries(): Flow<List<HabitEntryFlat>>  // boolean entries only
     suspend fun getHabitById(id: Int): Habit?
     fun getNumericEntries(habitId: Int): Flow<List<HabitNumericEntry>>
     suspend fun logNumericEntry(habitId: Int, date: LocalDate, value: Float)
