@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.format.TextStyle
 
 @Composable
@@ -34,13 +35,15 @@ fun NumericWeekBar(
     targetValue: Float?,
     scaleReference: Float,
     color: Color,
-    dayOfWeek: DayOfWeek,
+    date: LocalDate,
     isToday: Boolean,
     isFuture: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dayOfWeek = date.dayOfWeek
+
     // Calculate bar height
     val fillRatio = when {
         value == null || value == 0f -> 0f
@@ -128,17 +131,25 @@ fun NumericWeekBar(
         Spacer(modifier = Modifier.height(4.dp))
 
         // Day label
-        Text(
-            text = dayOfWeek.getDisplayName(TextStyle.SHORT, LocalLocale.current.platformLocale).uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-            color = when {
-                isSelected && !isFuture -> color
-                isToday -> MaterialTheme.colorScheme.primary
-                isFuture -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                else -> MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            fontSize = 11.sp
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = dayOfWeek.getDisplayName(TextStyle.SHORT, LocalLocale.current.platformLocale).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                color = when {
+                    isSelected && !isFuture -> color
+                    isToday -> MaterialTheme.colorScheme.primary
+                    isFuture -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                fontSize = 11.sp
+            )
+            Text(
+                text = date.dayOfMonth.toString(),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = if (isToday) FontWeight.ExtraBold else FontWeight.Medium,
+                color = if (isToday) color else MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }

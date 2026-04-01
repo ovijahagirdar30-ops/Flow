@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,10 +40,13 @@ import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.times
+import com.markel.flowstate.core.domain.HabitNumericEntry
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun NumericHabitCard(
     habitWithStatus: HabitWithStatus,
+    allEntries: List<HabitNumericEntry>,
     onIncrementToday: () -> Unit,
     onDecrementToday: () -> Unit,
     onSetValue: (LocalDate, Float?) -> Unit,
@@ -52,15 +57,41 @@ fun NumericHabitCard(
     val habit = habitWithStatus.habit
     val habitColor = Color(habit.colorArgb)
     val today = LocalDate.now()
-    val weekStart = today.with(DayOfWeek.MONDAY)
-    var selectedDate by remember { mutableStateOf(today) }
+    var weekOffset by remember { mutableIntStateOf(0) }  // O if actual week, -1 if is last week
+    val weekStart = remember(weekOffset) {
+        today.with(DayOfWeek.MONDAY).plusWeeks(weekOffset.toLong())
+    }
 
-    // Get the value of the selected date
-    val selectedDayIndex = selectedDate.dayOfWeek.value - 1
+    // navigation limits
+    val creationWeekStart = remember(habit.createdAt) {
+        habit.createdAt.with(DayOfWeek.MONDAY)
+    }
+    val canGoBack = weekStart > creationWeekStart
+    val canGoForward = weekOffset < 0  // don't allow going forward to the future
+
+    // Build the visible week entries
+    val entriesByDay = remember(allEntries) {
+        allEntries.associateBy { it.date }
+    }
+    val currentWeekValues = remember(entriesByDay, weekStart) {
+        (0L..6L).map { offset ->
+            entriesByDay[weekStart.plusDays(offset)]?.value
+        }
+    }
+
+    // selectedDate resets to today (if is this week) or monday when changing week view
+    var selectedDate by remember(weekOffset) {
+        mutableStateOf(if (weekOffset == 0) today else weekStart)
+    }
+
+    val selectedDayIndex = remember(selectedDate, weekStart) {
+        ChronoUnit.DAYS.between(weekStart, selectedDate).toInt().coerceIn(0, 6)
+    }
+
     val selectedValue = if (selectedDate.isAfter(today)) {
         null
     } else {
-        habitWithStatus.weekValues.getOrNull(selectedDayIndex)
+        currentWeekValues.getOrNull(selectedDayIndex)
     } ?: 0f
 
     val targetValue = habit.targetValue
@@ -72,10 +103,7 @@ fun NumericHabitCard(
             habitColor.copy(alpha = 0.2f).compositeOver(surfaceColor)
         else
             surfaceColor,
-        animationSpec = tween(
-            durationMillis = 300,
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
         label = "card_bg"
     )
 
@@ -83,6 +111,8 @@ fun NumericHabitCard(
     var showEditDialog by remember { mutableStateOf(false) }
     var showInputDialog by remember { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
+    var dragAccumulator by remember { mutableFloatStateOf(0f) }
+    val swipeThreshold = 60f
 
     // Delete dialog
     if (showDeleteDialog) {
@@ -126,7 +156,7 @@ fun NumericHabitCard(
 
     // Input dialog
     if (showInputDialog) {
-        val currentValueForDialog = habitWithStatus.weekValues.getOrNull(selectedDayIndex)
+        val currentValueForDialog = currentWeekValues.getOrNull(selectedDayIndex)
         NumericInputDialog(
             habitName = habit.name,
             unit = habit.unit,
@@ -207,9 +237,7 @@ fun NumericHabitCard(
                             }
                         )
                         DropdownMenuItem(
-                            text = {
-                                Text(stringResource(R.string.delete_habit_confirm_button))
-                            },
+                            text = { Text(stringResource(R.string.delete_habit_confirm_button)) },
                             onClick = {
                                 menuExpanded = false
                                 showDeleteDialog = true
@@ -223,17 +251,37 @@ fun NumericHabitCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .pointerInput(canGoBack, canGoForward) {
+                        detectHorizontalDragGestures(
+                            onDragStart = { dragAccumulator = 0f },
+                            onDragEnd = { dragAccumulator = 0f },
+                            onDragCancel = { dragAccumulator = 0f },
+                            onHorizontalDrag = { _, dragAmount ->
+                                dragAccumulator += dragAmount
+                                when {
+                                    dragAccumulator < -swipeThreshold && canGoForward -> {
+                                        weekOffset++
+                                        dragAccumulator = 0f
+                                    }
+                                    dragAccumulator > swipeThreshold && canGoBack -> {
+                                        weekOffset--
+                                        dragAccumulator = 0f
+                                    }
+                                }
+                            }
+                        )
+                    },
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 // Calculate the max value for reference
-                val maxWeekValue = habitWithStatus.weekValues.filterNotNull().maxOrNull() ?: 1f
+                val maxWeekValue = currentWeekValues.filterNotNull().maxOrNull() ?: 1f
                 val scaleReference = when {
                     targetValue != null -> maxOf(targetValue, maxWeekValue)
-                    else -> maxWeekValue
+                    else -> maxWeekValue.coerceAtLeast(1f)
                 }
 
-                habitWithStatus.weekValues.forEachIndexed { index, value ->
+                currentWeekValues.forEachIndexed { index, value ->
                     val date = weekStart.plusDays(index.toLong())
                     val isFuture = date.isAfter(today)
                     val isToday = date == today
@@ -244,7 +292,7 @@ fun NumericHabitCard(
                         targetValue = targetValue,
                         scaleReference = scaleReference,
                         color = habitColor,
-                        dayOfWeek = DayOfWeek.of(index + 1),
+                        date = date,
                         isToday = isToday,
                         isFuture = isFuture,
                         isSelected = isSelected,
@@ -324,8 +372,7 @@ fun NumericHabitCard(
                             if (selectedDate == today) {
                                 onDecrementToday()
                             } else {
-                                val currentVal =
-                                    habitWithStatus.weekValues.getOrNull(selectedDayIndex) ?: 0f
+                                val currentVal = currentWeekValues.getOrNull(selectedDayIndex) ?: 0f
                                 val newVal = maxOf(0f, currentVal - habit.step)
                                 onSetValue(selectedDate, if (newVal > 0f) newVal else null)
                             }
@@ -366,8 +413,7 @@ fun NumericHabitCard(
                             if (selectedDate == today) {
                                 onIncrementToday()
                             } else {
-                                val currentVal =
-                                    habitWithStatus.weekValues.getOrNull(selectedDayIndex) ?: 0f
+                                val currentVal = currentWeekValues.getOrNull(selectedDayIndex) ?: 0f
                                 val newVal = currentVal + habit.step
                                 onSetValue(selectedDate, newVal)
                             }

@@ -54,6 +54,9 @@ interface HabitDao {
     @Query("SELECT * FROM habit_numeric_entries WHERE habitId = :habitId ORDER BY epochDay DESC")
     fun getNumericEntries(habitId: Int): Flow<List<HabitNumericEntryEntity>>
 
+    @Query("SELECT * FROM habit_numeric_entries ORDER BY epochDay DESC")
+    fun getAllNumericEntries(): Flow<List<HabitNumericEntryEntity>>  // Numeric entries
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertNumericEntry(entry: HabitNumericEntryEntity)
 

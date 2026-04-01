@@ -9,6 +9,7 @@ import com.markel.flowstate.core.domain.usecase.habits.DecrementNumericValueUseC
 import com.markel.flowstate.core.domain.usecase.habits.DeleteHabitUseCase
 import com.markel.flowstate.core.domain.usecase.habits.DeleteNumericEntryUseCase
 import com.markel.flowstate.core.domain.usecase.habits.GetAllBooleanEntriesUseCase
+import com.markel.flowstate.core.domain.usecase.habits.GetAllNumericEntriesUseCase
 import com.markel.flowstate.core.domain.usecase.habits.GetHabitsWithStatusUseCase
 import com.markel.flowstate.core.domain.usecase.habits.IncrementNumericValueUseCase
 import com.markel.flowstate.core.domain.usecase.habits.InsertHabitUseCase
@@ -24,6 +25,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import java.time.LocalDate
@@ -36,6 +38,7 @@ class HabitViewModelTest {
     // Mocks for all UseCases used in the ViewModel
     private val getHabitsWithStatus: GetHabitsWithStatusUseCase = mockk(relaxed = true)
     private val getAllBooleanEntries: GetAllBooleanEntriesUseCase = mockk(relaxed = true)
+    private val getAllNumericEntries: GetAllNumericEntriesUseCase = mockk(relaxed = true)
     private val insertHabit: InsertHabitUseCase = mockk(relaxed = true)
     private val updateHabit: UpdateHabitUseCase = mockk(relaxed = true)
     private val deleteHabit: DeleteHabitUseCase = mockk(relaxed = true)
@@ -47,6 +50,10 @@ class HabitViewModelTest {
 
     private lateinit var viewModel: HabitViewModel
 
+    @Before
+    fun setUp() {
+        coEvery { getAllNumericEntries() } returns flowOf(emptyList())  // Avoid blocking tests waiting for flows. Tests that would need new numeric entries would overwrite this
+    }
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun habit(id: Int = 1, name: String = "Test habit") = Habit(
@@ -67,6 +74,7 @@ class HabitViewModelTest {
     private fun buildViewModel() = HabitViewModel(
         getHabitsWithStatus = getHabitsWithStatus,
         getAllBooleanEntries = getAllBooleanEntries,
+        getAllNumericEntries = getAllNumericEntries,
         insertHabit = insertHabit,
         updateHabit = updateHabit,
         deleteHabit = deleteHabit,

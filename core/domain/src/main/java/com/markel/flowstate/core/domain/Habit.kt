@@ -24,7 +24,6 @@ data class HabitWithStatus(
     val isCompletedToday: Boolean,
     val streak: Int = 0,
     val todayValue: Float? = null,
-    val weekValues: List<Float?> = emptyList()
 )
 
 data class HabitEntryFlat(val habitId: Int, val epochDay: Long)

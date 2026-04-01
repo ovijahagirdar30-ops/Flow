@@ -70,7 +70,6 @@ class GetHabitsWithStatusUseCase @Inject constructor(
         date: LocalDate
     ): List<HabitWithStatus> {
         val today = date.toEpochDay()
-        val weekStart = date.with(DayOfWeek.MONDAY)
 
         return habits
             .sortedBy { it.position }
@@ -91,11 +90,6 @@ class GetHabitsWithStatusUseCase @Inject constructor(
                         val entriesByDay = entries.associateBy { it.date.toEpochDay() }
                         val todayValue = entriesByDay[today]?.value
 
-                        val weekValues = (0L..6L).map { offset ->
-                            val day = weekStart.plusDays(offset).toEpochDay()
-                            entriesByDay[day]?.value
-                        }
-
                         // Completed if there is a value today and is bigger than the goal (or simply have a value without goal)
                         val isCompletedToday = when {
                             todayValue == null -> false
@@ -109,8 +103,7 @@ class GetHabitsWithStatusUseCase @Inject constructor(
                             habit = habit,
                             isCompletedToday = isCompletedToday,
                             streak = streak,
-                            todayValue = todayValue,
-                            weekValues = weekValues
+                            todayValue = todayValue
                         )
                     }
                 }

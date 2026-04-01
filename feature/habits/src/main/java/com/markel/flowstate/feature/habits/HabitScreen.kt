@@ -97,6 +97,8 @@ fun HabitScreen(
                                     HabitType.NUMERIC -> {
                                         NumericHabitCard(
                                             habitWithStatus = habitWithStatus,
+                                            allEntries = state.numericEntriesByHabit[habitWithStatus.habit.id]
+                                                ?: emptyList(),
                                             onIncrementToday = {
                                                 viewModel.incrementNumericHabit(
                                                     habitId = habitWithStatus.habit.id,

@@ -48,6 +48,11 @@ class HabitRepositoryImpl @Inject constructor(
             list.map { HabitEntryFlat(it.habitId, it.epochDay) }
         }
 
+    override fun getAllNumericEntries(): Flow<List<HabitNumericEntry>> =
+        dao.getAllNumericEntries().map { list ->
+            list.map { it.toDomain() }
+        }
+
     override fun getNumericEntries(habitId: Int): Flow<List<HabitNumericEntry>> =
         dao.getNumericEntries(habitId).map { entries ->
             entries.map { it.toDomain() }

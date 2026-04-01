@@ -9,6 +9,7 @@ import com.markel.flowstate.core.domain.usecase.habits.DecrementNumericValueUseC
 import com.markel.flowstate.core.domain.usecase.habits.DeleteHabitUseCase
 import com.markel.flowstate.core.domain.usecase.habits.DeleteNumericEntryUseCase
 import com.markel.flowstate.core.domain.usecase.habits.GetAllBooleanEntriesUseCase
+import com.markel.flowstate.core.domain.usecase.habits.GetAllNumericEntriesUseCase
 import com.markel.flowstate.core.domain.usecase.habits.GetHabitsWithStatusUseCase
 import com.markel.flowstate.core.domain.usecase.habits.IncrementNumericValueUseCase
 import com.markel.flowstate.core.domain.usecase.habits.InsertHabitUseCase
@@ -28,6 +29,7 @@ import javax.inject.Inject
 class HabitViewModel @Inject constructor(
     private val getHabitsWithStatus: GetHabitsWithStatusUseCase,
     private val getAllBooleanEntries: GetAllBooleanEntriesUseCase,
+    private val getAllNumericEntries: GetAllNumericEntriesUseCase,
     private val insertHabit: InsertHabitUseCase,
     private val updateHabit: UpdateHabitUseCase,
     private val deleteHabit: DeleteHabitUseCase,
@@ -43,15 +45,19 @@ class HabitViewModel @Inject constructor(
     val uiState = combine(
         getHabitsWithStatus(),
         getAllBooleanEntries(),
+        getAllNumericEntries(),
         _showAddDialog
-    ) { habits, allBooleanEntries, showDialog ->
+    ) { habits, allBooleanEntries, allNumericEntries, showDialog ->
         val weekEntriesByHabit = allBooleanEntries
             .groupBy({ it.habitId }, { it.epochDay })
             .mapValues { it.value.toSet() }
 
+        val numericEntriesByHabit = allNumericEntries.groupBy { it.habitId }
+
         HabitUiState.Success(
             habits = habits,
             weekEntriesByHabit = weekEntriesByHabit,
+            numericEntriesByHabit = numericEntriesByHabit,
             showAddDialog = showDialog,
             completedToday = habits.count { it.isCompletedToday },
             totalHabits = habits.size,
