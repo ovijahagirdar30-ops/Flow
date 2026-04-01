@@ -27,6 +27,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.YearMonth
 
 class HabitDetailViewModelTest {
 
@@ -251,10 +252,13 @@ class HabitDetailViewModelTest {
     @Test
     fun calculateMonthlyProgress_calculatesCorrectlyForCurrentMonth() = runTest {
         // GIVEN - Target is 5f daily
-        val today = LocalDate.now()
+        val currentMonth = YearMonth.now()
+        val day1 = currentMonth.atDay(1)
+        val day2 = currentMonth.atDay(2)
+
         val entries = listOf(
-            numericEntry(today, 10f), // Completed
-            numericEntry(today.minusDays(1), 2f) // Not completed
+            numericEntry(day1, 10f),  // Completed
+            numericEntry(day2, 2f)  // Not completed
         )
         coEvery { getHabitById(1) } returns habit(type = HabitType.NUMERIC, targetValue = 5f)
         coEvery { getNumericDetails(1) } returns flowOf(entries)
