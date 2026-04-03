@@ -16,9 +16,12 @@ import com.markel.flowstate.core.domain.usecase.habits.InsertHabitUseCase
 import com.markel.flowstate.core.domain.usecase.habits.LogNumericEntryUseCase
 import com.markel.flowstate.core.domain.usecase.habits.ToggleHabitEntryUseCase
 import com.markel.flowstate.core.domain.usecase.habits.UpdateHabitUseCase
+import com.markel.flowstate.core.domain.usecase.habits.UpdateHabitsOrderUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -37,37 +40,43 @@ class HabitViewModel @Inject constructor(
     private val logNumericEntry: LogNumericEntryUseCase,
     private val incrementNumericValue: IncrementNumericValueUseCase,
     private val decrementNumericValue: DecrementNumericValueUseCase,
-    private val deleteNumericEntry: DeleteNumericEntryUseCase
+    private val deleteNumericEntry: DeleteNumericEntryUseCase,
+    private val updateHabitsOrder: UpdateHabitsOrderUseCase
 ) : ViewModel() {
 
     private val _showAddDialog = MutableStateFlow(false)
+    private val _uiState = MutableStateFlow<HabitUiState>(HabitUiState.Loading)
+    val uiState = _uiState.asStateFlow()
 
-    val uiState = combine(
-        getHabitsWithStatus(),
-        getAllBooleanEntries(),
-        getAllNumericEntries(),
-        _showAddDialog
-    ) { habits, allBooleanEntries, allNumericEntries, showDialog ->
-        val weekEntriesByHabit = allBooleanEntries
-            .groupBy({ it.habitId }, { it.epochDay })
-            .mapValues { it.value.toSet() }
+    init{
+        viewModelScope.launch {
+            combine(
+                getHabitsWithStatus(),
+                getAllBooleanEntries(),
+                getAllNumericEntries(),
+                _showAddDialog
+            ) { habits, allBooleanEntries, allNumericEntries, showDialog ->
+                val weekEntriesByHabit = allBooleanEntries
+                    .groupBy({ it.habitId }, { it.epochDay })
+                    .mapValues { it.value.toSet() }
 
-        val numericEntriesByHabit = allNumericEntries.groupBy { it.habitId }
+                val numericEntriesByHabit = allNumericEntries.groupBy { it.habitId }
 
-        HabitUiState.Success(
-            habits = habits,
-            weekEntriesByHabit = weekEntriesByHabit,
-            numericEntriesByHabit = numericEntriesByHabit,
-            showAddDialog = showDialog,
-            completedToday = habits.count { it.isCompletedToday },
-            totalHabits = habits.size,
-            motivationalMessageIndex = LocalDate.now().dayOfYear % 7
-        )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = HabitUiState.Loading
-    )
+                HabitUiState.Success(
+                    habits = habits,
+                    weekEntriesByHabit = weekEntriesByHabit,
+                    numericEntriesByHabit = numericEntriesByHabit,
+                    showAddDialog = showDialog,
+                    completedToday = habits.count { it.isCompletedToday },
+                    totalHabits = habits.size,
+                    motivationalMessageIndex = LocalDate.now().dayOfYear % 7
+                )
+            }.collect {newState ->
+                _uiState.value = newState
+            }
+
+        }
+    }
 
     // ==================================
     // OPERATIONS FOR BOOLEAN HABITS
@@ -191,4 +200,26 @@ class HabitViewModel @Inject constructor(
 
     fun showAddDialog() { _showAddDialog.value = true }
     fun hideAddDialog() { _showAddDialog.value = false }
+
+    fun onReorder(fromIndex: Int, toIndex: Int) {  // optimistic update (same pattern as the other reorderings in the app)
+        val currentState = _uiState.value as? HabitUiState.Success ?: return
+        val currentList = currentState.habits.toMutableList()
+
+        val item = currentList.removeAt(fromIndex)
+        currentList.add(toIndex, item)
+
+        val updatedHabits = currentList.mapIndexed { index, habitWithStatus ->
+            habitWithStatus.copy(
+                habit = habitWithStatus.habit.copy(position = index)
+            )
+        }
+
+        _uiState.value = currentState.copy(habits = updatedHabits)
+
+        // save in the database (update in the background)
+        viewModelScope.launch {
+            val positionUpdates = updatedHabits.map { it.habit.id to it.habit.position }
+            updateHabitsOrder(positionUpdates)
+        }
+    }
 }

@@ -16,6 +16,7 @@ import com.markel.flowstate.core.domain.usecase.habits.InsertHabitUseCase
 import com.markel.flowstate.core.domain.usecase.habits.LogNumericEntryUseCase
 import com.markel.flowstate.core.domain.usecase.habits.ToggleHabitEntryUseCase
 import com.markel.flowstate.core.domain.usecase.habits.UpdateHabitUseCase
+import com.markel.flowstate.core.domain.usecase.habits.UpdateHabitsOrderUseCase
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -47,6 +48,7 @@ class HabitViewModelTest {
     private val incrementNumericValue: IncrementNumericValueUseCase = mockk(relaxed = true)
     private val decrementNumericValue: DecrementNumericValueUseCase = mockk(relaxed = true)
     private val deleteNumericEntry: DeleteNumericEntryUseCase = mockk(relaxed = true)
+    private val updateHabitsOrder: UpdateHabitsOrderUseCase = mockk(relaxed = true)
 
     private lateinit var viewModel: HabitViewModel
 
@@ -82,7 +84,8 @@ class HabitViewModelTest {
         logNumericEntry = logNumericEntry,
         incrementNumericValue = incrementNumericValue,
         decrementNumericValue = decrementNumericValue,
-        deleteNumericEntry = deleteNumericEntry
+        deleteNumericEntry = deleteNumericEntry,
+        updateHabitsOrder = updateHabitsOrder
     )
 
     // ── uiState ───────────────────────────────────────────────────────────────
