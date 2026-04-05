@@ -65,7 +65,7 @@ fun IdeaGridCard(
             Text(
                 text = idea.title,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                maxLines = 6,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
             if (idea.content.isNotBlank()) {
@@ -74,7 +74,7 @@ fun IdeaGridCard(
                     text = idea.content,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 5,
+                    maxLines = 6,
                     overflow = TextOverflow.Ellipsis
                 )
             }

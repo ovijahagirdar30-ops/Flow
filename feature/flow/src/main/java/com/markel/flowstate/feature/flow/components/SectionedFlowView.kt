@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,9 +34,6 @@ import sh.calvin.reorderable.rememberReorderableLazyRowState
  *  - Tasks    → vertical reorderable list using [AnimatableTaskItem]
  *  - Lists    → horizontal reorderable carousel using [CheckListGridCard]
  *  - Ideas    → horizontal reorderable carousel using [IdeaGridCard] (taller cards)
- *
- * Cards are the same components used in the old GridView so shared-element
- * transitions to editor screens continue to work out of the box.
  *
  * Future cross-section reordering:
  *  Replace per-section reorderable states with a unified drag state that tracks
@@ -63,6 +63,16 @@ fun SectionedFlowView(
 
     val outerListState = rememberLazyListState()
 
+    val reorderableState = rememberReorderableLazyListState(outerListState) { from, to ->
+        val headerOffset = 1
+        val fromTaskIndex = from.index - headerOffset
+        val toTaskIndex = to.index - headerOffset
+
+        if (fromTaskIndex in uiState.tasks.indices && toTaskIndex in uiState.tasks.indices) {
+            onTaskReorder(fromTaskIndex, toTaskIndex)
+        }
+    }
+
     LaunchedEffect(outerListState) {
         snapshotFlow {
             outerListState.firstVisibleItemIndex > 0 || outerListState.firstVisibleItemScrollOffset > 90
@@ -72,25 +82,51 @@ fun SectionedFlowView(
     LazyColumn(
         state = outerListState,
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 100.dp)
+        contentPadding = PaddingValues(bottom = 40.dp)
     ) {
         // ── Tasks ──────────────────────────────────────────────────────────
         if (uiState.tasks.isNotEmpty()) {
             item(key = "tasks_header") {
                 SectionHeader(
                     title = "TASKS",
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
             }
-            item(key = "tasks_list") {
-                TasksSection(
-                    tasks = uiState.tasks,
-                    onTaskClick = onTaskClick,
-                    onTaskDelete = onTaskDelete,
-                    onTaskToggle = onTaskToggle,
-                    onReorder = onTaskReorder,
-                    onDragEnd = onTaskDragEnd
-                )
+            itemsIndexed(items = uiState.tasks, key = { _, task -> task.id }) { index, task ->
+                val itemShape = when {
+                    uiState.tasks.size == 1 -> RoundedCornerShape(16.dp)
+                    index == 0 -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+                    index == uiState.tasks.lastIndex -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
+                    else -> RoundedCornerShape(4.dp)
+                }
+                ReorderableItem(reorderableState, key = task.id) { isDragging ->
+                    val scale by animateFloatAsState(
+                        targetValue = if (isDragging) 1.03f else 1f,
+                        label = "task_drag_scale"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 1.dp)
+                            .longPressDraggableHandle(
+                                onDragStopped = { onTaskDragEnd() },
+                                interactionSource = remember { MutableInteractionSource() }
+                            )
+                            .graphicsLayer {
+                                scaleX = scale; scaleY = scale
+                                alpha = if (isDragging) 0.92f else 1f
+                            }
+                            .zIndex(if (isDragging) 1f else 0f)
+                    ) {
+                        AnimatableTaskItem(
+                            task = task,
+                            shape = itemShape,
+                            onDelete = { onTaskDelete(task) },
+                            onComplete = { onTaskToggle(task) },
+                            onContentClick = { onTaskClick(task) }
+                        )
+                    }
+                }
             }
         }
 
@@ -160,68 +196,4 @@ private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
     )
-}
-
-// ── Tasks — vertical reorderable list ────────────────────────────────────────
-//
-// Uses a non-scrollable inner LazyColumn with a fixed height derived from item
-// count. The outer LazyColumn (in SectionedFlowView) handles all scrolling,
-// avoiding nested-scroll conflicts.
-
-@Composable
-private fun TasksSection(
-    tasks: List<Task>,
-    onTaskClick: (Task) -> Unit,
-    onTaskDelete: (Task) -> Unit,
-    onTaskToggle: (Task) -> Unit,
-    onReorder: (Int, Int) -> Unit,
-    onDragEnd: () -> Unit
-) {
-    val listState = rememberLazyListState()
-    val reorderableState = rememberReorderableLazyListState(listState) { from, to ->
-        onReorder(from.index, to.index)
-    }
-
-    // Estimated height per task row. Adjust if your AnimatableTaskItem is taller.
-    val itemHeightDp = 72.dp
-    val listHeight = itemHeightDp * tasks.size
-
-    LazyColumn(
-        state = listState,
-        userScrollEnabled = false,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(listHeight)
-            .padding(horizontal = 20.dp),
-        contentPadding = PaddingValues(vertical = 4.dp)
-    ) {
-        items(tasks, key = { it.id }) { task ->
-            ReorderableItem(reorderableState, key = task.id) { isDragging ->
-                val scale by animateFloatAsState(
-                    targetValue = if (isDragging) 1.03f else 1f,
-                    label = "task_drag_scale"
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .longPressDraggableHandle(
-                            onDragStopped = { onDragEnd() },
-                            interactionSource = remember { MutableInteractionSource() }
-                        )
-                        .graphicsLayer {
-                            scaleX = scale; scaleY = scale
-                            alpha = if (isDragging) 0.92f else 1f
-                        }
-                        .zIndex(if (isDragging) 1f else 0f)
-                ) {
-                    AnimatableTaskItem(
-                        task = task,
-                        onDelete = { onTaskDelete(task) },
-                        onComplete = { onTaskToggle(task) },
-                        onContentClick = { onTaskClick(task) }
-                    )
-                }
-            }
-        }
-    }
 }

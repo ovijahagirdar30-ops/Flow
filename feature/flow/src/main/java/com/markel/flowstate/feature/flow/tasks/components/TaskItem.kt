@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
@@ -70,6 +71,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun AnimatableTaskItem(
     task: Task,
+    shape: Shape,
     onDelete: () -> Unit,
     onComplete: () -> Unit,
     onContentClick: () -> Unit
@@ -129,6 +131,7 @@ fun AnimatableTaskItem(
                 isDone = isChecked,
                 priority = task.priority,
                 dueDate = task.dueDate,
+                shape = shape,
                 onClicked = onContentClick,
                 onCheckClicked = {
                     isChecked = true
@@ -236,6 +239,7 @@ fun TaskItemContent(
     isDone: Boolean,
     priority: Priority = Priority.NOTHING,
     dueDate: Long? = null,
+    shape: Shape,
     onClicked: () -> Unit,
     onCheckClicked: () -> Unit
 ) {
@@ -243,11 +247,12 @@ fun TaskItemContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { onClicked() }
-            .background(MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -401,10 +406,5 @@ fun TaskItemContent(
                 }
             }
         }
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            thickness = 0.4.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
     }
 }
