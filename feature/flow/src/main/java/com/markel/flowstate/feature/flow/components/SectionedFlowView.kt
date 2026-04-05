@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,7 +26,7 @@ import com.markel.flowstate.feature.flow.FlowUiState
 import com.markel.flowstate.feature.flow.tasks.components.AnimatableTaskItem
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import sh.calvin.reorderable.rememberReorderableLazyRowState
+import com.markel.flowstate.feature.tasks.R
 
 /**
  * Main sectioned view for the Flow screen.
@@ -88,7 +89,7 @@ fun SectionedFlowView(
         if (uiState.tasks.isNotEmpty()) {
             item(key = "tasks_header") {
                 SectionHeader(
-                    title = "TASKS",
+                    title = stringResource(R.string.tasks_m),
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
             }
@@ -134,7 +135,7 @@ fun SectionedFlowView(
         if (uiState.checkLists.isNotEmpty()) {
             item(key = "checklists_header") {
                 SectionHeader(
-                    title = "LISTS",
+                    title = stringResource(R.string.checklists_m),
                     modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 12.dp)
                 )
             }
@@ -158,7 +159,7 @@ fun SectionedFlowView(
         if (uiState.ideas.isNotEmpty()) {
             item(key = "ideas_header") {
                 SectionHeader(
-                    title = "IDEAS & NOTES",
+                    title = stringResource(R.string.ideas_notes_m),
                     modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 12.dp)
                 )
             }

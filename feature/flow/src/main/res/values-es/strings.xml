@@ -38,4 +38,7 @@
         <item quantity="one">%d completado</item>
         <item quantity="other">%d completados</item>
     </plurals>
+    <string name="tasks_m">TAREAS</string>
+    <string name="checklists_m">LISTAS</string>
+    <string name="ideas_notes_m">IDEAS &amp; NOTAS</string>
 </resources>
