@@ -22,6 +22,10 @@ class IdeaRepositoryImpl @Inject constructor(
         return ideaDao.getIdeaById(id)?.toDomain()
     }
 
+    override suspend fun updateIdeasOrder(ideas: List<Idea>) {
+        ideaDao.updateIdeas(ideas.map { it.toEntity() })
+    }
+
     // Mappers
     private fun IdeaEntity.toDomain() = Idea(id, title, content, createdAt, color)
     private fun Idea.toEntity() = IdeaEntity(id, title, content, createdAt, color)

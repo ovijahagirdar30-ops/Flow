@@ -3,11 +3,11 @@ package com.markel.flowstate.feature.flow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.CheckListRepository
-import com.markel.flowstate.core.domain.GridItemType
-import com.markel.flowstate.core.domain.GridOrderEntry
-import com.markel.flowstate.core.domain.GridOrderRepository
+import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.IdeaRepository
+import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,79 +23,56 @@ import javax.inject.Inject
  *
  * Responsibilities:
  *  - Control cross-screen UI state (isGridView)
- *  - Combine Tasks, Ideas, and CheckLists flows for the Grid view
- *  - Delegate task CRUD operations to TaskViewModel
- *  - Directly manage Ideas and CheckLists
- */
+ *  - Combine Tasks, Ideas and CheckLists into a sectioned UiState
+ *  - Optimistic reordering per section with DB persistence on drag end
+ *
+ * Future extensibility note:
+ *  Cross-section reordering (e.g. Task → Idea conversion) can be added by
+ *  introducing a shared reorder method that mutates multiple local state flows
+ *  and calls the corresponding repository operations in a single transaction.
+*/
 @HiltViewModel
 class FlowViewModel @Inject constructor(
     // Repositories required for the unified grid
     private val taskRepository: TaskRepository,
     private val ideaRepository: IdeaRepository,
     private val checkListRepository: CheckListRepository,
-    private val gridOrderRepository: GridOrderRepository,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    private val _localItems = MutableStateFlow<List<GridItem>?>(null)
+    // ── Optimistic local state per section ─────────────────────────────────
+    // null means "use the DB-driven value"; non-null means "drag is in progress"
+    private val _localTasks = MutableStateFlow<List<Task>?>(null)
+    private val _localIdeas = MutableStateFlow<List<Idea>?>(null)
+    private val _localCheckLists = MutableStateFlow<List<CheckList>?>(null)
 
-    // ── View state ───────────────────────────────────────────────────────
+    // ── Unified sectioned UiState ─────────────────────────────────────────────
 
-    val isGridView: StateFlow<Boolean?> = userPreferencesRepository.isGridView
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = null
-        )
-
-    fun toggleView() {
-        viewModelScope.launch {
-            userPreferencesRepository.setGridView(!(isGridView.value ?: false))
-        }
-    }
-
-    // ── Unified Grid state ─────────────────────────────────────────────
-
-    val flowUiState: StateFlow<FlowUiState> = combine(
+    private val domainDataFlow = combine(
         taskRepository.getTasks(),
         ideaRepository.getIdeas(),
-        checkListRepository.getLists(),
-        gridOrderRepository.getOrder(),
-        _localItems
-    ) { tasks, ideas, checkLists, order, localItems ->
-        if (localItems != null) return@combine FlowUiState.Success(localItems)
+        checkListRepository.getLists()
+    ) { tasks: List<Task>, ideas: List<Idea>, lists: List<CheckList> ->
+        Triple(tasks, ideas, lists)
+    }
 
-        val taskMap = tasks.filter { !it.isDone }.associateBy { it.id }
-        val ideaMap = ideas.associateBy { it.id }
-        val checkListMap = checkLists.associateBy { it.id }
+    private val localDataFlow = combine(
+        _localTasks,
+        _localIdeas,
+        _localCheckLists
+    ) { lTasks: List<Task>?, lIdeas: List<Idea>?, lLists: List<CheckList>? ->
+        Triple(lTasks, lIdeas, lLists)
+    }
 
-        // Items that already have a saved position, respecting the order
-        val orderedItems = order.mapNotNull { entry ->
-            when (entry.itemType) {
-                GridItemType.TASK -> taskMap[entry.itemId]?.let { GridItem.TaskItem(it) }
-                GridItemType.IDEA -> ideaMap[entry.itemId]?.let { GridItem.IdeaItem(it) }
-                GridItemType.CHECKLIST -> checkListMap[entry.itemId]?.let {
-                    GridItem.CheckListItem(
-                        it
-                    )
-                }
-            }
-        }
-
-        // New items that do not yet have an entry in grid_order (added to the beginning)
-        val orderedKeys = order.map { it.itemId to it.itemType }.toSet()
-        val newItems = buildList {
-            taskMap.values
-                .filter { (it.id to GridItemType.TASK) !in orderedKeys }
-                .forEach { add(GridItem.TaskItem(it)) }
-            ideaMap.values
-                .filter { (it.id to GridItemType.IDEA) !in orderedKeys }
-                .forEach { add(GridItem.IdeaItem(it)) }
-            checkListMap.values
-                .filter { (it.id to GridItemType.CHECKLIST) !in orderedKeys }
-                .forEach { add(GridItem.CheckListItem(it)) }
-        }
-        FlowUiState.Success(newItems + orderedItems)
+    val flowUiState: StateFlow<FlowUiState> = combine(
+        domainDataFlow,
+        localDataFlow
+    ) { (tasks, ideas, lists), (lTasks, lIdeas, lLists) ->
+        FlowUiState.Success(
+            tasks = lTasks ?: tasks.filter { !it.isDone },
+            ideas = lIdeas ?: ideas,
+            checkLists = lLists ?: lists
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -104,43 +81,55 @@ class FlowViewModel @Inject constructor(
 
     // ── Reorder ────────────────────────────────────────────────────────
 
-    fun onGridReorder(fromIndex: Int, toIndex: Int) {
-        val currentItems = (_localItems.value
-            ?: (flowUiState.value as? FlowUiState.Success)?.items)
+    fun onTaskReorder(fromIndex: Int, toIndex: Int) {
+        val current = _localTasks.value
+            ?: (flowUiState.value as? FlowUiState.Success)?.tasks
             ?: return
-
-        val mutable = currentItems.toMutableList()
-        val item = mutable.removeAt(fromIndex)
-        mutable.add(toIndex, item)
-
-        _localItems.value = mutable
+        _localTasks.value = current.toMutableList().apply {
+            add(toIndex, removeAt(fromIndex))
+        }
     }
 
-    fun onGridDragEnd() {
-        val finalItems = _localItems.value ?: return
-
-        val entries = finalItems.mapIndexed { index, gridItem ->
-            when (gridItem) {
-                is GridItem.TaskItem      -> GridOrderEntry(gridItem.task.id, GridItemType.TASK, index)
-                is GridItem.IdeaItem      -> GridOrderEntry(gridItem.idea.id, GridItemType.IDEA, index)
-                is GridItem.CheckListItem -> GridOrderEntry(gridItem.checkList.id, GridItemType.CHECKLIST, index)
-            }
-        }
-
+    fun onTaskDragEnd() {
+        val final = _localTasks.value?.mapIndexed { i, t -> t.copy(position = i) } ?: return
         viewModelScope.launch {
-            gridOrderRepository.saveOrder(entries)
-            _localItems.value = null
+            taskRepository.updateTasksOrder(final)
+            _localTasks.value = null
         }
     }
 
-    // ── Register new/deleted items ────────────────────────────
-
-    fun registerItem(itemId: Int, type: GridItemType) {
-        viewModelScope.launch { gridOrderRepository.addEntry(itemId, type) }
+    fun onIdeaReorder(fromIndex: Int, toIndex: Int) {
+        val current = _localIdeas.value
+            ?: (flowUiState.value as? FlowUiState.Success)?.ideas
+            ?: return
+        _localIdeas.value = current.toMutableList().apply {
+            add(toIndex, removeAt(fromIndex))
+        }
     }
 
-    fun unregisterItem(itemId: Int, type: GridItemType) {
-        viewModelScope.launch { gridOrderRepository.removeEntry(itemId, type) }
+    fun onIdeaDragEnd() {
+        val final = _localIdeas.value?.mapIndexed { i, idea -> idea.copy(position = i) } ?: return
+        viewModelScope.launch {
+            ideaRepository.updateIdeasOrder(final)
+            _localIdeas.value = null
+        }
+    }
+
+    fun onCheckListReorder(fromIndex: Int, toIndex: Int) {
+        val current = _localCheckLists.value
+            ?: (flowUiState.value as? FlowUiState.Success)?.checkLists
+            ?: return
+        _localCheckLists.value = current.toMutableList().apply {
+            add(toIndex, removeAt(fromIndex))
+        }
+    }
+
+    fun onCheckListDragEnd() {
+        val final = _localCheckLists.value?.mapIndexed { i, cl -> cl.copy(position = i) } ?: return
+        viewModelScope.launch {
+            checkListRepository.updateCheckListsOrder(final)
+            _localCheckLists.value = null
+        }
     }
 
 }

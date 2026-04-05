@@ -12,8 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * and which version of the database we are using.
  */
 @Database(
-    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, GridOrderEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class ], // List of all tables
-    version = 14,
+    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class ], // List of all tables
+    version = 15,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -22,7 +22,6 @@ abstract class FlowStateDatabase : RoomDatabase() {
     abstract val taskDao: TaskDao
     abstract val ideaDao: IdeaDao
     abstract val checkListDao: CheckListDao
-    abstract val gridOrderDao: GridOrderDao
     abstract val habitDao: HabitDao
 
     // Room will use this to create the DB instance.
@@ -165,6 +164,19 @@ abstract class FlowStateDatabase : RoomDatabase() {
 
                 // Recreate the index
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_numeric_entries_habitId` ON `habit_numeric_entries` (`habitId`)")
+            }
+        }
+
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add position column to ideas (default 0 so existing rows are unaffected)
+                db.execSQL("ALTER TABLE ideas ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
+
+                // Add position column to checklists
+                db.execSQL("ALTER TABLE checklists ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
+
+                // Drop the grid_order table — it is no longer used
+                db.execSQL("DROP TABLE IF EXISTS grid_order")
             }
         }
     }

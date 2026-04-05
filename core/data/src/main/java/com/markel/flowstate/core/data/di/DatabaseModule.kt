@@ -6,7 +6,6 @@ import androidx.room.Room
 import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.data.local.CheckListDao
 import com.markel.flowstate.core.data.local.FlowStateDatabase
-import com.markel.flowstate.core.data.local.GridOrderDao
 import com.markel.flowstate.core.data.local.HabitDao
 import com.markel.flowstate.core.data.local.IdeaDao
 import com.markel.flowstate.core.data.local.TaskDao
@@ -31,7 +30,7 @@ object DatabaseModule {
         )
             .addMigrations(FlowStateDatabase.MIGRATION_5_6, FlowStateDatabase.MIGRATION_6_7, FlowStateDatabase.MIGRATION_7_8, FlowStateDatabase.MIGRATION_8_9,
                 FlowStateDatabase.MIGRATION_9_10, FlowStateDatabase.MIGRATION_10_11, FlowStateDatabase.MIGRATION_11_12, FlowStateDatabase.MIGRATION_12_13,
-                FlowStateDatabase.MIGRATION_13_14)
+                FlowStateDatabase.MIGRATION_13_14, FlowStateDatabase.MIGRATION_14_15)
             .build()
     }
 
@@ -51,12 +50,6 @@ object DatabaseModule {
     @Singleton
     fun provideCheckListDao(db: FlowStateDatabase): CheckListDao{
         return db.checkListDao
-    }
-
-    @Provides
-    @Singleton
-    fun provideGridOrderDao(db: FlowStateDatabase): GridOrderDao {
-        return db.gridOrderDao
     }
 
     @Provides

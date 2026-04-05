@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class CheckListEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val title: String,
-    val color: Long = 0L
+    val color: Long = 0L,
+    val position: Int = 0
 )

@@ -33,140 +33,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// ── Task ─────────────────────────────────────────────────────────────────────
-
-@Composable
-fun TaskGridCard(
-    task: Task,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val priorityColor = task.priority.asColor()
-    val shape = RoundedCornerShape(12.dp)
-
-    Card(
-        onClick = onClick,
-        shape = shape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        modifier = modifier
-            .fillMaxWidth()
-            .sharedCardBounds(
-                key = TaskSharedKeys.container(task.id),
-                shape = shape
-            )
-    ) {
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-        ) {
-            if (task.priority != Priority.NOTHING) {
-                Box(
-                    modifier = Modifier
-                        .width(3.dp)
-                        .fillMaxHeight()
-                        .background(
-                            color = priorityColor,
-                            shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
-                        )
-                )
-            }
-
-            Column(
-                modifier = Modifier.padding(12.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.Top,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    // Task title
-                    Text(
-                        text = task.title,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                        maxLines = if (task.description.isBlank()) 12 else 4,
-                        overflow = TextOverflow.Ellipsis,
-                        textDecoration = if (task.isDone) TextDecoration.LineThrough else TextDecoration.None,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                // Description
-                if (task.description.isNotBlank()) {
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = task.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 8,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-
-                // Footer: dueDate and pending subtasks
-                val total = task.subTasks.size
-                val completed = task.subTasks.count { it.isDone }
-                val hasSubTasks = total > 0 && completed < total
-                val hasDueDate = task.dueDate != null
-
-                if (hasDueDate || hasSubTasks) {
-                    Spacer(Modifier.height(8.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (hasDueDate) {
-                            val isOverdue = isDateOverdue(task.dueDate!!)
-                            val dateColor = if (isOverdue)
-                                MaterialTheme.colorScheme.error
-                            else
-                                MaterialTheme.colorScheme.tertiary
-
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.event_24px),
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = dateColor
-                            )
-                            Text(
-                                text = formatDate(task.dueDate),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = dateColor
-                            )
-                        }
-
-                        if (hasDueDate && hasSubTasks) {
-                            Text(
-                                text = " ",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                            )
-                        }
-
-                        if (hasSubTasks) {
-                            val subtaskColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.subtask_24px),
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = subtaskColor
-                            )
-                            Text(
-                                text = "$completed/$total",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = subtaskColor
-                            )
-                        }
-
-                    }
-                }
-
-            }
-        }
-    }
-}
-
 // ── Idea ──────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -256,7 +122,7 @@ fun CheckListGridCard(
             )
             Spacer(Modifier.height(6.dp))
             val pendingItems = checkList.items.filter { !it.isDone }
-            val visibleItems = pendingItems.take(5)
+            val visibleItems = pendingItems.take(4)
             visibleItems.forEach { item ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -276,7 +142,7 @@ fun CheckListGridCard(
             if (pendingItems.size > 5) {
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    text = "+${pendingItems.size - 5} " + stringResource(com.markel.flowstate.feature.tasks.R.string.more),
+                    text = "+${pendingItems.size - 4} " + stringResource(com.markel.flowstate.feature.tasks.R.string.more),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )

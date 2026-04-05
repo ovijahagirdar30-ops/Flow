@@ -6,6 +6,7 @@ data class CheckList(
     val id: Int = 0,
     val title: String,
     val color: Long,
+    val position: Int = 0,
     val items: List<CheckListItem> = emptyList()
 )
 

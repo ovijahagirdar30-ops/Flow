@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CheckListDao {
     @Transaction
-    @Query("SELECT * FROM checklists")
+    @Query("SELECT * FROM checklists ORDER BY position ASC")
     fun getListsWithItems(): Flow<List<CheckListWithItems>>
 
     @Upsert
@@ -20,6 +20,9 @@ interface CheckListDao {
 
     @Delete
     suspend fun deleteListEntity(list: CheckListEntity)
+
+    @Update
+    suspend fun updateCheckLists(lists: List<CheckListEntity>)
 
     @Transaction
     suspend fun upsertFullList(list: CheckListEntity, items: List<CheckListItemEntity>): Int  {
