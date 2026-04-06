@@ -33,8 +33,7 @@ fun FlowScreen(
     onNavigateToNewIdea: () -> Unit,
     onNavigateToCheckListEditor: (checkListId: Int?) -> Unit
 ) {
-    val flowUiState by flowViewModel.flowUiState.collectAsStateWithLifecycle()
-
+    val flowUiState by flowViewModel.uiState.collectAsStateWithLifecycle()
     var isFabExpanded by remember { mutableStateOf(false) }
     var showCreationSheet by remember { mutableStateOf(false) }
 
@@ -59,15 +58,11 @@ fun FlowScreen(
                     onTaskDelete = { taskViewModel.deleteTask(it) },
                     onTaskToggle = { taskViewModel.toggleTaskDone(it) },
                     onTaskReorder = { from, to -> flowViewModel.onTaskReorder(from, to) },
-                    onTaskDragEnd = { flowViewModel.onTaskDragEnd() },
                     onIdeaClick = { onNavigateToIdeaEditor(it.id) },
                     onIdeaReorder = { from, to -> flowViewModel.onIdeaReorder(from, to) },
-                    onIdeaDragEnd = { flowViewModel.onIdeaDragEnd() },
                     onCheckListClick = { onNavigateToCheckListEditor(it.id) },
-                    onCheckListReorder = { from, to -> flowViewModel.onCheckListReorder(from, to) },
-                    onCheckListDragEnd = { flowViewModel.onCheckListDragEnd() }
+                    onCheckListReorder = { from, to -> flowViewModel.onCheckListReorder(from, to) }
                 )
-
             }
         }
         if (showCreationSheet) {

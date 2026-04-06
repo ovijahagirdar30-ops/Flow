@@ -24,7 +24,6 @@ fun <T : Any> ReorderableCarousel(
     items: List<T>,
     key: (T) -> Any,
     onReorder: (from: Int, to: Int) -> Unit,
-    onDragEnd: () -> Unit,
     content: @Composable (T) -> Unit
 ) {
     val rowState = rememberLazyListState()
@@ -47,7 +46,6 @@ fun <T : Any> ReorderableCarousel(
                 Box(
                     modifier = Modifier
                         .longPressDraggableHandle(
-                            onDragStopped = { onDragEnd() },
                             interactionSource = remember { MutableInteractionSource() }
                         )
                         .graphicsLayer {

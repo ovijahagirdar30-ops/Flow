@@ -49,15 +49,12 @@ fun SectionedFlowView(
     onTaskDelete: (Task) -> Unit,
     onTaskToggle: (Task) -> Unit,
     onTaskReorder: (from: Int, to: Int) -> Unit,
-    onTaskDragEnd: () -> Unit,
     // Idea callbacks
     onIdeaClick: (Idea) -> Unit,
     onIdeaReorder: (from: Int, to: Int) -> Unit,
-    onIdeaDragEnd: () -> Unit,
     // CheckList callbacks
     onCheckListClick: (CheckList) -> Unit,
     onCheckListReorder: (from: Int, to: Int) -> Unit,
-    onCheckListDragEnd: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (uiState !is FlowUiState.Success) return
@@ -110,7 +107,6 @@ fun SectionedFlowView(
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp, vertical = 1.dp)
                             .longPressDraggableHandle(
-                                onDragStopped = { onTaskDragEnd() },
                                 interactionSource = remember { MutableInteractionSource() }
                             )
                             .graphicsLayer {
@@ -143,8 +139,7 @@ fun SectionedFlowView(
                 ReorderableCarousel(
                     items = uiState.checkLists,
                     key = { it.id },
-                    onReorder = onCheckListReorder,
-                    onDragEnd = onCheckListDragEnd
+                    onReorder = onCheckListReorder
                 ) { checkList ->
                     CheckListGridCard(
                         checkList = checkList,
@@ -167,8 +162,7 @@ fun SectionedFlowView(
                 ReorderableCarousel(
                     items = uiState.ideas,
                     key = { it.id },
-                    onReorder = onIdeaReorder,
-                    onDragEnd = onIdeaDragEnd
+                    onReorder = onIdeaReorder
                 ) { idea ->
                     // Taller modifier to visually differentiate from checklist cards
                     IdeaGridCard(
