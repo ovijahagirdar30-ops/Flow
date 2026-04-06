@@ -257,7 +257,7 @@ fun TaskItemContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp, vertical = 22.dp),
+                .padding(12.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val borderBaseColor = if (priority == Priority.NOTHING)
@@ -283,7 +283,7 @@ fun TaskItemContent(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(21.dp)
+                    .size(19.dp)
                     .clip(RoundedCornerShape(7.dp))
                     .background(checkBgColor)
                     .border(1.5.dp, checkBorderColor, RoundedCornerShape(7.dp))
@@ -305,12 +305,12 @@ fun TaskItemContent(
                 }
 
             }
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 val taskTitleStyle = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp
+                    fontSize = 15.sp,
+                    lineHeight = 18.sp
                 )
                 Text(
                     text = title,
@@ -326,7 +326,7 @@ fun TaskItemContent(
                 )
 
                 if (description.isNotBlank()) {
-                    Spacer(Modifier.height(5.dp))
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = description,
                         style = if (isDone){
@@ -338,7 +338,7 @@ fun TaskItemContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                             )
                         },
-                        maxLines = 3,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
