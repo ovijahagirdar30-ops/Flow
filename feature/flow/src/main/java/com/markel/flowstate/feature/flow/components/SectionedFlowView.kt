@@ -184,7 +184,7 @@ fun SectionedFlowView(
 private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
     Text(
         text = title,
-        style = MaterialTheme.typography.labelSmall.copy(
+        style = MaterialTheme.typography.labelMedium.copy(
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.2.sp
         ),
