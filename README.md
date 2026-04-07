@@ -14,7 +14,7 @@
 
 <div align="center">
   <img src="screenshots/home_light.png" width="31%" />
-  <img src="screenshots/grid_light.png" width="31%" />
+  <img src="screenshots/checklist_light.png" width="31%" />
   <img src="screenshots/calendar_light.png" width="31%" />
   <br>
   <img src="screenshots/habits_prev.png" width="31%" />
