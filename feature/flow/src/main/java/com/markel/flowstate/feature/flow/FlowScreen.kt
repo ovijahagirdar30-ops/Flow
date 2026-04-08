@@ -17,11 +17,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.feature.flow.components.DynamicHeader
 import com.markel.flowstate.feature.flow.components.ExpandableFabMenu
-import com.markel.flowstate.feature.flow.tasks.TaskScreen
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
-import com.markel.flowstate.feature.flow.components.GridView
+import com.markel.flowstate.feature.flow.components.SectionedFlowView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,10 +33,7 @@ fun FlowScreen(
     onNavigateToNewIdea: () -> Unit,
     onNavigateToCheckListEditor: (checkListId: Int?) -> Unit
 ) {
-    val isGridView by flowViewModel.isGridView.collectAsStateWithLifecycle()
-    if (isGridView == null) return
-    val flowUiState by flowViewModel.flowUiState.collectAsStateWithLifecycle()
-
+    val flowUiState by flowViewModel.uiState.collectAsStateWithLifecycle()
     var isFabExpanded by remember { mutableStateOf(false) }
     var showCreationSheet by remember { mutableStateOf(false) }
 
@@ -52,35 +48,21 @@ fun FlowScreen(
         ) { paddingValues ->
             Column(modifier = Modifier.padding(paddingValues)) {
                 DynamicHeader(
-                    isMinimized = isHeaderMinimized,
-                    isGridView = isGridView!!,
-                    onToggleView = { flowViewModel.toggleView() }
+                    isMinimized = isHeaderMinimized
                 )
 
-                AnimatedContent(
-                    targetState = isGridView,
-                    transitionSpec = { fadeIn(tween(280)) togetherWith fadeOut(tween(200)) },
-                    label = "flow_view_transition"
-                ) { showGrid ->
-                    if (showGrid == true) {
-                        GridView(
-                            uiState = flowUiState,
-                            onScrolled = { isHeaderMinimized = true },
-                            onTaskClick = { onNavigateToTaskEditor(it.id) },
-                            onIdeaClick = { onNavigateToIdeaEditor(it.id) },
-                            onCheckListClick = { onNavigateToCheckListEditor(it.id) },
-                            onReorder = { from, to -> flowViewModel.onGridReorder(from, to) },
-                            onDragEnd = { flowViewModel.onGridDragEnd() }
-                        )
-                    } else {
-                        // TaskScreen manages all of the internal states still (FAB, sheets, editor)
-                        TaskScreen(
-                            viewModel = taskViewModel,
-                            onScrolled = { isHeaderMinimized = true },
-                            onTaskClick = { onNavigateToTaskEditor(it.id) }
-                        )
-                    }
-                }
+                SectionedFlowView(
+                    uiState = flowUiState,
+                    onScrolled = { isHeaderMinimized = true },
+                    onTaskClick = { onNavigateToTaskEditor(it.id) },
+                    onTaskDelete = { taskViewModel.deleteTask(it) },
+                    onTaskToggle = { taskViewModel.toggleTaskDone(it) },
+                    onTaskReorder = { from, to -> flowViewModel.onTaskReorder(from, to) },
+                    onIdeaClick = { onNavigateToIdeaEditor(it.id) },
+                    onIdeaReorder = { from, to -> flowViewModel.onIdeaReorder(from, to) },
+                    onCheckListClick = { onNavigateToCheckListEditor(it.id) },
+                    onCheckListReorder = { from, to -> flowViewModel.onCheckListReorder(from, to) }
+                )
             }
         }
         if (showCreationSheet) {

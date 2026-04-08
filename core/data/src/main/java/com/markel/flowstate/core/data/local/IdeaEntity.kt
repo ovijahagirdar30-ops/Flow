@@ -9,5 +9,6 @@ data class IdeaEntity(
     val title: String,
     val content: String,
     val createdAt: Long,
-    val color: Long
+    val color: Long,
+    val position: Int = 0
 )

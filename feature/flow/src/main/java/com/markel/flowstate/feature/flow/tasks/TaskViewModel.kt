@@ -90,27 +90,6 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch { toggleTaskUseCase(task) }
     }
 
-    fun onReorder(fromIndex: Int, toIndex: Int) {
-        val currentList = (uiState.value as? TasksUiState.Success)?.tasks?.toMutableList() ?: return
-
-        // 1. Apply movement in the temporary list
-        val item = currentList.removeAt(fromIndex)
-        currentList.add(toIndex, item)
-
-        // 2. Recalculate positions (indices 0, 1, 2...)
-        val updatedList = currentList.mapIndexed { index, task ->
-            task.copy(position = index)
-        }
-
-        // 3. Update the interface NOW
-        _uiState.value = TasksUiState.Success(updatedList)
-
-        // 4. Save to database in the background
-        viewModelScope.launch {
-            repository.updateTasksOrder(updatedList)
-        }
-    }
-
     // TASK CREATION
     fun updateDraftTitle(value: String) { _draft.update { it.copy(title = value) } }
     fun updateDraftDescription(value: String) { _draft.update { it.copy(description = value) } }

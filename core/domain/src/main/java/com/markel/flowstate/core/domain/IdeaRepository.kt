@@ -7,4 +7,5 @@ interface IdeaRepository {
     suspend fun upsertIdea(idea: Idea): Long
     suspend fun deleteIdea(idea: Idea)
     suspend fun getIdeaById(id: Int): Idea?
+    suspend fun updateIdeasOrder(ideas: List<Idea>)
 }

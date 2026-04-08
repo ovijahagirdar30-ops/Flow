@@ -5,5 +5,6 @@ data class Idea(
     val title: String,
     val content: String,
     val createdAt: Long = System.currentTimeMillis(),
-    val color: Long
+    val color: Long,
+    val position: Int = 0
 )

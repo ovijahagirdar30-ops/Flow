@@ -39,12 +39,10 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 @Composable
-fun DynamicHeader(
-    isMinimized: Boolean,
-    isGridView: Boolean = false,
-    onToggleView: (() -> Unit)? = null)
+fun DynamicHeader(isMinimized: Boolean)
 {
     val greeting = when (LocalTime.now().hour) {
         in 5..12 -> R.string.good_morning
@@ -52,7 +50,7 @@ fun DynamicHeader(
         else -> R.string.good_night
     }
 
-    val dateText = DateTimeFormatter.ofPattern("EEEE, d MMM", Locale.getDefault())
+    val dateText = DateTimeFormatter.ofPattern("EEEE, d MMM", LocalLocale.current.platformLocale)
         .format(LocalDate.now())
         .uppercase()
 
@@ -104,24 +102,6 @@ fun DynamicHeader(
                     ),
                     modifier = Modifier.animateContentSize() // Smooths the alignment change
                 )
-            }
-            if (onToggleView != null) {
-                AnimatedContent(
-                    targetState = isGridView,
-                    transitionSpec = { fadeIn() togetherWith fadeOut() },
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                    ,
-                    label = "toggle_view_icon"
-                ) { gridView ->
-                    IconButton(onClick = onToggleView) {
-                        Icon(
-                            imageVector = if (gridView) ImageVector.vectorResource(R.drawable.list_view_24px) else ImageVector.vectorResource(R.drawable.grid_view_24px),
-                            contentDescription = if (gridView) "List view" else "Grid view",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
             }
         }
 

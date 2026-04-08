@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
@@ -70,6 +71,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun AnimatableTaskItem(
     task: Task,
+    shape: Shape,
     onDelete: () -> Unit,
     onComplete: () -> Unit,
     onContentClick: () -> Unit
@@ -129,6 +131,7 @@ fun AnimatableTaskItem(
                 isDone = isChecked,
                 priority = task.priority,
                 dueDate = task.dueDate,
+                shape = shape,
                 onClicked = onContentClick,
                 onCheckClicked = {
                     isChecked = true
@@ -236,6 +239,7 @@ fun TaskItemContent(
     isDone: Boolean,
     priority: Priority = Priority.NOTHING,
     dueDate: Long? = null,
+    shape: Shape,
     onClicked: () -> Unit,
     onCheckClicked: () -> Unit
 ) {
@@ -243,16 +247,17 @@ fun TaskItemContent(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { onClicked() }
-            .background(MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp, vertical = 22.dp),
+                .padding(12.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val borderBaseColor = if (priority == Priority.NOTHING)
@@ -278,7 +283,7 @@ fun TaskItemContent(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(21.dp)
+                    .size(19.dp)
                     .clip(RoundedCornerShape(7.dp))
                     .background(checkBgColor)
                     .border(1.5.dp, checkBorderColor, RoundedCornerShape(7.dp))
@@ -300,12 +305,12 @@ fun TaskItemContent(
                 }
 
             }
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 val taskTitleStyle = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp
+                    fontSize = 15.sp,
+                    lineHeight = 18.sp
                 )
                 Text(
                     text = title,
@@ -321,7 +326,7 @@ fun TaskItemContent(
                 )
 
                 if (description.isNotBlank()) {
-                    Spacer(Modifier.height(5.dp))
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = description,
                         style = if (isDone){
@@ -333,7 +338,7 @@ fun TaskItemContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                             )
                         },
-                        maxLines = 3,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -401,10 +406,5 @@ fun TaskItemContent(
                 }
             }
         }
-        HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            thickness = 0.4.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
     }
 }

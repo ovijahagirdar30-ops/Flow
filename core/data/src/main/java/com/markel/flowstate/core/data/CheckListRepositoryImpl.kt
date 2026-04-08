@@ -21,13 +21,18 @@ class CheckListRepositoryImpl @Inject constructor(
 
     override suspend fun deleteList(list: CheckList) = checkListDao.deleteListEntity(list.toEntity())
 
+    override suspend fun updateCheckListsOrder(lists: List<CheckList>) {
+        checkListDao.updateCheckLists(lists.map { it.toEntity() })
+    }
+
     // Mappers
     private fun CheckListWithItems.toDomain() = CheckList(
         id = list.id,
         title = list.title,
         color = list.color,
+        position = list.position,
         items = items.map { CheckListItem(it.id, it.text, it.isDone, it.position) }
     )
-    private fun CheckList.toEntity() = CheckListEntity(id, title, color)
+    private fun CheckList.toEntity() = CheckListEntity(id, title, color, position)
     private fun CheckListItem.toEntity(listId: Int) = CheckListItemEntity(id, listId, text, isDone, position)
 }

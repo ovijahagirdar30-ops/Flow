@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface IdeaDao {
-    @Query("SELECT * FROM ideas ORDER BY createdAt DESC")
+    @Query("SELECT * FROM ideas ORDER BY position ASC, createdAt DESC")
     fun getIdeas(): Flow<List<IdeaEntity>>
 
     @Upsert
@@ -16,4 +16,7 @@ interface IdeaDao {
 
     @Query("SELECT * FROM ideas WHERE id = :id")
     suspend fun getIdeaById(id: Int): IdeaEntity?
+
+    @Update
+    suspend fun updateIdeas(ideas: List<IdeaEntity>)
 }
