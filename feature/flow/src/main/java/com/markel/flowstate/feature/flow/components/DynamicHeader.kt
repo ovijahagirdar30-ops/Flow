@@ -55,7 +55,7 @@ fun DynamicHeader(isMinimized: Boolean)
         .uppercase()
 
     val headerHeight by animateDpAsState(
-        targetValue = if (isMinimized) 40.dp else 80.dp,
+        targetValue = if (isMinimized) 35.dp else 65.dp,
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "height"
     )
@@ -103,14 +103,6 @@ fun DynamicHeader(isMinimized: Boolean)
                     modifier = Modifier.animateContentSize() // Smooths the alignment change
                 )
             }
-        }
-
-        AnimatedVisibility(visible = isMinimized) {
-            HorizontalDivider(
-                modifier = Modifier.padding(top = if (isLandscape) 4.dp else 8.dp),
-                thickness = 0.5.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-            )
         }
     }
 }

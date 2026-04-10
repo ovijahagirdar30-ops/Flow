@@ -110,7 +110,7 @@ fun CalendarContent(
                     return if (abs(dragOffset) < threshold) androidx.compose.ui.geometry.Offset(0f, delta * 0.5f) else androidx.compose.ui.geometry.Offset.Zero
                 }
 
-                // If it is collapsed, the list is at the top and we scroll downwards (positive delta)
+                // If it is collapsed, the list is at the top, and we scroll downwards (positive delta)
                 if (!isExpanded && delta > 0 && !listState.canScrollBackward) {
                     dragOffset += delta
                     if (dragOffset > threshold) {
@@ -206,8 +206,6 @@ fun CalendarContent(
             }
         )
         if (!isExpanded) Spacer(modifier = Modifier.height(4.dp))
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
         // TASKS LIST
         DailyTasksSection(

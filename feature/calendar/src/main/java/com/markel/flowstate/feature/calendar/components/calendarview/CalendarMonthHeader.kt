@@ -34,7 +34,7 @@ fun CalendarMonthHeader(
     onTodayClick: () -> Unit
     ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp, start = 16.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -58,7 +58,7 @@ fun CalendarMonthHeader(
 
         Text(
             text = displayMonth.month.getDisplayName(TextStyle.FULL, LocalLocale.current.platformLocale).replaceFirstChar { it.uppercase() } + " " + displayMonth.year,
-            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold)
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
         )
 
         // Today button

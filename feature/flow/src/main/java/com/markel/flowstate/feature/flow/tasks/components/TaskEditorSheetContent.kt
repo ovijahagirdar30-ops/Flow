@@ -201,7 +201,7 @@ fun TaskEditorSheetContent(
         // list of subtasks
         if (visibleSubTasks.isNotEmpty()) {
             Column (
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ){
                 visibleSubTasks.forEachIndexed { index, subTask ->
                     val isFirst = index == 0
