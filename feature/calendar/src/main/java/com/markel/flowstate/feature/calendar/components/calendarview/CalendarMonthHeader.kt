@@ -24,6 +24,12 @@ import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.BaselineShift
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun CalendarMonthHeader(
@@ -55,10 +61,35 @@ fun CalendarMonthHeader(
             }
 
         }
+        val monthTitle = displayMonth.month
+            .getDisplayName(TextStyle.FULL, LocalLocale.current.platformLocale)
+            .replaceFirstChar { it.uppercase() }
 
         Text(
-            text = displayMonth.month.getDisplayName(TextStyle.FULL, LocalLocale.current.platformLocale).replaceFirstChar { it.uppercase() } + " " + displayMonth.year,
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+            text = buildAnnotatedString {
+                withStyle(
+                    style = SpanStyle(
+                        fontWeight = FontWeight.Bold ,
+                        letterSpacing = (-0.35).sp,
+                        fontStyle = FontStyle.Italic,
+                        fontSize = 34.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                ) {
+                    append(monthTitle)
+                }
+                append("  ")
+                withStyle(
+                    style = SpanStyle(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                ) {
+                    append(displayMonth.year.toString())
+                }
+            },
+            lineHeight = 36.sp
         )
 
         // Today button

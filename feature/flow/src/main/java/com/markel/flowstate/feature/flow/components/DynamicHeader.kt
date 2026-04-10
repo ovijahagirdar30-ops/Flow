@@ -40,6 +40,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.text.font.FontStyle
 
 @Composable
 fun DynamicHeader(isMinimized: Boolean)
@@ -66,7 +67,7 @@ fun DynamicHeader(isMinimized: Boolean)
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .padding(top = if (isLandscape) 6.dp else 28.dp)
+            .padding(top = if (isLandscape) 6.dp else 30.dp)
     ) {
         Box(
             modifier = Modifier
@@ -88,9 +89,10 @@ fun DynamicHeader(isMinimized: Boolean)
                 ) {
                     Text(
                         text = stringResource(greeting),
-                        style = MaterialTheme.typography.headlineMedium.copy(
+                        style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = (-0.5).sp
+                            letterSpacing = (-0.5).sp,
+                            fontStyle = FontStyle.Italic,
                         )
                     )
                 }
