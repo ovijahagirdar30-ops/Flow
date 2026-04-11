@@ -193,13 +193,11 @@ fun CalendarContent(
             selectedDate = selectedDate,
             onDateSelected = { date ->
                 // If we select a date that is already selected, force the scroll only when the date is not visible
-                if (date == selectedDate) {
-                    if (isExpanded) {
-                        // This is for the edge case when a day of other month is selected but visible from a different month to still make the scroll available
-                        val selectedYearMonth = YearMonth.from(selectedDate)
-                        if (monthState.firstVisibleMonth.yearMonth != selectedYearMonth) {
-                            scrollTrigger = System.currentTimeMillis()
-                        }
+                if (date == selectedDate && isExpanded) {
+                    // This is for the edge case when a day of other month is selected but visible from a different month to still make the scroll available
+                    val selectedYearMonth = YearMonth.from(selectedDate)
+                    if (monthState.firstVisibleMonth.yearMonth != selectedYearMonth) {
+                        scrollTrigger = System.currentTimeMillis()
                     }
                 }
                 onDateSelected(date)
@@ -209,8 +207,8 @@ fun CalendarContent(
 
         // TASKS LIST
         DailyTasksSection(
-            selectedDate = selectedDate,
-            tasks = tasksByDate[selectedDate] ?: emptyList(),
+            startDate = selectedDate,
+            tasksByDate = tasksByDate,
             listState = listState,
             onTaskToggle = onTaskToggle
         )

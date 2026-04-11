@@ -28,32 +28,64 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.calendar.R
+import com.markel.flowstate.feature.flow.tasks.util.asColor
+
+private val CARD_SHAPE = RoundedCornerShape(14.dp)
+private val ACCENT_WIDTH = 3.dp
+
 
 @Composable
 fun InteractiveTaskRow(
     task: Task,
     onToggle: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
+    val priorityColor: Color? = if (task.priority == Priority.NOTHING) null
+    else task.priority.asColor()
+
+    val cardModifier = if (priorityColor != null) {
+        Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+            .padding(vertical = 4.dp)
+            .clip(CARD_SHAPE)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .drawBehind {
+                drawRect(
+                    color = priorityColor,
+                    topLeft = Offset(0f, 0f),
+                    size = androidx.compose.ui.geometry.Size(ACCENT_WIDTH.toPx(), size.height)
+                )
+            }
+    } else {
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clip(CARD_SHAPE)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+    }
+    Box(modifier = cardModifier)
+     {
+         Row(
+             modifier = Modifier.padding(
+                 start = if (priorityColor != null) ACCENT_WIDTH + 14.dp else 16.dp,
+                 end = 16.dp,
+                 top = 14.dp,
+                 bottom = 14.dp
+             ),
+             verticalAlignment = Alignment.CenterVertically
+         ) {
             // Interactive checkbox
             val checkBgColor by animateColorAsState(
                 targetValue = if (task.isDone) MaterialTheme.colorScheme.tertiary else androidx.compose.ui.graphics.Color.Transparent,
