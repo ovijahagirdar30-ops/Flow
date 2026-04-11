@@ -1,5 +1,7 @@
 package com.markel.flowstate.feature.calendar.components.taskslist
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -7,11 +9,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -109,6 +115,7 @@ private fun WeekSection(
 
 // ── Day row ───────────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun DayRow(
     day: DayBlock,
@@ -136,12 +143,28 @@ private fun DayRow(
                 color = if (isToday) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text(
-                text = day.date.dayOfMonth.toString(),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Normal),
-                color = if (isToday) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface
-            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        color = if (isToday) MaterialTheme.colorScheme.tertiary
+                                else androidx.compose.ui.graphics.Color.Transparent,
+                        shape = MaterialShapes.Pill.toShape()
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = day.date.dayOfMonth.toString(),
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Normal
+                    ),
+                    color = if (isToday) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
 
         // Right column: task cards

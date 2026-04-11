@@ -92,7 +92,7 @@ fun CalendarMonthHeader(
             lineHeight = 36.sp
         )
 
-        // Today button
+        // Today button to center the selected day in the calendar to today
         IconButton(
             onClick = onTodayClick ,
         ) {

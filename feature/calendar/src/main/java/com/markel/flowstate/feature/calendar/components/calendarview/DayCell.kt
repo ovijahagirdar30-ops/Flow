@@ -11,8 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.DayPosition
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DayCell(
     day: CalendarDay,
@@ -52,13 +56,13 @@ fun DayCell(
     ) {
         Box(modifier = Modifier
             .size(38.dp)
-            .clip(RoundedCornerShape(10.dp))
             .background(
                 color = when {
                     showSelection -> MaterialTheme.colorScheme.tertiary
                     isToday && isCurrentMonth -> MaterialTheme.colorScheme.surfaceVariant
                     else -> Color.Transparent
-                }
+                },
+                shape = MaterialShapes.Pill.toShape()
             )
             .clickable(onClick = onClick),
             contentAlignment = Alignment.Center

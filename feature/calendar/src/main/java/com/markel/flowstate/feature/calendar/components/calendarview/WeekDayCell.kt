@@ -11,8 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.core.WeekDay
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun WeekDayCell(
     day: WeekDay,
@@ -40,13 +44,13 @@ fun WeekDayCell(
         Box(
             modifier = Modifier
                 .size(38.dp)
-                .clip(RoundedCornerShape(10.dp))
                 .background(
                     color = when {
                         isSelected -> MaterialTheme.colorScheme.tertiary
                         isToday -> MaterialTheme.colorScheme.surfaceVariant
                         else -> Color.Transparent
-                    }
+                    },
+                    shape = MaterialShapes.Pill.toShape()
                 )
                 .clickable(onClick = onClick)
         ) {
