@@ -29,7 +29,7 @@ fun MonthBanner(date: LocalDate) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 20.dp)
+            .padding(horizontal = 16.dp, vertical = 16.dp)
             .background(
                 color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
                 shape = RoundedCornerShape(topStart = 28.dp, bottomEnd = 28.dp, topEnd = 4.dp, bottomStart = 4.dp)
