@@ -4,13 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +33,8 @@ fun WeekDayCell(
     isToday: Boolean,
     onClick: () -> Unit
 ) {
+    val shape = MaterialShapes.Pill.toShape()
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -44,13 +44,14 @@ fun WeekDayCell(
         Box(
             modifier = Modifier
                 .size(38.dp)
+                .clip(shape)
                 .background(
                     color = when {
                         isSelected -> MaterialTheme.colorScheme.tertiary
                         isToday -> MaterialTheme.colorScheme.surfaceVariant
                         else -> Color.Transparent
                     },
-                    shape = MaterialShapes.Pill.toShape()
+                    shape = shape
                 )
                 .clickable(onClick = onClick)
         ) {

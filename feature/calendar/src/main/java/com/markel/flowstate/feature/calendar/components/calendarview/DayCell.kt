@@ -47,6 +47,7 @@ fun DayCell(
         isCurrentMonth -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
     }
+    val shape = MaterialShapes.Pill.toShape()
 
     Box(
         modifier = Modifier
@@ -56,13 +57,14 @@ fun DayCell(
     ) {
         Box(modifier = Modifier
             .size(38.dp)
+            .clip(shape)
             .background(
                 color = when {
                     showSelection -> MaterialTheme.colorScheme.tertiary
                     isToday && isCurrentMonth -> MaterialTheme.colorScheme.surfaceVariant
                     else -> Color.Transparent
                 },
-                shape = MaterialShapes.Pill.toShape()
+                shape = shape
             )
             .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
