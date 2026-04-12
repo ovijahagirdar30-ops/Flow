@@ -35,7 +35,7 @@ import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
 import java.time.temporal.WeekFields
 
-private const val DAYS_AHEAD = 90
+private const val DAYS_AHEAD = 180
 private val DAY_COLUMN_WIDTH = 56.dp
 private val firstDayOfWeek: DayOfWeek
     get() = WeekFields.of(Locale.getDefault()).firstDayOfWeek
@@ -48,7 +48,8 @@ private data class WeekBlock(
 
 private data class DayBlock(
     val date: LocalDate,
-    val tasks: List<Task>
+    val tasks: List<Task>,
+    val isFirstOfMonth: Boolean = false
 )
 
 @Composable
@@ -87,28 +88,31 @@ private fun WeekSection(
     week: WeekBlock,
     onTaskToggle: (Task) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Left column spacer — keeps week label aligned with task cards
-        Spacer(modifier = Modifier.width(DAY_COLUMN_WIDTH))
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left column spacer — keeps week label aligned with task cards
+            Spacer(modifier = Modifier.width(DAY_COLUMN_WIDTH))
+            // Week label sits directly above its day rows, in the same column as the cards
+            Text(
+                text = week.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+            )
+        }
 
-        // Week label sits directly above its day rows, in the same column as the cards
-        Text(
-            text = week.label,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+        Spacer(modifier = Modifier.height(6.dp))
 
-    Spacer(modifier = Modifier.height(6.dp))
-
-    if (week.days.isNotEmpty()) {
         week.days.forEach { day ->
-            DayRow(day = day, onTaskToggle = onTaskToggle)
+            if (day.isFirstOfMonth) {
+                MonthBanner(day.date)
+            }
+
+            if (day.tasks.isNotEmpty()) {
+                DayRow(day = day, onTaskToggle = onTaskToggle)
+            }
         }
     }
 }
@@ -194,24 +198,28 @@ private fun buildWeekBlocks(
     var weekStart = startDate.with(TemporalAdjusters.previousOrSame(firstDayOfWeek))
 
     while (weekStart <= endDate) {
-        val weekEnd = weekStart.plusDays(6)
-        val days = (0L..6L)
-            .map { weekStart.plusDays(it) }
-            .filter { it in startDate..endDate }
-            .mapNotNull { day ->
-                tasksByDate[day]?.takeIf { it.isNotEmpty() }?.let { DayBlock(day, it) }
-            }
+        val days = (0L..6L).map { offset ->
+            val dayDate = weekStart.plusDays(offset)
+            val tasks = tasksByDate[dayDate] ?: emptyList()
 
-        blocks.add(
-            WeekBlock(
-                weekKey = weekKeyFor(weekStart),
-                label = buildWeekLabel(weekStart, weekEnd),
-                days = days
+            DayBlock(
+                date = dayDate,
+                tasks = tasks,
+                isFirstOfMonth = dayDate.dayOfMonth == 1
             )
-        )
+        }.filter { it.date in startDate..endDate }
+
+        if (days.isNotEmpty()) {
+            blocks.add(
+                WeekBlock(
+                    weekKey = weekKeyFor(weekStart),
+                    label = buildWeekLabel(weekStart, weekStart.plusDays(6)),
+                    days = days
+                )
+            )
+        }
         weekStart = weekStart.plusWeeks(1)
     }
-
     return blocks
 }
 
