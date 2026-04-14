@@ -1,6 +1,7 @@
 package com.markel.flowstate.feature.calendar.components.taskslist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -71,7 +72,7 @@ fun DailyTasksSection(
 
     LazyColumn(
         state = listState,
-        contentPadding = PaddingValues(bottom = 60.dp)
+        contentPadding = PaddingValues(bottom = 60.dp, top = 8.dp)
     ) {
         weeks.forEach { week ->
             item(key = "week_${week.weekKey}") {
@@ -88,9 +89,8 @@ private fun WeekSection(
     week: WeekBlock,
     onTaskToggle: (Task) -> Unit
 ) {
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Left column spacer — keeps week label aligned with task cards
@@ -103,8 +103,6 @@ private fun WeekSection(
             )
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
-
         week.days.forEach { day ->
             if (day.isFirstOfMonth) {
                 MonthBanner(day.date)
@@ -114,6 +112,7 @@ private fun WeekSection(
                 DayRow(day = day, onTaskToggle = onTaskToggle)
             }
         }
+        Spacer(modifier = Modifier.height(4.5.dp))
     }
 }
 
@@ -129,8 +128,7 @@ private fun DayRow(
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp),
+            .fillMaxWidth(),
         verticalAlignment = Alignment.Top
     ) {
         // Left column: abbrev + number
