@@ -177,7 +177,8 @@ fun CalendarContent(
             onTodayClick = {
                 onDateSelected(java.time.LocalDate.now())
                 scrollTrigger = System.currentTimeMillis()
-            }
+            },
+            onDateSelected = onDateSelected
         )
 
         // WEEKDAYS
