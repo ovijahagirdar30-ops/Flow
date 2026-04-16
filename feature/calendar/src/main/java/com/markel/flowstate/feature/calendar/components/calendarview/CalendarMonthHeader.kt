@@ -51,6 +51,8 @@ fun CalendarMonthHeader(
     ) {
 
     var isPickerExpanded by remember { mutableStateOf(false) }
+    var scrollTriggerMonth by remember { mutableStateOf<YearMonth?>(null) }
+    var scrollTriggerStamp by remember { mutableStateOf(0L) }
 
     val displayMonth = if (isExpanded) {
         monthState.firstVisibleMonth.yearMonth
@@ -116,7 +118,11 @@ fun CalendarMonthHeader(
 
             // Today button to center the selected day in the calendar to today
             IconButton(
-                onClick = onTodayClick,
+                onClick = {
+                    scrollTriggerMonth = YearMonth.from(java.time.LocalDate.now())
+                    scrollTriggerStamp = System.currentTimeMillis()
+                    onTodayClick()
+                }
             ) {
                 TodayIcon(
                     outlineColor = MaterialTheme.colorScheme.onSurface,
@@ -127,6 +133,7 @@ fun CalendarMonthHeader(
         AnimatedVisibility(visible = isPickerExpanded) {
             MonthPicker(
                 currentMonth = displayMonth,
+                scrollTrigger = scrollTriggerMonth to scrollTriggerStamp,
                 onMonthClick = { targetMonth ->
                     val firstDay = targetMonth.atDay(1)
 

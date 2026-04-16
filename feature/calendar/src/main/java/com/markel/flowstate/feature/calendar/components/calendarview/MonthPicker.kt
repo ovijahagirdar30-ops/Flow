@@ -23,6 +23,7 @@ sealed interface MonthPickerItem {
 @Composable
 fun MonthPicker(
     currentMonth: YearMonth,
+    scrollTrigger: Pair<YearMonth?, Long>,
     onMonthClick: (YearMonth) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -41,10 +42,23 @@ fun MonthPicker(
 
     val listState = rememberLazyListState()
 
-    // Scroll to the current month
+    // Scroll to the current month for the first time
     LaunchedEffect(Unit) {
         val index = pickerItems.indexOfFirst { it is MonthPickerItem.Month && it.yearMonth == currentMonth }
         if (index >= 0) listState.scrollToItem(maxOf(0, index - 2))
+    }
+
+    // Scroll to center the view when clicking the ‘Today’ button
+    LaunchedEffect(scrollTrigger) {
+        val targetMonth = scrollTrigger.first ?: return@LaunchedEffect
+        val index = pickerItems.indexOfFirst { it is MonthPickerItem.Month && it.yearMonth == targetMonth }
+        if (index < 0) return@LaunchedEffect
+
+        val visibleItems = listState.layoutInfo.visibleItemsInfo
+        val isVisible = visibleItems.any { it.index == index }
+        if (!isVisible) {
+            listState.animateScrollToItem(maxOf(0, index - 2))
+        }
     }
 
     LazyRow(
