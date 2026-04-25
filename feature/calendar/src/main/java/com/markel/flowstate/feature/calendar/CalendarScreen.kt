@@ -125,7 +125,9 @@ fun CalendarScreen(
                         onPriorityChange = { taskViewModel.updateDraftPriority(it) },
                         dueDate = draft.dueDate,
                         onDueDateChange = { taskViewModel.updateDraftDueDate(it) },
-                        onSave = { _, _, _, _ ->
+                        reminderTime = draft.reminderTime,
+                        onReminderTimeChange = { taskViewModel.updateDraftReminderTime(it) },
+                        onSave = { _, _, _, _, _ ->
                             taskViewModel.submitDraft()
                             showCreationSheet = false
                         }

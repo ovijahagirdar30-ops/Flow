@@ -34,13 +34,13 @@ class TaskRepositoryImpl @Inject constructor(
         return dao.getTaskById(id)?.toDomain()
     }
 
-    override suspend fun upsertTask(task: Task) {
+    override suspend fun upsertTask(task: Task): Long {
         // We break down the Domain object into Parent Entity + Child Entities
         val taskEntity = task.toEntity()
         val subTaskEntities = task.subTasks.map { it.toEntity(taskId = task.id) }
 
         // We delegate the complex transaction to the DAO
-        dao.upsertTaskWithSubTasks(taskEntity, subTaskEntities)
+        return dao.upsertTaskWithSubTasks(taskEntity, subTaskEntities)
     }
 
     override suspend fun deleteTask(task: Task) {
@@ -82,7 +82,8 @@ class TaskRepositoryImpl @Inject constructor(
             priority = Priority.entries.getOrElse(this.priority) { Priority.NOTHING },
             dueDate = this.dueDate,
             position = this.position,
-            completedAt = this.completedAt
+            completedAt = this.completedAt,
+            reminderTime = this.reminderTime
         )
     }
 
@@ -110,7 +111,8 @@ class TaskRepositoryImpl @Inject constructor(
             priority = this.priority.ordinal,
             dueDate = this.dueDate,
             position = this.position,
-            completedAt = this.completedAt
+            completedAt = this.completedAt,
+            reminderTime = this.reminderTime
         )
     }
 }

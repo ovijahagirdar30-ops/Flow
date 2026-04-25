@@ -1,5 +1,6 @@
 package com.markel.flowstate.feature.flow.tasks
 
+import android.Manifest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.domain.Priority
@@ -8,6 +9,7 @@ import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
 import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
 import com.markel.flowstate.core.domain.usecase.tasks.ToggleTaskUseCase
+import com.markel.flowstate.core.notifications.ReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +29,8 @@ data class TaskDraftState(
     val title: String = "",
     val description: String = "",
     val priority: Priority = Priority.NOTHING,
-    val dueDate: Long? = null
+    val dueDate: Long? = null,
+    val reminderTime: Long? = null  // Epoch millis for the reminder alarm. Independent of dueDate.
 )
 
 /**
@@ -38,7 +41,8 @@ data class TaskDraftState(
 class TaskViewModel @Inject constructor(
     private val repository: TaskRepository,
     private val toggleTaskUseCase: ToggleTaskUseCase,
-    private val deleteTaskUseCase: DeleteTaskUseCase
+    private val deleteTaskUseCase: DeleteTaskUseCase,
+    private val reminderScheduler: ReminderScheduler
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TasksUiState>(TasksUiState.Loading)
@@ -59,7 +63,7 @@ class TaskViewModel @Inject constructor(
     }
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
-    fun addTask(title: String, description: String, priority: Priority, dueDate: Long?, subTasks: List<SubTask>) {
+    fun addTask(title: String, description: String, priority: Priority, dueDate: Long?, reminderTime: Long?, subTasks: List<SubTask>) {
         if (title.isBlank()) return
         viewModelScope.launch {
             val currentTasks = (uiState.value as? TasksUiState.Success)?.tasks ?: emptyList()
@@ -72,15 +76,22 @@ class TaskViewModel @Inject constructor(
                 position = minPosition - 1,
                 priority = priority,
                 dueDate = dueDate,
+                reminderTime = reminderTime,
                 subTasks = subTasks
             )
-            repository.upsertTask(newTask)
+            val generatedId = repository.upsertTask(newTask)
+
+            // Schedule the alarm after the task is persisted.
+            if (reminderTime != null && reminderTime > System.currentTimeMillis()) {
+                reminderScheduler.schedule(generatedId.toInt(), title, reminderTime)
+            }
         }
     }
 
     // Function to delete a task
     fun deleteTask(task: Task) {
         viewModelScope.launch {
+            reminderScheduler.cancel(task.id)
             deleteTaskUseCase(task)
         }
     }
@@ -95,10 +106,11 @@ class TaskViewModel @Inject constructor(
     fun updateDraftDescription(value: String) { _draft.update { it.copy(description = value) } }
     fun updateDraftPriority(value: Priority) { _draft.update { it.copy(priority = value) } }
     fun updateDraftDueDate(value: Long?) { _draft.update { it.copy(dueDate = value) } }
+    fun updateDraftReminderTime(value: Long?) { _draft.update { it.copy(reminderTime = value) } }
 
     fun submitDraft() {
         val d = _draft.value
-        addTask(d.title, d.description, d.priority, d.dueDate, emptyList())
+        addTask(d.title, d.description, d.priority, d.dueDate, d.reminderTime, emptyList())
         _draft.value = TaskDraftState() // reset
     }
 }

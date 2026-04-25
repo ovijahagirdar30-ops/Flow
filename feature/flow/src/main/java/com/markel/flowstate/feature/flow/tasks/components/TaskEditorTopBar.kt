@@ -34,6 +34,8 @@ fun TaskEditorTopBar(
     dueDate: Long?,
     onDueDateChange: (Long?) -> Unit,
     isDone: Boolean,
+    reminderTime: Long?,
+    onReminderTimeChange: (Long?) -> Unit,
     onComplete: () -> Unit,
     onDelete: () -> Unit,
     onBack: () -> Unit
@@ -72,6 +74,10 @@ fun TaskEditorTopBar(
                 dueDate = dueDate,
                 onDueDateChange = onDueDateChange,
                 showLabel = true
+            )
+            ReminderSelector(
+                reminderTime = reminderTime,
+                onReminderTimeChange = onReminderTimeChange
             )
 
             IconButton(onClick = { /* TODO: Implement format */ }) {

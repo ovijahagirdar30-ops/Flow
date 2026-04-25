@@ -1,5 +1,7 @@
 package com.markel.flowstate.feature.flow
 
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.data.UserPreferencesRepository
@@ -9,6 +11,8 @@ import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.IdeaRepository
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.notifications.ReminderScheduler
+import com.markel.flowstate.core.notifications.buildAlarmItems
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -39,14 +44,24 @@ class FlowViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val ideaRepository: IdeaRepository,
     private val checkListRepository: CheckListRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
-) : ViewModel() {
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val reminderScheduler: ReminderScheduler
+) : ViewModel(), DefaultLifecycleObserver {
 
     // ── Optimistic local state ─────────────────────────────────
     private val _uiState = MutableStateFlow<FlowUiState>(FlowUiState.Loading)
     val uiState: StateFlow<FlowUiState> = _uiState
 
-    // ── Unified sectioned UiState ─────────────────────────────────────────────
+    // ── Banner ────────────────────────────────────────────────────────────────
+
+    // Backed by a MutableStateFlow so we can force a re-evaluation on resume without waiting for a DB emission
+    private val _bannerVisible = MutableStateFlow(false)
+    val showReminderBanner: StateFlow<Boolean> = _bannerVisible
+
+    // Tracks whether the permission was missing the last time we checked
+    // When it flips from false → true (user just granted it), we reschedule
+    private var wasPermissionMissing = false
+
     init {
         viewModelScope.launch {
             combine(
@@ -59,10 +74,27 @@ class FlowViewModel @Inject constructor(
                     ideas = ideas,
                     checkLists = lists
                 )
-            }.collect {
-                _uiState.value = it
+            }.collect { state ->
+                _uiState.value = state
+                refreshBanner()
             }
         }
+    }
+
+    // ── Lifecycle: called every time the app comes to the foreground ──────────
+
+    override fun onResume(owner: LifecycleOwner) {
+        val permissionNowGranted = reminderScheduler.canScheduleExactAlarms()
+
+        if (wasPermissionMissing && permissionNowGranted) {
+            // Permission was just granted — reschedule everything that was pending
+            viewModelScope.launch {
+                val items = buildAlarmItems(taskRepository)
+                reminderScheduler.rescheduleAll(items)
+
+            }
+        }
+        refreshBanner()
     }
 
     // ── Reorder ────────────────────────────────────────────────────────
@@ -111,6 +143,25 @@ class FlowViewModel @Inject constructor(
 
         viewModelScope.launch {
             checkListRepository.updateCheckListsOrder(updated)
+        }
+    }
+
+    // ── Internal ──────────────────────────────────────────────────────────────
+
+    private fun refreshBanner() {
+        val canSchedule = reminderScheduler.canScheduleExactAlarms()
+        wasPermissionMissing = !canSchedule
+
+        viewModelScope.launch {
+            val tasks = (uiState.value as? FlowUiState.Success)?.tasks
+                ?: return@launch  // still loading — init block will call refreshBanner again via first DB emit
+
+            val now = System.currentTimeMillis()
+            val hasAnyFutureReminder = tasks.any { task ->
+                (task.reminderTime?.let { it > now } == true) ||
+                        task.subTasks.any { sub -> sub.reminderTime?.let { it > now } == true }
+            }
+            _bannerVisible.value = hasAnyFutureReminder && !canSchedule
         }
     }
 

@@ -52,6 +52,8 @@ fun TaskEditorScreen(
                 onPriorityChange = { viewModel.updatePriority(it) },
                 dueDate = editor.dueDate,
                 onDueDateChange = { viewModel.updateDueDate(it) },
+                reminderTime = editor.reminderTime,
+                onReminderTimeChange = { viewModel.updateReminderTime(it) },
                 isDone = editor.isDone,
                 onComplete = { viewModel.toggleDone() },
                 onDelete = {
@@ -74,8 +76,11 @@ fun TaskEditorScreen(
                     task = task,
                     priority = editor.priority,
                     dueDate = editor.dueDate,
-                    onAutoUpdate = { title, desc, prio, date, subTasks ->
-                        viewModel.updateTask(task, title, desc, prio, date, subTasks)
+                    remTime = editor.reminderTime,
+                    onAutoUpdate = { title, desc, prio, date, remTime, subTasks ->
+                        viewModel.updateTask(
+                            task, title, desc, prio, date, remTime,subTasks,
+                        )
                     }
                 )
             }

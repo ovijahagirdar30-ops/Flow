@@ -2,6 +2,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- ── Notifications ───────────────────────────────────── -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- ── Exact alarms ──────────────────────────────────────────────────── -->
+    <!--
+        USE_EXACT_ALARM (Android 13+): granted automatically, no runtime prompt needed.
+        SCHEDULE_EXACT_ALARM (Android 12): shown in system settings; we redirect the
+        user there from the in-app permission settings button.
+    -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        tools:ignore="ExactAlarm" />
+
+    <!-- ── Boot (to reschedule alarms after reboot) ───────────────────────── -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+
     <application
         android:name=".FlowStateApp"
         android:allowBackup="true"
@@ -24,6 +40,23 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Fires the notification when the alarm triggers -->
+        <receiver
+            android:name=".core.notifications.ReminderReceiver"
+            android:exported="false" />
+
+        <!-- Reprograms alarms after device reboot -->
+        <receiver
+            android:name=".core.notifications.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- Some HTC / fast-boot devices use this action instead -->
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

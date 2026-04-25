@@ -30,7 +30,7 @@ object DatabaseModule {
         )
             .addMigrations(FlowStateDatabase.MIGRATION_5_6, FlowStateDatabase.MIGRATION_6_7, FlowStateDatabase.MIGRATION_7_8, FlowStateDatabase.MIGRATION_8_9,
                 FlowStateDatabase.MIGRATION_9_10, FlowStateDatabase.MIGRATION_10_11, FlowStateDatabase.MIGRATION_11_12, FlowStateDatabase.MIGRATION_12_13,
-                FlowStateDatabase.MIGRATION_13_14, FlowStateDatabase.MIGRATION_14_15, FlowStateDatabase.MIGRATION_15_16)
+                FlowStateDatabase.MIGRATION_13_14, FlowStateDatabase.MIGRATION_14_15, FlowStateDatabase.MIGRATION_15_16, FlowStateDatabase.MIGRATION_16_17)
             .build()
     }
 

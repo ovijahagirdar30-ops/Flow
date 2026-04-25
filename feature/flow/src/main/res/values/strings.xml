@@ -41,4 +41,9 @@
     <string name="tasks_m">TASKS</string>
     <string name="checklists_m">CHECKLISTS</string>
     <string name="ideas_notes_m">IDEAS &amp; NOTES</string>
+    <string name="next">Next</string>
+    <string name="reminder_time_title">Set time</string>
+    <string name="permission_title">Time-sensitive reminders are turned off</string>
+    <string name="permission_body">To be notified at the right time, grant FlowState permission to set exact alarms.</string>
+    <string name="permission_settings">Go to settings</string>
 </resources>

@@ -19,7 +19,8 @@ data class SubTask(
     val priority: Priority = Priority.NOTHING,
     val dueDate: Long? = null,
     val position: Int = 0,
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
+    val reminderTime: Long? = null
 )
 data class Task(
     val id: Int = 0,

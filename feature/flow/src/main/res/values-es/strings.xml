@@ -41,4 +41,9 @@
     <string name="tasks_m">TAREAS</string>
     <string name="checklists_m">LISTAS</string>
     <string name="ideas_notes_m">IDEAS &amp; NOTAS</string>
+    <string name="next">Siguiente</string>
+    <string name="reminder_time_title">Fijar hora</string>
+    <string name="permission_title">Los recordatorios precisos están desactivados</string>
+    <string name="permission_body">Para ser notificado en el momento exacto, proporciona los permisos necesarios a FlowState para las alarmas exactas.</string>
+    <string name="permission_settings">Ir a ajustes</string>
 </resources>

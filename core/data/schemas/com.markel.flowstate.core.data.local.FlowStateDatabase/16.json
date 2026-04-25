@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 16,
-    "identityHash": "455a75e3401c8bb1b72ff139315f9094",
+    "identityHash": "f88893df5b6da0df90be168fe6bfe78f",
     "entities": [
       {
         "tableName": "tasks",
@@ -69,7 +69,7 @@
       },
       {
         "tableName": "subtasks",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `taskId` INTEGER NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `isDone` INTEGER NOT NULL, `priority` INTEGER NOT NULL, `dueDate` INTEGER, `position` INTEGER NOT NULL, `completedAt` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`taskId`) REFERENCES `tasks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `taskId` INTEGER NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `isDone` INTEGER NOT NULL, `priority` INTEGER NOT NULL, `dueDate` INTEGER, `position` INTEGER NOT NULL, `completedAt` INTEGER, `reminderTime` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`taskId`) REFERENCES `tasks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -121,6 +121,11 @@
           {
             "fieldPath": "completedAt",
             "columnName": "completedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "reminderTime",
+            "columnName": "reminderTime",
             "affinity": "INTEGER"
           }
         ],
@@ -482,7 +487,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '455a75e3401c8bb1b72ff139315f9094')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f88893df5b6da0df90be168fe6bfe78f')"
     ]
   }
 }

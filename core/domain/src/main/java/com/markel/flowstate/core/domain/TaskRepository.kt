@@ -24,7 +24,7 @@ interface TaskRepository {
     /**
      * Inserts or updates a task.
      */
-    suspend fun upsertTask(task: Task)
+    suspend fun upsertTask(task: Task): Long
 
     /**
      * Deletes a task.
