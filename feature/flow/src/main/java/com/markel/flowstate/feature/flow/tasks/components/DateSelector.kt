@@ -161,7 +161,6 @@ fun DateSelector(
             )
         }
     }
-    Spacer(Modifier.width(2.dp))
 }
 
 fun isDateOverdue(timestamp: Long): Boolean {
