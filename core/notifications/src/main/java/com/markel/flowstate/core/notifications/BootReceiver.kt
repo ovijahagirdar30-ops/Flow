@@ -50,19 +50,45 @@ class BootReceiver : BroadcastReceiver() {
 }
 
 /**
- * Builds the flat list of (requestCode, title, triggerMillis) for all tasks
- * and subtasks that have a future reminder. Shared by BootReceiver and
- * FlowViewModel so the rescheduling logic stays in one place.
+ * Represents a single alarm to be scheduled.
+ * Used by [buildAlarmItems], [ReminderScheduler.rescheduleAll], and related code.
  */
-suspend fun buildAlarmItems(taskRepository: TaskRepository): List<Triple<Int, String, Long>> {
+data class AlarmItem(
+    val requestCode: Int,
+    val title: String,
+    val triggerMillis: Long,
+    val isSubtask: Boolean = false,
+    val subTaskId: String? = null
+)
+
+/**
+ * Builds the flat list of [AlarmItem] for all tasks and subtasks that have a
+ * future reminder. Shared by BootReceiver and FlowViewModel so the rescheduling
+ * logic stays in one place.
+ */
+suspend fun buildAlarmItems(taskRepository: TaskRepository): List<AlarmItem> {
     val now = System.currentTimeMillis()
-    val result = mutableListOf<Triple<Int, String, Long>>()
+    val result = mutableListOf<AlarmItem>()
 
     taskRepository.getTasks().first().forEach { task ->
-        task.reminderTime?.let { if (it > now) result += Triple(task.id, task.title, it) }
+        task.reminderTime?.let {
+            if (it > now) result += AlarmItem(
+                requestCode = task.id,
+                title = task.title,
+                triggerMillis = it,
+                isSubtask = false,
+                subTaskId = null
+            )
+        }
         task.subTasks.forEach { sub ->
             sub.reminderTime?.let {
-                if (it > now) result += Triple(sub.id.hashCode(), sub.title, it)
+                if (it > now) result += AlarmItem(
+                    requestCode = sub.id.hashCode(),
+                    title = sub.title,
+                    triggerMillis = it,
+                    isSubtask = true,
+                    subTaskId = sub.id
+                )
             }
         }
     }

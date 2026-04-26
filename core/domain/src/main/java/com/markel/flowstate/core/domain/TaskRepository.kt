@@ -35,4 +35,14 @@ interface TaskRepository {
      * Updates the order of the tasks.
      */
     suspend fun updateTasksOrder(tasks: List<Task>)
+
+    /**
+     * Clears the reminderTime of a task, marking its reminder as consumed.
+     */
+    suspend fun clearTaskReminder(taskId: Int)
+
+    /**
+     * Clears the reminderTime of a subtask, marking its reminder as consumed.
+     */
+    suspend fun clearSubTaskReminder(subTaskId: String)
 }

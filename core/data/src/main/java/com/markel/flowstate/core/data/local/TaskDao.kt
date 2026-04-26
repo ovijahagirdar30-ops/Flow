@@ -69,4 +69,10 @@ interface TaskDao {
 
     @Update
     suspend fun updateTasks(tasks: List<TaskEntity>)
+
+    @Query("UPDATE tasks SET reminderTime = NULL WHERE id = :taskId")
+    suspend fun clearTaskReminder(taskId: Int)
+
+    @Query("UPDATE subtasks SET reminderTime = NULL WHERE id = :subTaskId")
+    suspend fun clearSubTaskReminder(subTaskId: String)
 }

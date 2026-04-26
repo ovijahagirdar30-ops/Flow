@@ -53,6 +53,14 @@ class TaskRepositoryImpl @Inject constructor(
         dao.updateTasks(entities)
     }
 
+    override suspend fun clearTaskReminder(taskId: Int) {
+        dao.clearTaskReminder(taskId)
+    }
+
+    override suspend fun clearSubTaskReminder(subTaskId: String) {
+        dao.clearSubTaskReminder(subTaskId)
+    }
+
     // --- MAPPING FUNCTIONS ---
     // These functions convert between the DB model and the Domain model
 

@@ -31,7 +31,13 @@ class ReminderScheduler @Inject constructor(
 
     fun schedule(taskId: Int, taskTitle: String, triggerAtMillis: Long) {
         if (!canScheduleExactAlarms()) return
-        setAlarm(requestCode = taskId, title = taskTitle, triggerAtMillis = triggerAtMillis)
+        setAlarm(
+            requestCode = taskId,
+            title = taskTitle,
+            triggerAtMillis = triggerAtMillis,
+            isSubtask = false,
+            subTaskId = null
+        )
     }
 
     fun cancel(taskId: Int) {
@@ -50,7 +56,9 @@ class ReminderScheduler @Inject constructor(
         setAlarm(
             requestCode = subTaskId.hashCode(),
             title = subTaskTitle,
-            triggerAtMillis = triggerAtMillis
+            triggerAtMillis = triggerAtMillis,
+            isSubtask = true,
+            subTaskId = subTaskId
         )
     }
 
@@ -62,15 +70,22 @@ class ReminderScheduler @Inject constructor(
 
     /**
      * Reschedules every alarm in [items] whose trigger is in the future.
-     * Used when the exact-alarm permission is granted after reminders were already saved.
-     * [items] is a flat list of (requestCode, title, triggerAtMillis) triples
-     * covering both tasks and subtasks.
+     * Used when the exact-alarm permission is granted after reminders were already saved,
+     * or after a device reboot (via BootReceiver).
+     * Each [AlarmItem] carries whether it is a subtask, so the resulting PendingIntent
+     * includes the correct extras for the ReminderReceiver to consume the reminder properly.
      */
-    fun rescheduleAll(items: List<Triple<Int, String, Long>>) {
+    fun rescheduleAll(items: List<AlarmItem>) {
         if (!canScheduleExactAlarms()) return
         val now = System.currentTimeMillis()
-        items.forEach { (code, title, trigger) ->
-            if (trigger > now) setAlarm(code, title, trigger)
+        items.forEach { item ->
+            if (item.triggerMillis > now) setAlarm(
+                requestCode = item.requestCode,
+                title = item.title,
+                triggerAtMillis = item.triggerMillis,
+                isSubtask = item.isSubtask,
+                subTaskId = item.subTaskId
+            )
         }
     }
 
@@ -87,8 +102,14 @@ class ReminderScheduler @Inject constructor(
 
     // ── Internal ──────────────────────────────────────────────────────────────
 
-    private fun setAlarm(requestCode: Int, title: String, triggerAtMillis: Long) {
-        pendingIntent(requestCode, title, PendingIntent.FLAG_UPDATE_CURRENT)?.let { pi ->
+    private fun setAlarm(
+        requestCode: Int,
+        title: String,
+        triggerAtMillis: Long,
+        isSubtask: Boolean = false,
+        subTaskId: String? = null
+    ) {
+        pendingIntent(requestCode, title, PendingIntent.FLAG_UPDATE_CURRENT, isSubtask, subTaskId)?.let { pi ->
             alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 triggerAtMillis,
@@ -103,13 +124,21 @@ class ReminderScheduler @Inject constructor(
         pi.cancel()
     }
 
-    private fun pendingIntent(requestCode: Int, title: String, flags: Int): PendingIntent? =
+    private fun pendingIntent(
+        requestCode: Int,
+        title: String,
+        flags: Int,
+        isSubtask: Boolean = false,
+        subTaskId: String? = null
+    ): PendingIntent? =
         PendingIntent.getBroadcast(
             context,
             requestCode,
             Intent(context, ReminderReceiver::class.java).apply {
                 putExtra(ReminderReceiver.EXTRA_TASK_ID, requestCode)
                 putExtra(ReminderReceiver.EXTRA_TASK_TITLE, title)
+                putExtra(ReminderReceiver.EXTRA_IS_SUBTASK, isSubtask)
+                subTaskId?.let { putExtra(ReminderReceiver.EXTRA_SUBTASK_ID, it) }
             },
             flags or PendingIntent.FLAG_IMMUTABLE
         )
