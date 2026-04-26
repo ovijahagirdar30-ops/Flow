@@ -65,7 +65,7 @@ fun SectionedFlowView(
     val outerListState = rememberLazyListState()
 
     val reorderableState = rememberReorderableLazyListState(outerListState) { from, to ->
-        val headerOffset = 1
+        val headerOffset = 2
         val fromTaskIndex = from.index - headerOffset
         val toTaskIndex = to.index - headerOffset
 
