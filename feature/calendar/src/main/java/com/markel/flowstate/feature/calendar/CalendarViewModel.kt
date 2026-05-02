@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.domain.usecase.tasks.ToggleTaskUseCase
+import com.markel.flowstate.core.notifications.ReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -28,7 +30,9 @@ sealed interface CalendarUiState {
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
-    private val repository: TaskRepository
+    private val repository: TaskRepository,
+    private val toggleTaskUseCase: ToggleTaskUseCase,
+    private val reminderScheduler: ReminderScheduler
 ) : ViewModel() {
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
@@ -75,16 +79,13 @@ class CalendarViewModel @Inject constructor(
     }
 
     fun toggleTaskDone(task: Task) {
-        val newIsDone = !task.isDone
-        val newCompletedAt = if (newIsDone) System.currentTimeMillis() else null
-
         viewModelScope.launch {
-            repository.upsertTask(
-                task.copy(
-                    isDone = newIsDone,
-                    completedAt = newCompletedAt
-                )
-            )
+            val completing = !task.isDone
+            toggleTaskUseCase(task)
+            if (completing) {
+                reminderScheduler.cancel(task.id)
+                task.subTasks.forEach { reminderScheduler.cancelSubTask(it.id) }
+            }
         }
     }
 
