@@ -10,6 +10,15 @@ class ToggleTaskUseCase @Inject constructor(
     suspend operator fun invoke(task: Task) {
         val newIsDone = !task.isDone
         val newCompletedAt = if (newIsDone) System.currentTimeMillis() else null
-        repository.upsertTask(task.copy(isDone = newIsDone, completedAt = newCompletedAt))
+
+        // If a task is completed delete all the reminders (from the subtasks too)
+        val updatedReminderTime = if (newIsDone) null else task.reminderTime
+        val updatedSubTasks = if (newIsDone) {
+            task.subTasks.map { it.copy(reminderTime = null) }
+        } else {
+            task.subTasks
+        }
+
+        repository.upsertTask(task.copy(isDone = newIsDone, completedAt = newCompletedAt, reminderTime = updatedReminderTime, subTasks = updatedSubTasks))
     }
 }
