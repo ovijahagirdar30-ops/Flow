@@ -71,6 +71,7 @@ suspend fun buildAlarmItems(taskRepository: TaskRepository): List<AlarmItem> {
     val result = mutableListOf<AlarmItem>()
 
     taskRepository.getTasks().first().forEach { task ->
+        if (task.isDone) return@forEach
         task.reminderTime?.let {
             if (it > now) result += AlarmItem(
                 requestCode = task.id,
@@ -81,6 +82,7 @@ suspend fun buildAlarmItems(taskRepository: TaskRepository): List<AlarmItem> {
             )
         }
         task.subTasks.forEach { sub ->
+            if (sub.isDone) return@forEach
             sub.reminderTime?.let {
                 if (it > now) result += AlarmItem(
                     requestCode = sub.id.hashCode(),
