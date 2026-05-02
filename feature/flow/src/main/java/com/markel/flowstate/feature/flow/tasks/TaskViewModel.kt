@@ -98,7 +98,14 @@ class TaskViewModel @Inject constructor(
 
     // Function to toggle task completion status
     fun toggleTaskDone(task: Task) {
-        viewModelScope.launch { toggleTaskUseCase(task) }
+        viewModelScope.launch {
+            val completing = !task.isDone
+            toggleTaskUseCase(task)
+            if (completing) {
+                reminderScheduler.cancel(task.id)
+                task.subTasks.forEach { reminderScheduler.cancelSubTask(it.id) }
+            }
+        }
     }
 
     // TASK CREATION
