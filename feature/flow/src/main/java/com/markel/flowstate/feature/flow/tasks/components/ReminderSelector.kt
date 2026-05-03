@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -154,6 +155,31 @@ fun ReminderSelector(
             is24Hour = DateFormat.is24HourFormat(context)
         )
 
+        // Toggle between clock face (Picker) and text input (Keyboard) mode
+        var isKeyboardMode by remember { mutableStateOf(false) }
+
+        val timeAccentColor = MaterialTheme.colorScheme.secondary
+        val onTimeAccentColor = MaterialTheme.colorScheme.onSecondary
+
+        val timePickerColors = TimePickerDefaults.colors(
+            // Clock dial
+            clockDialColor = MaterialTheme.colorScheme.surfaceVariant,
+            selectorColor = timeAccentColor,
+            clockDialSelectedContentColor = onTimeAccentColor,
+            clockDialUnselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            // Hour/minute chips at the top
+            timeSelectorSelectedContainerColor = timeAccentColor,
+            timeSelectorSelectedContentColor = onTimeAccentColor,
+            timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+            // AM/PM period selector
+            periodSelectorSelectedContainerColor = timeAccentColor,
+            periodSelectorSelectedContentColor = onTimeAccentColor,
+            periodSelectorUnselectedContainerColor = Color.Transparent,
+            periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurface,
+            periodSelectorBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+        )
+
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
@@ -161,9 +187,30 @@ fun ReminderSelector(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    IconButton(
+                        onClick = { isKeyboardMode = !isKeyboardMode }
+                    ) {
+                        Icon(
+                            imageVector = if (isKeyboardMode) {
+                                ImageVector.vectorResource(R.drawable.schedule_24px)
+                            } else {
+                                ImageVector.vectorResource(R.drawable.keyboard_alt_24px)
+                            },
+                            contentDescription = if (isKeyboardMode) {
+                                "Switch to clock"
+                            } else {
+                                "Switch to keyboard"
+                            },
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
                     TextButton(
                         onClick = { showTimePicker = false },
-                        colors = textButtonColors
+                        colors = ButtonDefaults.textButtonColors(contentColor = timeAccentColor)
                     ) { Text(stringResource(R.string.cancel)) }
 
                     TextButton(
@@ -179,14 +226,24 @@ fun ReminderSelector(
                             }
                             pendingDate = null
                         },
-                        colors = textButtonColors
+                        colors = ButtonDefaults.textButtonColors(contentColor = timeAccentColor)
                     ) { Text(stringResource(R.string.ok)) }
                 }
             },
             title = { Text(stringResource(R.string.reminder_time_title)) },
             text = {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
-                    TimePicker(state = timePickerState)
+                    if (isKeyboardMode) {
+                        TimeInput(
+                            state = timePickerState,
+                            colors = timePickerColors
+                        )
+                    } else {
+                        TimePicker(
+                            state = timePickerState,
+                            colors = timePickerColors
+                        )
+                    }
                 }
             }
         )
