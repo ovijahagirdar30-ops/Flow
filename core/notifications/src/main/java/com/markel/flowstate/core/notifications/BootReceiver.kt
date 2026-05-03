@@ -56,6 +56,7 @@ class BootReceiver : BroadcastReceiver() {
 data class AlarmItem(
     val requestCode: Int,
     val title: String,
+    val description: String? = null,
     val triggerMillis: Long,
     val isSubtask: Boolean = false,
     val subTaskId: String? = null
@@ -76,6 +77,7 @@ suspend fun buildAlarmItems(taskRepository: TaskRepository): List<AlarmItem> {
             if (it > now) result += AlarmItem(
                 requestCode = task.id,
                 title = task.title,
+                description = task.description,
                 triggerMillis = it,
                 isSubtask = false,
                 subTaskId = null

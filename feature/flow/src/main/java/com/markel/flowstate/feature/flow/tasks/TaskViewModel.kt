@@ -83,7 +83,7 @@ class TaskViewModel @Inject constructor(
 
             // Schedule the alarm after the task is persisted.
             if (reminderTime != null && reminderTime > System.currentTimeMillis()) {
-                reminderScheduler.schedule(generatedId.toInt(), title, reminderTime)
+                reminderScheduler.schedule(generatedId.toInt(), title, description, reminderTime)
             }
         }
     }

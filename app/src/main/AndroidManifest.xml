@@ -46,6 +46,11 @@
             android:name=".core.notifications.ReminderReceiver"
             android:exported="false" />
 
+        <!-- Marks a task as done from the notification "Complete" action -->
+        <receiver
+            android:name=".core.notifications.CompleteTaskReceiver"
+            android:exported="false" />
+
         <!-- Reprograms alarms after device reboot -->
         <receiver
             android:name=".core.notifications.BootReceiver"

@@ -24,6 +24,7 @@ class ReminderReceiver : BroadcastReceiver() {
     companion object {
         const val EXTRA_TASK_ID = "extra_task_id"
         const val EXTRA_TASK_TITLE = "extra_task_title"
+        const val EXTRA_TASK_DESCRIPTION = "extra_task_description"
         const val EXTRA_IS_SUBTASK = "extra_is_subtask"
         const val EXTRA_SUBTASK_ID = "extra_subtask_id"
 
@@ -40,12 +41,27 @@ class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val taskId = intent.getIntExtra(EXTRA_TASK_ID, -1)
         val taskTitle = intent.getStringExtra(EXTRA_TASK_TITLE) ?: return
+        val taskDescription = intent.getStringExtra(EXTRA_TASK_DESCRIPTION)
+
         if (taskId == -1) return
 
-        // Show the notification
+        // Build the "Complete" PendingIntent
+        val completeIntent = Intent(context, CompleteTaskReceiver::class.java).apply {
+            putExtra(CompleteTaskReceiver.EXTRA_TASK_ID, taskId)
+        }
+        val completePendingIntent = android.app.PendingIntent.getBroadcast(
+            context,
+            taskId,
+            completeIntent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Show the notification with Complete action
         notificationHelper.showReminder(
             notificationId = taskId,
-            taskTitle = taskTitle
+            taskTitle = taskTitle,
+            taskDescription = taskDescription,
+            completePendingIntent = completePendingIntent
         )
 
 

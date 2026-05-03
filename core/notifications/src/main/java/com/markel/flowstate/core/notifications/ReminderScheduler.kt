@@ -29,11 +29,12 @@ class ReminderScheduler @Inject constructor(
 
     // ── Tasks ─────────────────────────────────────────────────────────────────
 
-    fun schedule(taskId: Int, taskTitle: String, triggerAtMillis: Long) {
+    fun schedule(taskId: Int, taskTitle: String, taskDescription: String?, triggerAtMillis: Long) {
         if (!canScheduleExactAlarms()) return
         setAlarm(
             requestCode = taskId,
             title = taskTitle,
+            description = taskDescription,
             triggerAtMillis = triggerAtMillis,
             isSubtask = false,
             subTaskId = null
@@ -82,6 +83,7 @@ class ReminderScheduler @Inject constructor(
             if (item.triggerMillis > now) setAlarm(
                 requestCode = item.requestCode,
                 title = item.title,
+                description = item.description,
                 triggerAtMillis = item.triggerMillis,
                 isSubtask = item.isSubtask,
                 subTaskId = item.subTaskId
@@ -93,7 +95,7 @@ class ReminderScheduler @Inject constructor(
 
     /**
      * Returns true if the device can schedule exact alarms.
-     * Always true below Android 12 (maybe this if is not needed since the minSDK is 31, but in any case I prefer to check)
+     * Always true below Android 12 (maybe this "if" is not needed since the minSDK is 31, but in any case I prefer to check)
      */
     fun canScheduleExactAlarms(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) alarmManager.canScheduleExactAlarms()
@@ -105,11 +107,12 @@ class ReminderScheduler @Inject constructor(
     private fun setAlarm(
         requestCode: Int,
         title: String,
+        description: String? = null,
         triggerAtMillis: Long,
         isSubtask: Boolean = false,
         subTaskId: String? = null
     ) {
-        pendingIntent(requestCode, title, PendingIntent.FLAG_UPDATE_CURRENT, isSubtask, subTaskId)?.let { pi ->
+        pendingIntent(requestCode, title, description, PendingIntent.FLAG_UPDATE_CURRENT, isSubtask, subTaskId)?.let { pi ->
             alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 triggerAtMillis,
@@ -119,7 +122,7 @@ class ReminderScheduler @Inject constructor(
     }
 
     private fun cancelAlarm(requestCode: Int) {
-        val pi = pendingIntent(requestCode, "", PendingIntent.FLAG_NO_CREATE) ?: return
+        val pi = pendingIntent(requestCode, "", null, PendingIntent.FLAG_NO_CREATE) ?: return
         alarmManager.cancel(pi)
         pi.cancel()
     }
@@ -127,6 +130,7 @@ class ReminderScheduler @Inject constructor(
     private fun pendingIntent(
         requestCode: Int,
         title: String,
+        description: String?,
         flags: Int,
         isSubtask: Boolean = false,
         subTaskId: String? = null

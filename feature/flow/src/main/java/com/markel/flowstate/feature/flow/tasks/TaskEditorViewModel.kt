@@ -108,7 +108,7 @@ class TaskEditorViewModel @Inject constructor(
             repository.upsertTask(updated)
 
             if (value != null && value > System.currentTimeMillis()) {
-                reminderScheduler.schedule(task.id, task.title, value)
+                reminderScheduler.schedule(task.id, task.title, task.description, value)
             }
         }
     }

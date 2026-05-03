@@ -42,11 +42,17 @@ class NotificationHelper @Inject constructor(
     }
 
     /**
-     * Shows a reminder notification. Tapping it opens MainActivity.
+     * Shows a reminder notification with a "Complete" action.
+     * Tapping the notification opens MainActivity; tapping "Complete" marks the task as done.
      * [notificationId] should be the task ID so each task has its own notification slot
      * (a new reminder for the same task replaces the old one automatically).
      */
-    fun showReminder(notificationId: Int, taskTitle: String) {
+    fun showReminder(
+        notificationId: Int,
+        taskTitle: String,
+        taskDescription: String?,
+        completePendingIntent: PendingIntent
+    ) {
         val tapIntent = context.packageManager
             .getLaunchIntentForPackage(context.packageName)
             ?.apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK }
@@ -60,14 +66,26 @@ class NotificationHelper @Inject constructor(
             )
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.new_ic_launcher_foreground_white )
-            .setContentText(taskTitle)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.new_ic_launcher_foreground_white)
+            .setContentTitle(taskTitle)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(tapPendingIntent)
-            .build()
 
-        notificationManager.notify(notificationId, notification)
+        // Show description if exists
+        if (!taskDescription.isNullOrBlank()) {
+            builder.setContentText(taskDescription)
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(taskDescription))
+        }
+
+        // Add action to complete the task
+        builder.addAction(
+            R.drawable.check_24px,
+            context.getString(R.string.notification_action_complete),
+            completePendingIntent
+        )
+
+        notificationManager.notify(notificationId, builder.build())
     }
 }
