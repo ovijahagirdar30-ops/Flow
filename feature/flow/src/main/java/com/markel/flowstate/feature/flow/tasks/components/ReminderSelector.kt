@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
+import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -150,7 +151,7 @@ fun ReminderSelector(
         val timePickerState = rememberTimePickerState(
             initialHour = existingTime.hour,
             initialMinute = existingTime.minute,
-            is24Hour = true
+            is24Hour = DateFormat.is24HourFormat(context)
         )
 
         AlertDialog(
@@ -240,7 +241,9 @@ fun formatReminderDateTime(timestamp: Long): String {
     val time = zdt.toLocalTime()
     val today = LocalDate.now()
 
-    val timeStr = DateTimeFormatter.ofPattern("HH:mm").format(time)
+    val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    val timePattern = if (is24Hour) "HH:mm" else "h:mm a"
+    val timeStr = DateTimeFormatter.ofPattern(timePattern).format(time)
     val dateStr = when (date) {
         today -> stringResource(R.string.today)
         today.plusDays(1) -> stringResource(R.string.tomorrow)

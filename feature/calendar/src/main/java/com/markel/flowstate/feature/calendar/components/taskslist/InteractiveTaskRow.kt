@@ -1,5 +1,6 @@
 package com.markel.flowstate.feature.calendar.components.taskslist
 
+import android.text.format.DateFormat
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -33,6 +34,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
@@ -212,12 +214,15 @@ fun InteractiveTaskRow(
 @Composable
 private fun formatCalendarReminderTime(timestamp: Long?): String {
     if (timestamp == null) return ""
+    val context = LocalContext.current
     val zdt = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault())
     val date = zdt.toLocalDate()
     val time = zdt.toLocalTime()
     val today = LocalDate.now()
 
-    val timeStr = DateTimeFormatter.ofPattern("HH:mm").format(time)
+    val is24Hour = DateFormat.is24HourFormat(context)
+    val timePattern = if (is24Hour) "HH:mm" else "h:mm a"
+    val timeStr = DateTimeFormatter.ofPattern(timePattern).format(time)
     val dateStr = when (date) {
         today -> stringResource(R.string.today)
         today.plusDays(1) -> stringResource(R.string.tomorrow)
