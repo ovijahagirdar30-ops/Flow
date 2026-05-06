@@ -46,4 +46,5 @@
     <string name="permission_title">Los recordatorios precisos están desactivados</string>
     <string name="permission_body">Para ser notificado en el momento exacto, proporciona los permisos necesarios a FlowState para las alarmas exactas.</string>
     <string name="permission_settings">Ir a ajustes</string>
+    <string name="reminder_past_time_error">Selecciona una hora futura</string>
 </resources>

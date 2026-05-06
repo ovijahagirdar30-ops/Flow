@@ -46,4 +46,5 @@
     <string name="permission_title">Time-sensitive reminders are turned off</string>
     <string name="permission_body">To be notified at the right time, grant FlowState permission to set exact alarms.</string>
     <string name="permission_settings">Go to settings</string>
+    <string name="reminder_past_time_error">Select a future time</string>
 </resources>

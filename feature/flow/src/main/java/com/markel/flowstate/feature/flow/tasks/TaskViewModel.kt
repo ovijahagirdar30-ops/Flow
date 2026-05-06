@@ -68,6 +68,7 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch {
             val currentTasks = (uiState.value as? TasksUiState.Success)?.tasks ?: emptyList()
             val minPosition = currentTasks.minOfOrNull { it.position } ?: 0
+            val effectiveReminderTime = if (reminderTime != null && reminderTime > System.currentTimeMillis()) reminderTime else null
 
             val newTask = Task(
                 title = title,
@@ -82,8 +83,8 @@ class TaskViewModel @Inject constructor(
             val generatedId = repository.upsertTask(newTask)
 
             // Schedule the alarm after the task is persisted.
-            if (reminderTime != null && reminderTime > System.currentTimeMillis()) {
-                reminderScheduler.schedule(generatedId.toInt(), title, description, reminderTime)
+            if (effectiveReminderTime != null) {
+                reminderScheduler.schedule(generatedId.toInt(), title, description, effectiveReminderTime)
             }
         }
     }

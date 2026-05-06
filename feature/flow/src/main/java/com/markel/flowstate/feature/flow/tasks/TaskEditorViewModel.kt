@@ -98,7 +98,9 @@ class TaskEditorViewModel @Inject constructor(
 
     fun updateReminderTime(value: Long?) {
         val task = _editor.value.task ?: return
-        _editor.update { it.copy(reminderTime = value) }
+        val effectiveValue = if (value != null && value > System.currentTimeMillis()) value else null
+
+        _editor.update { it.copy(reminderTime = effectiveValue) }
 
         viewModelScope.launch {
             // Cancel the old alarm regardless of whether we're setting a new one.
@@ -107,8 +109,8 @@ class TaskEditorViewModel @Inject constructor(
             val updated = task.copy(reminderTime = value)
             repository.upsertTask(updated)
 
-            if (value != null && value > System.currentTimeMillis()) {
-                reminderScheduler.schedule(task.id, task.title, task.description, value)
+            if (effectiveValue != null) {
+                reminderScheduler.schedule(task.id, task.title, task.description, effectiveValue)
             }
         }
     }

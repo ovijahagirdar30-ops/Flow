@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.text.format.DateFormat
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -89,9 +90,20 @@ fun ReminderSelector(
     // ── Step 1: Date picker ───────────────────────────────────────────────────
     if (showDatePicker) {
         val initialMillis = reminderTime ?: System.currentTimeMillis()
+
+        val selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val selectedDate = Instant.ofEpochMilli(utcTimeMillis)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                return !selectedDate.isBefore(LocalDate.now())
+            }
+        }
+
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = initialMillis,
-            initialDisplayMode = if (isLandscape) DisplayMode.Input else DisplayMode.Picker
+            initialDisplayMode = if (isLandscape) DisplayMode.Input else DisplayMode.Picker,
+            selectableDates = selectableDates
         )
         val datePickerColors = DatePickerDefaults.colors(
             selectedDayContainerColor = accentColor,
@@ -149,10 +161,12 @@ fun ReminderSelector(
             Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalTime()
         } ?: LocalTime.of(9, 0)
 
+        val is24Hour = DateFormat.is24HourFormat(context)
+
         val timePickerState = rememberTimePickerState(
             initialHour = existingTime.hour,
             initialMinute = existingTime.minute,
-            is24Hour = DateFormat.is24HourFormat(context)
+            is24Hour = is24Hour
         )
 
         // Toggle between clock face (Picker) and text input (Keyboard) mode
@@ -213,18 +227,26 @@ fun ReminderSelector(
                         colors = ButtonDefaults.textButtonColors(contentColor = timeAccentColor)
                     ) { Text(stringResource(R.string.cancel)) }
 
+                    val pastTimeErrorMsg = stringResource(R.string.reminder_past_time_error)
                     TextButton(
                         onClick = {
-                            showTimePicker = false
                             pendingDate?.let { date ->
                                 val millis = ZonedDateTime.of(
                                     date,
                                     LocalTime.of(timePickerState.hour, timePickerState.minute),
                                     ZoneId.systemDefault()
                                 ).toInstant().toEpochMilli()
-                                onReminderTimeChange(millis)
+                                if (millis <= System.currentTimeMillis()) {
+                                    Toast.makeText(
+                                        context,
+                                        pastTimeErrorMsg,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    showTimePicker = false
+                                    onReminderTimeChange(millis)
+                                }
                             }
-                            pendingDate = null
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = timeAccentColor)
                     ) { Text(stringResource(R.string.ok)) }
