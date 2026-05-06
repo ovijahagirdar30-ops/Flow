@@ -119,6 +119,12 @@ class TaskEditorViewModel @Inject constructor(
         _editor.update { it.copy(isDone = newIsDone) }
         viewModelScope.launch {
             toggleTaskUseCase(current)
+            if (newIsDone) {
+                reminderScheduler.cancel(current.id)
+                current.subTasks.filter { it.reminderTime != null }.forEach { subTask ->
+                    reminderScheduler.cancelSubTask(subTask.id)
+                }
+            }
         }
     }
     fun deleteTask(task: Task) {
