@@ -6,6 +6,7 @@ import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
 import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
 import com.markel.flowstate.core.domain.usecase.tasks.ToggleTaskUseCase
+import com.markel.flowstate.core.notifications.ReminderScheduler
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coVerify
 import io.mockk.every
@@ -25,12 +26,13 @@ class TaskEditorViewModelTest {
     private val repository: TaskRepository = mockk(relaxed = true)
     private val toggleTaskUseCase: ToggleTaskUseCase = mockk(relaxed = true)
     private val deleteTaskUseCase: DeleteTaskUseCase = mockk(relaxed = true)
+    private val reminderScheduler: ReminderScheduler = mockk(relaxed = true)
     private lateinit var viewModel: TaskEditorViewModel
 
     @Test
     fun initialState_isEmpty() = runTest {
         // GIVEN / WHEN - A fresh ViewModel with no loadTask call yet
-        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         // THEN - editor state should be empty
         viewModel.editor.test {
@@ -47,7 +49,7 @@ class TaskEditorViewModelTest {
         val task = Task(id = 42, title = "Buy milk", isDone = false, priority = Priority.HIGH, dueDate = 1000L)
         every { repository.getTasks() } returns flowOf(listOf(task))
 
-        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         // WHEN
         viewModel.loadTask(taskId = 42)
@@ -67,7 +69,7 @@ class TaskEditorViewModelTest {
         // GIVEN - Repository returns a list that does NOT contain the requested ID
         every { repository.getTasks() } returns flowOf(emptyList())
 
-        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         // WHEN
         viewModel.loadTask(taskId = 99)
@@ -82,7 +84,7 @@ class TaskEditorViewModelTest {
     @Test
     fun updatePriority_updatesStateCorrectly() = runTest {
         // GIVEN
-        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         // WHEN
         viewModel.updatePriority(Priority.MEDIUM)
@@ -96,7 +98,7 @@ class TaskEditorViewModelTest {
     @Test
     fun updateDueDate_updatesStateCorrectly() = runTest {
         // GIVEN
-        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         // WHEN
         viewModel.updateDueDate(9999L)
@@ -112,7 +114,7 @@ class TaskEditorViewModelTest {
         // GIVEN - A task loaded in the editor
         val original = Task(id = 5, title = "Old title", isDone = false, priority = Priority.NOTHING)
         every { repository.getTasks() } returns flowOf(listOf(original))
-        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
         viewModel.loadTask(5)
 
         // WHEN - User edits the task
@@ -122,6 +124,7 @@ class TaskEditorViewModelTest {
             newDescription = "New desc",
             newPriority = Priority.HIGH,
             newDueDate = 5000L,
+            newReminderTime = null,
             newSubTasks = emptyList()
         )
 
@@ -140,12 +143,12 @@ class TaskEditorViewModelTest {
     @Test
     fun updateTask_withBlankTitle_doesNotCallRepository() = runTest {
         // GIVEN
-        val original = Task(id = 1, title = "Original", isDone = false,)
+        val original = Task(id = 1, title = "Original", isDone = false)
         every { repository.getTasks() } returns flowOf(listOf(original))
-        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         // WHEN - Trying to save with a blank title
-        viewModel.updateTask(original, "   ", "", Priority.NOTHING, null, emptyList())
+        viewModel.updateTask(original, "   ", "", Priority.NOTHING, null, null, emptyList())
 
         // THEN - Repository must NOT be called
         coVerify(exactly = 0) { repository.upsertTask(any()) }
@@ -156,7 +159,7 @@ class TaskEditorViewModelTest {
         // GIVEN
         val task = Task(id = 1, title = "Task", isDone = false)
         every { repository.getTasks() } returns flowOf(listOf(task))
-        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
         viewModel.loadTask(1)
 
         // WHEN
@@ -171,17 +174,18 @@ class TaskEditorViewModelTest {
     }
 
     @Test
-    fun deleteTask_callsDeleteUseCase() = runTest {
+    fun deleteTask_cancelsAlarmsAndCallsDeleteUseCase() = runTest {
         // GIVEN
         val task = Task(id = 3, title = "Task to delete", isDone = false)
         every { repository.getTasks() } returns flowOf(listOf(task))
-        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
         viewModel.loadTask(3)
 
         // WHEN
         viewModel.deleteTask(task)
 
         // THEN
+        coVerify { reminderScheduler.cancel(3) }
         coVerify { deleteTaskUseCase(task) }
     }
 }

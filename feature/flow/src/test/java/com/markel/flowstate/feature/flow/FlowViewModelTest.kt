@@ -8,6 +8,7 @@ import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.core.domain.IdeaRepository
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.notifications.ReminderScheduler
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -27,6 +28,7 @@ class FlowViewModelTest {
     private val ideaRepository: IdeaRepository = mockk(relaxed = true)
     private val checkListRepository: CheckListRepository = mockk(relaxed = true)
     private val userPreferencesRepository: UserPreferencesRepository = mockk(relaxed = true)
+    private val reminderScheduler: ReminderScheduler = mockk(relaxed = true)
 
     private lateinit var viewModel: FlowViewModel
 
@@ -47,9 +49,7 @@ class FlowViewModelTest {
         coEvery { checkListRepository.getLists() } returns flowOf(mockLists)
 
         // WHEN
-        viewModel = FlowViewModel(
-            taskRepository, ideaRepository, checkListRepository, userPreferencesRepository
-        )
+        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository, reminderScheduler)
 
         // THEN
         viewModel.uiState.test {
@@ -80,7 +80,7 @@ class FlowViewModelTest {
         coEvery { ideaRepository.getIdeas() } returns flowOf(emptyList())
         coEvery { checkListRepository.getLists() } returns flowOf(emptyList())
 
-        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository)
+        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository, reminderScheduler)
 
         viewModel.uiState.test {
             val initialState = awaitItem()
@@ -121,7 +121,7 @@ class FlowViewModelTest {
         coEvery { ideaRepository.getIdeas() } returns flowOf(listOf(i1, i2))
         coEvery { checkListRepository.getLists() } returns flowOf(emptyList())
 
-        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository)
+        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository, reminderScheduler)
 
         viewModel.uiState.test {
             val initialState = awaitItem()
@@ -153,7 +153,7 @@ class FlowViewModelTest {
         coEvery { ideaRepository.getIdeas() } returns flowOf(emptyList())
         coEvery { checkListRepository.getLists() } returns flowOf(listOf(c1, c2))
 
-        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository)
+        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository, reminderScheduler)
 
         viewModel.uiState.test {
             val initialState = awaitItem()

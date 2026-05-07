@@ -6,6 +6,7 @@ import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
 import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
 import com.markel.flowstate.core.domain.usecase.tasks.ToggleTaskUseCase
+import com.markel.flowstate.core.notifications.ReminderScheduler
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -28,6 +29,7 @@ class TaskViewModelTest {
     private val repository: TaskRepository = mockk(relaxed = true)
     private val toggleTaskUseCase: ToggleTaskUseCase = mockk(relaxed = true)
     private val deleteTaskUseCase: DeleteTaskUseCase = mockk(relaxed = true)
+    private val reminderScheduler: ReminderScheduler = mockk(relaxed = true)
 
     private lateinit var viewModel: TaskViewModel
 
@@ -38,7 +40,7 @@ class TaskViewModelTest {
         coEvery { repository.getTasks() } returns flowOf(emptyList())
 
         // WHEN (When we initialize the ViewModel)
-        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         // THEN (Then the first state should be Loading or a quick empty Success)
         // Note: Since we use UnconfinedTestDispatcher, init runs very quickly.
@@ -66,7 +68,7 @@ class TaskViewModelTest {
         coEvery { repository.getTasks() } returns flowOf(mockTasks)
 
         // WHEN - Initialize
-        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         // THEN - Verify that it filters out completed tasks (according to the logic in init, it filters tasks to only work with incomplete ones)
         viewModel.uiState.test {
@@ -86,14 +88,14 @@ class TaskViewModelTest {
     fun addTask_callsRepositoryUpsertWithCorrectData() = runTest {
         // GIVEN
         coEvery { repository.getTasks() } returns flowOf(emptyList())
-        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         val title = "New Task"
         val desc = "Description"
         val priority = Priority.HIGH
 
         // WHEN
-        viewModel.addTask(title, desc, priority, null, emptyList())
+        viewModel.addTask(title, desc, priority, null, null, emptyList())
 
         // THEN
         // Verify that upsertTask was called in the repository
@@ -110,7 +112,7 @@ class TaskViewModelTest {
     @Test
     fun toggleTaskDone_callsToggleUseCase_withCorrectTask() = runTest {
         coEvery { repository.getTasks() } returns flowOf(emptyList())
-        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         val task = Task(id = 1, title = "Demo", isDone = false)
 
@@ -120,9 +122,22 @@ class TaskViewModelTest {
     }
 
     @Test
+    fun toggleTaskDone_whenCompleting_cancelsAlarms() = runTest {
+        coEvery { repository.getTasks() } returns flowOf(emptyList())
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
+
+        val task = Task(id = 5, title = "Demo", isDone = false)
+
+        viewModel.toggleTaskDone(task)
+
+        coVerify { toggleTaskUseCase(task) }
+        coVerify { reminderScheduler.cancel(5) }
+    }
+
+    @Test
     fun deleteTask_callsDeleteUseCase_withCorrectTask() = runTest {
         coEvery { repository.getTasks() } returns flowOf(emptyList())
-        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase)
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
 
         val task = Task(id = 1, title = "Demo", isDone = false)
 
