@@ -131,6 +131,7 @@ fun AnimatableTaskItem(
                 isDone = isChecked,
                 priority = task.priority,
                 dueDate = task.dueDate,
+                reminderTime = task.reminderTime,
                 shape = shape,
                 onClicked = onContentClick,
                 onCheckClicked = {
@@ -239,6 +240,7 @@ fun TaskItemContent(
     isDone: Boolean,
     priority: Priority = Priority.NOTHING,
     dueDate: Long? = null,
+    reminderTime: Long? = null,
     shape: Shape,
     onClicked: () -> Unit,
     onCheckClicked: () -> Unit
@@ -346,8 +348,9 @@ fun TaskItemContent(
                 val completed = subTasks.count { it.isDone }
                 val hasSubtasks = total > 0 && completed < total
                 val hasDate = dueDate != null
+                val hasReminder = reminderTime != null
 
-                if (hasSubtasks || hasDate) {
+                if (hasSubtasks || hasDate || hasReminder) {
 
                     Spacer(modifier = Modifier.height(6.dp))
 
@@ -399,6 +402,28 @@ fun TaskItemContent(
                                             MaterialTheme.colorScheme.tertiary
                                         }
                                     }
+                                )
+                            }
+                        }
+                        if ((hasSubtasks || hasDate) && hasReminder) {
+                            Spacer(modifier = Modifier.width(12.dp))
+                        }
+
+                        if (hasReminder) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.notifications_24px),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = formatReminderDateTime(reminderTime),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.secondary
                                 )
                             }
                         }

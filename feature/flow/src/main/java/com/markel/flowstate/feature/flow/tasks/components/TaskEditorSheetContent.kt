@@ -34,7 +34,8 @@ fun TaskEditorSheetContent(
     task: Task?,
     priority: Priority, // Get it from the parent
     dueDate: Long?,
-    onAutoUpdate: (String, String, Priority, Long?, List<SubTask>) -> Unit
+    remTime: Long?,
+    onAutoUpdate: (String, String, Priority, Long?, Long?, List<SubTask>) -> Unit
 ) {
     val isNewTask = remember { task == null }
     var title by remember { mutableStateOf(task?.title ?: "") }
@@ -56,42 +57,47 @@ fun TaskEditorSheetContent(
     var draftSubDescription by rememberSaveable { mutableStateOf("") }
     var draftSubPriority by rememberSaveable { mutableStateOf(Priority.NOTHING) }
     var draftSubDueDate by rememberSaveable { mutableStateOf<Long?>(null) }
+    var draftSubReminder by rememberSaveable { mutableStateOf<Long?>(null) }
 
     // Checkpoints to track what was actually last saved
     var lastSavedTitle by remember { mutableStateOf(title) }
     var lastSavedDesc by remember { mutableStateOf(description) }
     var lastSavedPriority by remember { mutableStateOf(priority) }
     var lastSavedDueDate by remember { mutableStateOf(dueDate) }
+    var lastSavedReminder by remember { mutableStateOf(remTime) }
     var lastSavedSubTasksHash by remember { mutableIntStateOf(subTasks.toList().hashCode()) }
 
     val focusRequester = remember { FocusRequester() }
 
     val currentPriority by rememberUpdatedState(priority)
     val currentDueDate by rememberUpdatedState(dueDate)
+    val currentReminder by rememberUpdatedState(remTime)
     val currentTitle by rememberUpdatedState(title)
     val currentDescription by rememberUpdatedState(description)
     val currentSubTasksList by rememberUpdatedState(subTasks.toList())
 
     // TIME-BASED AUTOSAVE (DEBOUNCE)
     if (!isNewTask) {
-        LaunchedEffect(title, description, priority, dueDate, subTasks.toList().hashCode()) {
+        LaunchedEffect(title, description, priority, dueDate, remTime, subTasks.toList().hashCode()) {
             val currentSubTasksHash = subTasks.toList().hashCode()
 
             val hasChanges = title != lastSavedTitle ||
                     description != lastSavedDesc ||
                     priority != lastSavedPriority ||
                     dueDate != lastSavedDueDate ||
+                    remTime != lastSavedReminder ||
                     currentSubTasksHash != lastSavedSubTasksHash
 
             if (hasChanges && title.isNotBlank()) {
                 delay(600)
                 // Save
-                onAutoUpdate(title, description, priority, dueDate, subTasks.toList())
+                onAutoUpdate(title, description, priority, dueDate, remTime, subTasks.toList())
                 // Update references
                 lastSavedTitle = title
                 lastSavedDesc = description
                 lastSavedPriority = priority
                 lastSavedDueDate = dueDate
+                lastSavedReminder = remTime
                 lastSavedSubTasksHash = currentSubTasksHash
             }
         }
@@ -108,6 +114,7 @@ fun TaskEditorSheetContent(
                         currentDescription != lastSavedDesc ||
                         currentPriority != lastSavedPriority ||
                         currentDueDate != lastSavedDueDate ||
+                        currentReminder != lastSavedReminder ||
                         currentSubTasksHash != lastSavedSubTasksHash
 
                 if (hasPendingChanges && currentTitle.isNotBlank()) {
@@ -116,6 +123,7 @@ fun TaskEditorSheetContent(
                         currentDescription,
                         currentPriority,
                         currentDueDate,
+                        currentReminder,
                         currentSubTasksList
                     )
                 }
@@ -293,7 +301,9 @@ fun TaskEditorSheetContent(
                 dueDate = draftSubDueDate,
                 onDueDateChange = { draftSubDueDate = it },
                 titlePlaceholder = stringResource(R.string.add_subtask_placeholder),
-                onSave = { title, desc, prio, date ->
+                reminderTime = draftSubReminder,
+                onReminderTimeChange = { draftSubReminder = it },
+                onSave = { title, desc, prio, date, reminder ->
                     val newSubTask = SubTask(
                         id = UUID.randomUUID().toString(),
                         title = title,
@@ -301,7 +311,8 @@ fun TaskEditorSheetContent(
                         isDone = false,
                         priority = prio,
                         dueDate = date,
-                        position = subTasks.size
+                        position = subTasks.size,
+                        reminderTime = reminder
                     )
                     subTasks.add(newSubTask)
 
@@ -309,6 +320,7 @@ fun TaskEditorSheetContent(
                     draftSubDescription = ""
                     draftSubPriority = Priority.NOTHING
                     draftSubDueDate = null
+                    draftSubReminder = null
                     showCreationSheet = false
                 }
             )

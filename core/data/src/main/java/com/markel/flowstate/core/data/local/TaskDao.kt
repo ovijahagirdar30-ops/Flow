@@ -37,11 +37,12 @@ interface TaskDao {
      * Being @Transaction, if something fails, nothing is saved (total integrity)
      */
     @Transaction
-    suspend fun upsertTaskWithSubTasks(task: TaskEntity, subTasks: List<SubTaskEntity>) {
+    suspend fun upsertTaskWithSubTasks(task: TaskEntity, subTasks: List<SubTaskEntity>): Long {
         // 1. We save/update the parent.
         val rowId = upsertTaskEntity(task)
 
-        // This new logic avoids errors when upsertTaskEntity returns unexpected FK values (normally when nothing has changed in the main task)
+        // For existing tasks, upsertTaskEntity returns -1 on some Room versions
+        // when nothing changed, so we fall back to task.id.
         val taskId = if (task.id == 0) rowId.toInt() else task.id
 
         // 2. We delete the old subtasks to avoid duplicates or "ghosts"
@@ -50,6 +51,10 @@ interface TaskDao {
         // 3. We assign the task ID to the subtasks and insert them
         val subTasksWithId = subTasks.map { it.copy(taskId = taskId) }
         insertSubTasks(subTasksWithId)
+
+        // Return the real task ID as Long so callers can schedule alarms.
+        return taskId.toLong()
+
     }
 
     // Requests all ordered tasks
@@ -64,4 +69,10 @@ interface TaskDao {
 
     @Update
     suspend fun updateTasks(tasks: List<TaskEntity>)
+
+    @Query("UPDATE tasks SET reminderTime = NULL WHERE id = :taskId")
+    suspend fun clearTaskReminder(taskId: Int)
+
+    @Query("UPDATE subtasks SET reminderTime = NULL WHERE id = :subTaskId")
+    suspend fun clearSubTaskReminder(subTaskId: String)
 }

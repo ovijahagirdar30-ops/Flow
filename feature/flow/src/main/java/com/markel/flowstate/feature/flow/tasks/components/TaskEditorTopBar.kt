@@ -1,6 +1,8 @@
 package com.markel.flowstate.feature.flow.tasks.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
@@ -17,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -34,6 +37,8 @@ fun TaskEditorTopBar(
     dueDate: Long?,
     onDueDateChange: (Long?) -> Unit,
     isDone: Boolean,
+    reminderTime: Long?,
+    onReminderTimeChange: (Long?) -> Unit,
     onComplete: () -> Unit,
     onDelete: () -> Unit,
     onBack: () -> Unit
@@ -51,75 +56,82 @@ fun TaskEditorTopBar(
             }
         },
         actions = {
-            IconButton(onClick = {
-                val nextPriority = when (priority) {
-                    Priority.NOTHING -> Priority.LOW
-                    Priority.LOW -> Priority.MEDIUM
-                    Priority.MEDIUM -> Priority.HIGH
-                    Priority.HIGH -> Priority.NOTHING
-                }
-                onPriorityChange(nextPriority)
-            }) {
-                Icon(
-                    imageVector = ImageVector.vectorResource(R.drawable.flag_2_24px),
-                    contentDescription = "Priority",
-                    tint = priority.asColor(),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            DateSelector(
-                dueDate = dueDate,
-                onDueDateChange = onDueDateChange,
-                showLabel = true
-            )
-
-            IconButton(onClick = { /* TODO: Implement format */ }) {
-                Icon(
-                    imageVector = ImageVector.vectorResource(R.drawable.format_color_text_24px),
-                    contentDescription = "Format",
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.95f)
-                )
-            }
-            Box {
-                IconButton(onClick = { menuExpanded = true }) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = {
+                    val nextPriority = when (priority) {
+                        Priority.NOTHING -> Priority.LOW
+                        Priority.LOW -> Priority.MEDIUM
+                        Priority.MEDIUM -> Priority.HIGH
+                        Priority.HIGH -> Priority.NOTHING
+                    }
+                    onPriorityChange(nextPriority)
+                }) {
                     Icon(
-                        imageVector = ImageVector.vectorResource(R.drawable.more_vert_24px),
-                        contentDescription = "More options"
+                        imageVector = ImageVector.vectorResource(R.drawable.flag_2_24px),
+                        contentDescription = "Priority",
+                        tint = priority.asColor(),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false },
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(if (isDone) stringResource(R.string.mark_pending) else stringResource(R.string.mark_completed)) },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.check_24px),
-                                contentDescription = null
-                            )
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            onComplete()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete_task))},
-                        leadingIcon = {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
-                                contentDescription = null
-                            )
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            onDelete()
-                        }
-                    )
+
+                DateSelector(
+                    dueDate = dueDate,
+                    onDueDateChange = onDueDateChange,
+                    showLabel = true
+                )
+                ReminderSelector(
+                    reminderTime = reminderTime,
+                    onReminderTimeChange = onReminderTimeChange
+                )
+
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.more_vert_24px),
+                            contentDescription = "More options"
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    if (isDone) stringResource(R.string.mark_pending) else stringResource(
+                                        R.string.mark_completed
+                                    )
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.check_24px),
+                                    contentDescription = null
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onComplete()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.delete_task)) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
+                                    contentDescription = null
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onDelete()
+                            }
+                        )
+                    }
                 }
             }
         },

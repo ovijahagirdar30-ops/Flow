@@ -24,9 +24,11 @@ import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.FlowUiState
 import com.markel.flowstate.feature.flow.tasks.components.AnimatableTaskItem
+import com.markel.flowstate.feature.flow.tasks.components.ReminderPermissionBanner
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import com.markel.flowstate.feature.tasks.R
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Main sectioned view for the Flow screen.
@@ -55,6 +57,7 @@ fun SectionedFlowView(
     // CheckList callbacks
     onCheckListClick: (CheckList) -> Unit,
     onCheckListReorder: (from: Int, to: Int) -> Unit,
+    showPermissionBanner : Boolean,
     modifier: Modifier = Modifier
 ) {
     if (uiState !is FlowUiState.Success) return
@@ -62,7 +65,7 @@ fun SectionedFlowView(
     val outerListState = rememberLazyListState()
 
     val reorderableState = rememberReorderableLazyListState(outerListState) { from, to ->
-        val headerOffset = 1
+        val headerOffset = 2
         val fromTaskIndex = from.index - headerOffset
         val toTaskIndex = to.index - headerOffset
 
@@ -89,6 +92,9 @@ fun SectionedFlowView(
                     title = stringResource(R.string.tasks_m),
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                 )
+            }
+            item {
+                ReminderPermissionBanner(showPermissionBanner)
             }
             itemsIndexed(items = uiState.tasks, key = { _, task -> task.id }) { index, task ->
                 val itemShape = when {

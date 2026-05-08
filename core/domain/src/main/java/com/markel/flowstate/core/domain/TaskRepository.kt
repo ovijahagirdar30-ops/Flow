@@ -24,7 +24,7 @@ interface TaskRepository {
     /**
      * Inserts or updates a task.
      */
-    suspend fun upsertTask(task: Task)
+    suspend fun upsertTask(task: Task): Long
 
     /**
      * Deletes a task.
@@ -35,4 +35,14 @@ interface TaskRepository {
      * Updates the order of the tasks.
      */
     suspend fun updateTasksOrder(tasks: List<Task>)
+
+    /**
+     * Clears the reminderTime of a task, marking its reminder as consumed.
+     */
+    suspend fun clearTaskReminder(taskId: Int)
+
+    /**
+     * Clears the reminderTime of a subtask, marking its reminder as consumed.
+     */
+    suspend fun clearSubTaskReminder(subTaskId: String)
 }

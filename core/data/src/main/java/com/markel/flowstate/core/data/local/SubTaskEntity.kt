@@ -28,5 +28,6 @@ data class SubTaskEntity(
     val priority: Int,
     val dueDate: Long?,
     val position: Int,
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
+    val reminderTime: Long? = null
 )

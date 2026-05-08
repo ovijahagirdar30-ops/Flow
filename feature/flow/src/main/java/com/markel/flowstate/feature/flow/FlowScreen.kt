@@ -1,6 +1,13 @@
 package com.markel.flowstate.feature.flow
 
+import android.R.attr.data
+import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -10,7 +17,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -21,11 +31,14 @@ import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import com.markel.flowstate.feature.flow.components.SectionedFlowView
+import com.markel.flowstate.feature.tasks.R
+import androidx.core.net.toUri
+import kotlinx.coroutines.flow.flow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlowScreen(
-    flowViewModel: FlowViewModel = hiltViewModel(),
+    flowViewModel: FlowViewModel,
     taskViewModel: TaskViewModel = hiltViewModel(),
     // Nvigation Callbacks to detail screens (edition)
     onNavigateToTaskEditor: (taskId: Int) -> Unit,
@@ -34,6 +47,7 @@ fun FlowScreen(
     onNavigateToCheckListEditor: (checkListId: Int?) -> Unit
 ) {
     val flowUiState by flowViewModel.uiState.collectAsStateWithLifecycle()
+    val showPermissionBanner by flowViewModel.showReminderBanner.collectAsStateWithLifecycle()
     var isFabExpanded by remember { mutableStateOf(false) }
     var showCreationSheet by remember { mutableStateOf(false) }
 
@@ -61,7 +75,8 @@ fun FlowScreen(
                     onIdeaClick = { onNavigateToIdeaEditor(it.id) },
                     onIdeaReorder = { from, to -> flowViewModel.onIdeaReorder(from, to) },
                     onCheckListClick = { onNavigateToCheckListEditor(it.id) },
-                    onCheckListReorder = { from, to -> flowViewModel.onCheckListReorder(from, to) }
+                    onCheckListReorder = { from, to -> flowViewModel.onCheckListReorder(from, to) },
+                    showPermissionBanner = showPermissionBanner
                 )
             }
         }
@@ -86,7 +101,9 @@ fun FlowScreen(
                     onPriorityChange = { taskViewModel.updateDraftPriority(it) },
                     dueDate = draft.dueDate,
                     onDueDateChange = { taskViewModel.updateDraftDueDate(it) },
-                    onSave = { _, _, _, _ ->
+                    reminderTime = draft.reminderTime,
+                    onReminderTimeChange = { taskViewModel.updateDraftReminderTime(it) },
+                    onSave = { _, _, _, _, _ ->
                         taskViewModel.submitDraft()
                         showCreationSheet = false
                     }

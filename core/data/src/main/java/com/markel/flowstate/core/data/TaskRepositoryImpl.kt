@@ -34,13 +34,13 @@ class TaskRepositoryImpl @Inject constructor(
         return dao.getTaskById(id)?.toDomain()
     }
 
-    override suspend fun upsertTask(task: Task) {
+    override suspend fun upsertTask(task: Task): Long {
         // We break down the Domain object into Parent Entity + Child Entities
         val taskEntity = task.toEntity()
         val subTaskEntities = task.subTasks.map { it.toEntity(taskId = task.id) }
 
         // We delegate the complex transaction to the DAO
-        dao.upsertTaskWithSubTasks(taskEntity, subTaskEntities)
+        return dao.upsertTaskWithSubTasks(taskEntity, subTaskEntities)
     }
 
     override suspend fun deleteTask(task: Task) {
@@ -51,6 +51,14 @@ class TaskRepositoryImpl @Inject constructor(
     override suspend fun updateTasksOrder(tasks: List<Task>) {
         val entities = tasks.map { it.toEntity() }
         dao.updateTasks(entities)
+    }
+
+    override suspend fun clearTaskReminder(taskId: Int) {
+        dao.clearTaskReminder(taskId)
+    }
+
+    override suspend fun clearSubTaskReminder(subTaskId: String) {
+        dao.clearSubTaskReminder(subTaskId)
     }
 
     // --- MAPPING FUNCTIONS ---
@@ -68,6 +76,7 @@ class TaskRepositoryImpl @Inject constructor(
             priority = priorityEnum,
             dueDate = this.task.dueDate,
             completedAt = this.task.completedAt,
+            reminderTime = this.task.reminderTime,
             subTasks = this.subTasks.map { it.toDomain() }
         )
     }
@@ -81,7 +90,8 @@ class TaskRepositoryImpl @Inject constructor(
             priority = Priority.entries.getOrElse(this.priority) { Priority.NOTHING },
             dueDate = this.dueDate,
             position = this.position,
-            completedAt = this.completedAt
+            completedAt = this.completedAt,
+            reminderTime = this.reminderTime
         )
     }
 
@@ -94,8 +104,8 @@ class TaskRepositoryImpl @Inject constructor(
             position = this.position,
             priority = this.priority.ordinal,
             dueDate = this.dueDate,
-            completedAt = this.completedAt
-
+            completedAt = this.completedAt,
+            reminderTime = this.reminderTime
         )
     }
 
@@ -109,7 +119,8 @@ class TaskRepositoryImpl @Inject constructor(
             priority = this.priority.ordinal,
             dueDate = this.dueDate,
             position = this.position,
-            completedAt = this.completedAt
+            completedAt = this.completedAt,
+            reminderTime = this.reminderTime
         )
     }
 }

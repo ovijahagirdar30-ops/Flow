@@ -51,8 +51,10 @@ fun TaskCreationSheetContent(
     onPriorityChange: (Priority) -> Unit,
     dueDate: Long?,
     onDueDateChange: (Long?) -> Unit,
+    reminderTime: Long?,
+    onReminderTimeChange: (Long?) -> Unit,
     titlePlaceholder: String = stringResource(R.string.new_task_placeholder),
-    onSave: (String, String, Priority, Long?) -> Unit
+    onSave: (String, String, Priority, Long?, Long?) -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -114,6 +116,10 @@ fun TaskCreationSheetContent(
                     onDueDateChange = onDueDateChange,
                     showLabel = true
                 )
+                ReminderSelector(
+                    reminderTime = reminderTime,
+                    onReminderTimeChange = onReminderTimeChange
+                )
                 IconButton(onClick = {
                     val nextPriority = when(priority) {
                         Priority.NOTHING -> Priority.LOW
@@ -135,7 +141,7 @@ fun TaskCreationSheetContent(
 
             // Send Button
             FilledIconButton(
-                onClick = { if (title.isNotBlank()) onSave(title, description, priority, dueDate) },
+                onClick = { if (title.isNotBlank()) onSave(title, description, priority, dueDate, reminderTime) },
                 enabled = title.isNotBlank(),
                 modifier = Modifier.size(44.dp),
                 colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.tertiary)

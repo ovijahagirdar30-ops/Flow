@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -30,6 +31,7 @@ import com.markel.flowstate.core.designsystem.ui.LocalSharedTransitionScope
 import com.markel.flowstate.feature.calendar.CalendarScreen
 import com.markel.flowstate.feature.calendar.CalendarViewModel
 import com.markel.flowstate.feature.flow.FlowScreen
+import com.markel.flowstate.feature.flow.FlowViewModel
 import com.markel.flowstate.feature.flow.checklists.CheckListEditorScreen
 import com.markel.flowstate.feature.flow.ideas.IdeaEditorScreen
 import com.markel.flowstate.feature.flow.tasks.components.TaskEditorScreen
@@ -105,8 +107,16 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     // --- Main tabs ---
                                     composable(Screen.Tasks.route) {
+                                        val flowViewModel: FlowViewModel = hiltViewModel()
+                                        // Register as lifecycle observer so onResume() fires correctly.
+                                        val lifecycleOwner = LocalLifecycleOwner.current
+                                        DisposableEffect(lifecycleOwner) {
+                                            lifecycleOwner.lifecycle.addObserver(flowViewModel)
+                                            onDispose { lifecycleOwner.lifecycle.removeObserver(flowViewModel) }
+                                        }
                                         CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                                             FlowScreen(
+                                                flowViewModel = flowViewModel,
                                                 onNavigateToTaskEditor = { taskId ->
                                                     navController.navigate(
                                                         Screen.Detail.taskEditor(

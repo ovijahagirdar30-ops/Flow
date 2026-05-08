@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class ], // List of all tables
-    version = 15,
+    version = 17,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -177,6 +177,19 @@ abstract class FlowStateDatabase : RoomDatabase() {
 
                 // Drop the grid_order table — it is no longer used
                 db.execSQL("DROP TABLE IF EXISTS grid_order")
+            }
+        }
+
+        // Adds reminderTime to tasks for scheduled notifications
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN reminderTime INTEGER DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE subtasks ADD COLUMN reminderTime INTEGER DEFAULT NULL")
             }
         }
     }

@@ -3,6 +3,8 @@ package com.markel.flowstate.feature.calendar
 import app.cash.turbine.test
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.domain.usecase.tasks.ToggleTaskUseCase
+import com.markel.flowstate.core.notifications.ReminderScheduler
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -21,6 +23,8 @@ class CalendarViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository: TaskRepository = mockk(relaxed = true)
+    private val toggleTaskUseCase: ToggleTaskUseCase = mockk(relaxed = true)
+    private val reminderScheduler: ReminderScheduler = mockk(relaxed = true)
     private lateinit var viewModel: CalendarViewModel
 
     // Helper to create timestamps (milliseconds) from a LocalDate
@@ -72,7 +76,7 @@ class CalendarViewModelTest {
         )
 
         // WHEN
-        viewModel = CalendarViewModel(repository)
+        viewModel = CalendarViewModel(repository, toggleTaskUseCase, reminderScheduler)
 
         // THEN
         viewModel.uiState.test {
@@ -103,7 +107,7 @@ class CalendarViewModelTest {
     @Test
     fun onDateSelected_updatesSelectedDateInUiState() = runTest {
         coEvery { repository.getTasks() } returns flowOf(emptyList())
-        viewModel = CalendarViewModel(repository)
+        viewModel = CalendarViewModel(repository, toggleTaskUseCase, reminderScheduler)
 
         val randomDate = LocalDate.of(2025, 12, 31)
 
@@ -122,18 +126,15 @@ class CalendarViewModelTest {
     }
 
     @Test
-    fun toggleTaskDone_callsRepositoryWithInverseStatus() = runTest {
+    fun toggleTaskDone_callsToggleUseCaseAndCancelsAlarm() = runTest {
         coEvery { repository.getTasks() } returns flowOf(emptyList())
-        viewModel = CalendarViewModel(repository)
+        viewModel = CalendarViewModel(repository, toggleTaskUseCase, reminderScheduler)
 
         val task = Task(id = 1, title = "Test", isDone = false)
 
         viewModel.toggleTaskDone(task)
 
-        coVerify {
-            repository.upsertTask(match {
-                it.isDone && it.completedAt != null
-            })
-        }
+        coVerify { toggleTaskUseCase(task) }
+        coVerify { reminderScheduler.cancel(1) }
     }
 }
