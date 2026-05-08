@@ -2,6 +2,7 @@ package com.markel.flowstate.feature.flow.tasks
 
 import app.cash.turbine.test
 import com.markel.flowstate.core.domain.Priority
+import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
 import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
@@ -122,19 +123,6 @@ class TaskViewModelTest {
     }
 
     @Test
-    fun toggleTaskDone_whenCompleting_cancelsAlarms() = runTest {
-        coEvery { repository.getTasks() } returns flowOf(emptyList())
-        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
-
-        val task = Task(id = 5, title = "Demo", isDone = false)
-
-        viewModel.toggleTaskDone(task)
-
-        coVerify { toggleTaskUseCase(task) }
-        coVerify { reminderScheduler.cancel(5) }
-    }
-
-    @Test
     fun deleteTask_callsDeleteUseCase_withCorrectTask() = runTest {
         coEvery { repository.getTasks() } returns flowOf(emptyList())
         viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
@@ -143,6 +131,88 @@ class TaskViewModelTest {
 
         viewModel.deleteTask(task)
 
+        coVerify { deleteTaskUseCase(task) }
+    }
+
+
+    // ── Reminder scheduling tests ─────────────────────────────────────────────
+
+    @Test
+    fun addTask_with_future_reminderTime_schedules_the_alarm() = runTest {
+        coEvery { repository.getTasks() } returns flowOf(emptyList())
+        coEvery { repository.upsertTask(any()) } returns 42L
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
+
+        val futureTime = System.currentTimeMillis() + 60_000L
+
+        viewModel.addTask("Remind me", "Desc", Priority.HIGH, null, futureTime, emptyList())
+
+        coVerify { reminderScheduler.schedule(42, "Remind me", "Desc", futureTime) }
+    }
+
+    @Test
+    fun addTask_with_past_reminderTime_does_not_schedule_the_alarm() = runTest {
+        coEvery { repository.getTasks() } returns flowOf(emptyList())
+        coEvery { repository.upsertTask(any()) } returns 1L
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
+
+        val pastTime = System.currentTimeMillis() - 60_000L
+
+        viewModel.addTask("Old reminder", "Desc", Priority.NOTHING, null, pastTime, emptyList())
+
+        coVerify(exactly = 0) { reminderScheduler.schedule(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun addTask_with_null_reminderTime_does_not_schedule_the_alarm() = runTest {
+        coEvery { repository.getTasks() } returns flowOf(emptyList())
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
+
+        viewModel.addTask("No reminder", "Desc", Priority.NOTHING, null, null, emptyList())
+
+        coVerify(exactly = 0) { reminderScheduler.schedule(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun toggleTaskDone_completing_cancels_task_alarm_and_all_subtask_alarms() = runTest {
+        coEvery { repository.getTasks() } returns flowOf(emptyList())
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
+
+        val sub1 = SubTask(id = "s1", title = "Sub1")
+        val sub2 = SubTask(id = "s2", title = "Sub2")
+        val task = Task(id = 10, title = "With subs", isDone = false, subTasks = listOf(sub1, sub2))
+
+        viewModel.toggleTaskDone(task)
+
+        coVerify { reminderScheduler.cancel(10) }
+        coVerify { reminderScheduler.cancelSubTask("s1") }
+        coVerify { reminderScheduler.cancelSubTask("s2") }
+    }
+
+    @Test
+    fun toggleTaskDone_uncompleting_does_not_cancel_alarms() = runTest {
+        coEvery { repository.getTasks() } returns flowOf(emptyList())
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
+
+        val task = Task(id = 10, title = "Done task", isDone = true)
+
+        viewModel.toggleTaskDone(task)
+
+        // When uncompleting, !task.isDone = false → completing = false → no cancel
+        coVerify(exactly = 0) { reminderScheduler.cancel(any()) }
+        coVerify(exactly = 0) { reminderScheduler.cancelSubTask(any()) }
+    }
+
+    @Test
+    fun deleteTask_cancels_the_task_alarm() = runTest {
+        coEvery { repository.getTasks() } returns flowOf(emptyList())
+        viewModel = TaskViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler)
+
+        val task = Task(id = 7, title = "Delete me", isDone = false)
+
+        viewModel.deleteTask(task)
+
+        coVerify { reminderScheduler.cancel(7) }
         coVerify { deleteTaskUseCase(task) }
     }
 }

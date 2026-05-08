@@ -7,6 +7,7 @@ import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.core.domain.IdeaRepository
+import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.TaskRepository
 import com.markel.flowstate.core.notifications.ReminderScheduler
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
@@ -16,6 +17,8 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -32,6 +35,17 @@ class FlowViewModelTest {
 
     private lateinit var viewModel: FlowViewModel
 
+    private fun createViewModel(
+        tasks: List<Task> = emptyList(),
+        ideas: List<Idea> = emptyList(),
+        checkLists: List<CheckList> = emptyList()
+    ): FlowViewModel {
+        coEvery { taskRepository.getTasks() } returns flowOf(tasks)
+        coEvery { ideaRepository.getIdeas() } returns flowOf(ideas)
+        coEvery { checkListRepository.getLists() } returns flowOf(checkLists)
+        return FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository, reminderScheduler)
+    }
+
     // ── Initialization & Combine logic ────────────────────────────────────────
 
     @Test
@@ -44,12 +58,8 @@ class FlowViewModelTest {
         val mockIdeas = listOf(Idea(id = 1, title = "Idea 1", position = 0, content = "Content", color = 0L))
         val mockLists = listOf(CheckList(id = 1, title = "List 1", position = 0, color = 0L))
 
-        coEvery { taskRepository.getTasks() } returns flowOf(mockTasks)
-        coEvery { ideaRepository.getIdeas() } returns flowOf(mockIdeas)
-        coEvery { checkListRepository.getLists() } returns flowOf(mockLists)
-
         // WHEN
-        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository, reminderScheduler)
+        viewModel = createViewModel(tasks = mockTasks, ideas = mockIdeas, checkLists = mockLists)
 
         // THEN
         viewModel.uiState.test {
@@ -76,11 +86,7 @@ class FlowViewModelTest {
         val t2 = Task(id = 2, title = "T2", isDone = false, position = 1)
         val t3 = Task(id = 3, title = "T3", isDone = false, position = 2)
 
-        coEvery { taskRepository.getTasks() } returns flowOf(listOf(t1, t2, t3))
-        coEvery { ideaRepository.getIdeas() } returns flowOf(emptyList())
-        coEvery { checkListRepository.getLists() } returns flowOf(emptyList())
-
-        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository, reminderScheduler)
+        viewModel = createViewModel(tasks = listOf(t1, t2, t3))
 
         viewModel.uiState.test {
             val initialState = awaitItem()
@@ -117,11 +123,7 @@ class FlowViewModelTest {
         val i1 = Idea(id = 1, title = "I1", position = 0, content = "Content", color = 0L)
         val i2 = Idea(id = 2, title = "I2", position = 1, content = "Content", color = 0L)
 
-        coEvery { taskRepository.getTasks() } returns flowOf(emptyList())
-        coEvery { ideaRepository.getIdeas() } returns flowOf(listOf(i1, i2))
-        coEvery { checkListRepository.getLists() } returns flowOf(emptyList())
-
-        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository, reminderScheduler)
+        viewModel = createViewModel(ideas = listOf(i1, i2))
 
         viewModel.uiState.test {
             val initialState = awaitItem()
@@ -149,11 +151,7 @@ class FlowViewModelTest {
         val c1 = CheckList(id = 1, title = "C1", position = 0, color = 0L)
         val c2 = CheckList(id = 2, title = "C2", position = 1, color = 0L)
 
-        coEvery { taskRepository.getTasks() } returns flowOf(emptyList())
-        coEvery { ideaRepository.getIdeas() } returns flowOf(emptyList())
-        coEvery { checkListRepository.getLists() } returns flowOf(listOf(c1, c2))
-
-        viewModel = FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository, reminderScheduler)
+        viewModel = createViewModel(checkLists = listOf(c1, c2))
 
         viewModel.uiState.test {
             val initialState = awaitItem()
@@ -173,5 +171,122 @@ class FlowViewModelTest {
                 list[0].id == 2 && list[1].id == 1
             })
         }
+    }
+
+
+    // ── Banner logic ──────────────────────────────────────────────────────────
+
+    @Test
+    fun banner_is_hidden_when_permission_is_granted() = runTest {
+        coEvery { reminderScheduler.canScheduleExactAlarms() } returns true
+        val futureTime = System.currentTimeMillis() + 60_000L
+        val task = Task(id = 1, title = "T", isDone = false, reminderTime = futureTime)
+
+        viewModel = createViewModel(tasks = listOf(task))
+
+        viewModel.showReminderBanner.test {
+            assertFalse(awaitItem())
+        }
+    }
+
+    @Test
+    fun banner_is_shown_when_permission_missing_and_tasks_have_future_reminders() = runTest {
+        coEvery { reminderScheduler.canScheduleExactAlarms() } returns false
+        val futureTime = System.currentTimeMillis() + 60_000L
+        val task = Task(id = 1, title = "T", isDone = false, reminderTime = futureTime)
+
+        viewModel = createViewModel(tasks = listOf(task))
+
+        viewModel.showReminderBanner.test {
+            assertTrue(awaitItem())
+        }
+    }
+
+    @Test
+    fun banner_is_hidden_when_permission_missing_but_no_future_reminders() = runTest {
+        coEvery { reminderScheduler.canScheduleExactAlarms() } returns false
+        val task = Task(id = 1, title = "T", isDone = false, reminderTime = null)
+
+        viewModel = createViewModel(tasks = listOf(task))
+
+        viewModel.showReminderBanner.test {
+            assertFalse(awaitItem())
+        }
+    }
+
+    @Test
+    fun banner_is_shown_when_subtask_has_future_reminder_and_permission_missing() = runTest {
+        coEvery { reminderScheduler.canScheduleExactAlarms() } returns false
+        val futureTime = System.currentTimeMillis() + 60_000L
+        val subTask = SubTask(id = "s1", title = "Sub", reminderTime = futureTime)
+        val task = Task(id = 1, title = "T", isDone = false, subTasks = listOf(subTask))
+
+        viewModel = createViewModel(tasks = listOf(task))
+
+        viewModel.showReminderBanner.test {
+            assertTrue(awaitItem())
+        }
+    }
+
+    @Test
+    fun banner_is_hidden_when_only_past_reminders_exist_and_permission_missing() = runTest {
+        coEvery { reminderScheduler.canScheduleExactAlarms() } returns false
+        val pastTime = System.currentTimeMillis() - 60_000L
+        val task = Task(id = 1, title = "T", isDone = false, reminderTime = pastTime)
+
+        viewModel = createViewModel(tasks = listOf(task))
+
+        viewModel.showReminderBanner.test {
+            assertFalse(awaitItem())
+        }
+    }
+
+    // ── onResume: permission grant triggers reschedule ───────────────────────
+
+    @Test
+    fun onResume_reschedules_alarms_when_permission_was_just_granted() = runTest {
+        // First call: permission missing → sets wasPermissionMissing = true
+        // Second call: permission granted → triggers reschedule
+        coEvery { reminderScheduler.canScheduleExactAlarms() } returns false andThen true
+
+        val futureTime = System.currentTimeMillis() + 60_000L
+        val task = Task(id = 1, title = "T", isDone = false, reminderTime = futureTime)
+
+        viewModel = createViewModel(tasks = listOf(task))
+
+        // First onResume: sets wasPermissionMissing = true (permission still missing)
+        viewModel.onResume(mockk())
+
+        // Second onResume: permission now granted → should reschedule
+        viewModel.onResume(mockk())
+
+        // Verify rescheduleAll was called
+        coVerify { reminderScheduler.rescheduleAll(any()) }
+    }
+
+    @Test
+    fun onResume_does_not_reschedule_when_permission_was_already_granted() = runTest {
+        coEvery { reminderScheduler.canScheduleExactAlarms() } returns true
+
+        viewModel = createViewModel()
+
+        viewModel.onResume(mockk())
+        viewModel.onResume(mockk())
+
+        // rescheduleAll should never be called since permission was never missing
+        coVerify(exactly = 0) { reminderScheduler.rescheduleAll(any()) }
+    }
+
+    @Test
+    fun onResume_does_not_reschedule_when_permission_is_still_missing() = runTest {
+        coEvery { reminderScheduler.canScheduleExactAlarms() } returns false
+
+        viewModel = createViewModel()
+
+        viewModel.onResume(mockk())
+        viewModel.onResume(mockk())
+
+        // Permission never granted, so no reschedule
+        coVerify(exactly = 0) { reminderScheduler.rescheduleAll(any()) }
     }
 }
