@@ -35,12 +35,12 @@
 - **Task Scheduling**: Add due dates
 - **Calendar** view
 - **Habit Tracking**: Build daily routines and track streaks
+- **Reminders**
 
 ### In Development
-- **Improve UI**: in the tasks and habits module
-- **Reminders**
-- **Mood Tracking**: Log daily emotions and view trends
 - **Widgets**: Home screen widgets for quick access
+- **Mood Tracking**: Log daily emotions and view trends
+- **Improve UI**: in the tasks and habits module
 - **Themes**: More customization options
 - Any new **suggestion**
 
