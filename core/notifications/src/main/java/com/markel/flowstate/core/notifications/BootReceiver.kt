@@ -1,5 +1,6 @@
 package com.markel.flowstate.core.notifications
 
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -17,6 +18,7 @@ import javax.inject.Inject
  *
  * AlarmManager alarms are wiped on device reboot. This receiver queries the DB
  * for every task that still has a reminderTime in the future and reschedules them.
+ * The missed notifications are fired immediately and the reminderTime is cleaned.
  *
  * Note: BroadcastReceiver.onReceive must return quickly. We launch a coroutine
  * with goAsync() to do the DB work without blocking the main thread.
@@ -26,6 +28,7 @@ class BootReceiver : BroadcastReceiver() {
 
     @Inject lateinit var taskRepository: TaskRepository
     @Inject lateinit var reminderScheduler: ReminderScheduler
+    @Inject lateinit var notificationHelper: NotificationHelper
 
     // A dedicated scope that outlives onReceive (goAsync result is kept alive).
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -40,12 +43,53 @@ class BootReceiver : BroadcastReceiver() {
 
         scope.launch {
             try {
+                val now = System.currentTimeMillis()
                 val alarmItems = buildAlarmItems(taskRepository)
-                reminderScheduler.rescheduleAll(alarmItems)
+
+                // Separate future alarms (reschedule after reboot) and missed alarms (fire them now)
+                val futureAlarms = alarmItems.filter { it.triggerMillis > now }
+                val expiredAlarms = alarmItems.filter { it.triggerMillis <= now }
+
+                // Reschedule
+                reminderScheduler.rescheduleAll(futureAlarms)
+
+                // Fire immediately expired alarmas
+                expiredAlarms.forEach { item ->
+                    showExpiredNotification(context, item)
+                    // Consume the reminder (clean in the DB)
+                    if (item.isSubtask && item.subTaskId != null) {
+                        taskRepository.clearSubTaskReminder(item.subTaskId)
+                    } else {
+                        taskRepository.clearTaskReminder(item.requestCode)
+                    }
+                }
+
             } finally {
                 pendingResult.finish()
             }
         }
+    }
+
+    /**
+     * Fires a notification for an alarm that expired while the device was off
+     */
+    private fun showExpiredNotification(context: Context, item: AlarmItem) {
+        val completeIntent = Intent(context, CompleteTaskReceiver::class.java).apply {
+            putExtra(CompleteTaskReceiver.EXTRA_TASK_ID, item.requestCode)
+        }
+        val completePendingIntent = PendingIntent.getBroadcast(
+            context,
+            item.requestCode,
+            completeIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        notificationHelper.showReminder(
+            notificationId = item.requestCode,
+            taskTitle = item.title,
+            taskDescription = item.description,
+            completePendingIntent = completePendingIntent
+        )
     }
 }
 
@@ -68,13 +112,12 @@ data class AlarmItem(
  * logic stays in one place.
  */
 suspend fun buildAlarmItems(taskRepository: TaskRepository): List<AlarmItem> {
-    val now = System.currentTimeMillis()
     val result = mutableListOf<AlarmItem>()
 
     taskRepository.getTasks().first().forEach { task ->
         if (task.isDone) return@forEach
         task.reminderTime?.let {
-            if (it > now) result += AlarmItem(
+            result += AlarmItem(
                 requestCode = task.id,
                 title = task.title,
                 description = task.description,
@@ -86,7 +129,7 @@ suspend fun buildAlarmItems(taskRepository: TaskRepository): List<AlarmItem> {
         task.subTasks.forEach { sub ->
             if (sub.isDone) return@forEach
             sub.reminderTime?.let {
-                if (it > now) result += AlarmItem(
+                result += AlarmItem(
                     requestCode = sub.id.hashCode(),
                     title = sub.title,
                     triggerMillis = it,
