@@ -1,26 +1,19 @@
 package com.markel.flowstate.feature.habits.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
@@ -42,6 +35,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.times
 import com.markel.flowstate.core.domain.HabitNumericEntry
 import java.time.temporal.ChronoUnit
+import kotlinx.coroutines.launch
 
 @Composable
 fun NumericHabitCard(
@@ -57,6 +51,7 @@ fun NumericHabitCard(
     val habit = habitWithStatus.habit
     val habitColor = Color(habit.colorArgb)
     val today = LocalDate.now()
+    val scope = rememberCoroutineScope()
     var weekOffset by remember { mutableIntStateOf(0) }  // O if actual week, -1 if is last week
     val weekStart = remember(weekOffset) {
         today.with(DayOfWeek.MONDAY).plusWeeks(weekOffset.toLong())
@@ -96,7 +91,7 @@ fun NumericHabitCard(
 
     val targetValue = habit.targetValue
     val isCompletedToday = habitWithStatus.isCompletedToday
-    
+
     val surfaceColor = MaterialTheme.colorScheme.surfaceContainer
     val cardBg by animateColorAsState(
         targetValue = if (isCompletedToday)
@@ -193,7 +188,7 @@ fun NumericHabitCard(
                     iconName = habit.iconName,
                     onClick = { } // Nothing to do here yet, only used as an indicator
                 )
-                
+
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = habit.name,
@@ -214,7 +209,7 @@ fun NumericHabitCard(
                         )
                     }
                 }
-                
+
                 Box {
                     IconButton(onClick = { menuExpanded = true }) {
                         Text(
@@ -359,16 +354,27 @@ fun NumericHabitCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val decInteraction = remember { MutableInteractionSource() }
-                    val isDecPressed by decInteraction.collectIsPressedAsState()
-                    val decScale by animateFloatAsState(
-                        targetValue = if (isDecPressed) 0.9f else 1f,
-                        animationSpec = spring(dampingRatio = 0.5f, stiffness = 1200f)
+                    // ── Decrement button ──────────────────────────────────
+                    val decScale = remember { Animatable(1f) }
+                    val decShape = RoundedCornerShape(
+                        topStart = CornerSize(50),
+                        bottomStart = CornerSize(50),
+                        topEnd = CornerSize(8.dp),
+                        bottomEnd = CornerSize(8.dp)
                     )
 
-                    // Decrement button
                     FilledTonalIconButton(
                         onClick = {
+                            scope.launch {
+                                decScale.snapTo(0.88f)
+                                decScale.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = spring(
+                                        dampingRatio = 0.20f,
+                                        stiffness = 200f
+                                    )
+                                )
+                            }
                             if (selectedDate == today) {
                                 onDecrementToday()
                             } else {
@@ -377,21 +383,19 @@ fun NumericHabitCard(
                                 onSetValue(selectedDate, if (newVal > 0f) newVal else null)
                             }
                         },
-                        interactionSource = decInteraction,
                         enabled = selectedValue > 0,
                         colors = IconButtonDefaults.filledTonalIconButtonColors(
                             containerColor = habitColor.copy(alpha = 0.60f),
                             contentColor = habitColor
                         ),
                         modifier = Modifier
-                            .size(width = 46.dp, height = 42.dp)
-                            .graphicsLayer(scaleX = decScale, scaleY = decScale),
-                        shape = RoundedCornerShape(
-                            topStart = CornerSize(50),
-                            bottomStart = CornerSize(50),
-                            topEnd = CornerSize(8.dp),
-                            bottomEnd = CornerSize(8.dp)
-                        )
+                            .graphicsLayer {
+                                scaleX = decScale.value
+                                scaleY = decScale.value
+                                shape = decShape
+                            }
+                            .size(width = 46.dp, height = 42.dp),
+                        shape = decShape
                     ) {
                         Icon(
                             imageVector = ImageVector.vectorResource(R.drawable.remove_24px),
@@ -401,15 +405,27 @@ fun NumericHabitCard(
                         )
                     }
 
-                    val incInteraction = remember { MutableInteractionSource() }
-                    val isIncPressed by incInteraction.collectIsPressedAsState()
-                    val incScale by animateFloatAsState(
-                        targetValue = if (isIncPressed) 0.9f else 1f,
-                        animationSpec = spring(dampingRatio = 0.5f, stiffness = 1200f)
+                    // ── Increment button ──────────────────────────────────
+                    val incScale = remember { Animatable(1f) }
+                    val incShape = RoundedCornerShape(
+                        topStart = CornerSize(8.dp),
+                        bottomStart = CornerSize(8.dp),
+                        topEnd = CornerSize(50),
+                        bottomEnd = CornerSize(50)
                     )
-                    // Increment button
+
                     FilledTonalIconButton(
                         onClick = {
+                            scope.launch {
+                                incScale.snapTo(0.88f)
+                                incScale.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = spring(
+                                        dampingRatio = 0.20f,
+                                        stiffness = 200f
+                                    )
+                                )
+                            }
                             if (selectedDate == today) {
                                 onIncrementToday()
                             } else {
@@ -418,20 +434,18 @@ fun NumericHabitCard(
                                 onSetValue(selectedDate, newVal)
                             }
                         },
-                        interactionSource = incInteraction,
                         colors = IconButtonDefaults.filledTonalIconButtonColors(
                             containerColor = habitColor.copy(alpha = 0.60f),
                             contentColor = habitColor
                         ),
                         modifier = Modifier
-                            .size(width = 46.dp, height = 42.dp)
-                            .graphicsLayer(scaleX = incScale, scaleY = incScale),
-                        shape = RoundedCornerShape(
-                            topStart = CornerSize(8.dp),
-                            bottomStart = CornerSize(8.dp),
-                            topEnd = CornerSize(50),
-                            bottomEnd = CornerSize(50)
-                        )
+                            .graphicsLayer {
+                                scaleX = incScale.value
+                                scaleY = incScale.value
+                                shape = incShape
+                            }
+                            .size(width = 46.dp, height = 42.dp),
+                        shape = incShape
                     ) {
                         Icon(
                             imageVector = ImageVector.vectorResource(R.drawable.add_24px),
