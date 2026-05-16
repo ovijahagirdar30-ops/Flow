@@ -155,7 +155,7 @@ class HabitWidget : GlanceAppWidget() {
                     Text(
                         text = dayNumber.toString(),
                         style = TextStyle(
-                            fontSize = 16.sp,
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             color = badgeTextColor,
                             textAlign = TextAlign.Center
@@ -181,7 +181,7 @@ class HabitWidget : GlanceAppWidget() {
                     Text(
                         text = habitName.take(2).uppercase(),
                         style = TextStyle(
-                            fontSize = 20.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = backgIconColor
                         )
