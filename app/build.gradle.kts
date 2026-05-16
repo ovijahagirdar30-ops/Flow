@@ -53,6 +53,7 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:notifications"))
+    implementation(project(":core:widgets"))
 
     // Android Core & Lifecycle
     implementation(libs.androidx.core.ktx)

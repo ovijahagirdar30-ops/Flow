@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Shows and controls a boolean habit</string>
+    <string name="choose_habit">Choose a habit</string>
+    <string name="no_boolean_habits">You don\'t have basic habits yet</string>
+    <string name="cancel">Cancel</string>
+    <string name="no_config">Not configured widget</string>
+</resources>
