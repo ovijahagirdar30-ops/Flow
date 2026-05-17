@@ -111,9 +111,6 @@ class HabitWidgetConfigActivity : ComponentActivity() {
                             val glanceId = GlanceAppWidgetManager(this@HabitWidgetConfigActivity)
                                 .getGlanceIdBy(appWidgetId)
 
-                            val today = LocalDate.now()
-                            val isCompletedToday = today.toEpochDay() in pickerData.completedDates
-
                             updateAppWidgetState(
                                 this@HabitWidgetConfigActivity,
                                 PreferencesGlanceStateDefinition,
@@ -121,12 +118,6 @@ class HabitWidgetConfigActivity : ComponentActivity() {
                             ) { prefs ->
                                 prefs.toMutablePreferences().apply {
                                     this[KEY_HABIT_ID] = habit.id
-                                    this[KEY_HABIT_NAME] = habit.name
-                                    this[KEY_HABIT_ICON] = habit.iconName
-                                    this[KEY_HABIT_COLOR] = habit.colorArgb
-                                    this[KEY_HABIT_TYPE] = habit.habitType.name
-                                    this[KEY_IS_COMPLETED] = isCompletedToday
-                                    this[KEY_DAY_NUMBER] = today.dayOfMonth
                                 }
                             }
 

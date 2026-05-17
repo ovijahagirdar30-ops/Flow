@@ -2,6 +2,8 @@ package com.markel.flowstate.core.widgets
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -41,12 +43,6 @@ import java.time.LocalDate
 
 // Key preferences for the widget
 val KEY_HABIT_ID = intPreferencesKey("habit_id")
-val KEY_HABIT_NAME = stringPreferencesKey("habit_name")
-val KEY_HABIT_ICON = stringPreferencesKey("habit_icon")
-val KEY_HABIT_COLOR = intPreferencesKey("habit_color")
-val KEY_IS_COMPLETED = booleanPreferencesKey("is_completed")
-val KEY_HABIT_TYPE = stringPreferencesKey("habit_type")
-val KEY_DAY_NUMBER = intPreferencesKey("day_number")
 
 class HabitWidget : GlanceAppWidget() {
 
@@ -55,61 +51,75 @@ class HabitWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Single
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // Load data needed to render the AppWidget
-        // First, get the repository via EntryPointAccessors
+        provideContent {
+            GlanceTheme {
+                HabitWidgetContent(context)
+            }
+        }
+    }
+
+    @Composable
+    private fun HabitWidgetContent(context: Context) {
+        val prefs = currentState<Preferences>()
+        val habitId = prefs[KEY_HABIT_ID] ?: -1
+
+        if (habitId == -1) {
+            PlaceholderContent()
+            return
+        }
+
         val entryPoint = EntryPointAccessors.fromApplication(
             context.applicationContext,
             HabitWidgetEntryPoint::class.java
         )
         val repository = entryPoint.habitRepository()
 
-        // Read the saved habitId in Preferences for this specific widget
-        val prefs = androidx.glance.appwidget.state.getAppWidgetState(
-            context, PreferencesGlanceStateDefinition, id
-        )
-        val habitId = prefs[KEY_HABIT_ID] ?: -1
+        val habit by repository.getHabitFlow(habitId)
+            .collectAsState(initial = null)
+        val entries by repository.getEntriesForHabit(habitId)
+            .collectAsState(initial = emptyList())
 
-        if (habitId != -1) {
-            // Check via repository and update Preferences with fresh data
-            withContext(Dispatchers.IO) {
-                val habit = repository.getHabitById(habitId)
-                val today = LocalDate.now()
-                val isCompleted = repository.getEntriesForHabit(habitId)
-                    .first()
-                    .contains(today)
-
-                if (habit != null) {
-                    androidx.glance.appwidget.state.updateAppWidgetState(context, id) { mutablePrefs ->
-                        mutablePrefs[KEY_HABIT_NAME] = habit.name
-                        mutablePrefs[KEY_HABIT_ICON] = habit.iconName
-                        mutablePrefs[KEY_HABIT_COLOR] = habit.colorArgb
-                        mutablePrefs[KEY_IS_COMPLETED] = isCompleted
-                        mutablePrefs[KEY_HABIT_TYPE] = habit.habitType.name
-                        mutablePrefs[KEY_HABIT_ID] = habitId
-                        mutablePrefs[KEY_DAY_NUMBER] = today.dayOfMonth
-
-                    }
-                }
-            }
+        // If the habit was deleted show placeholder
+        if (habit == null) {
+            PlaceholderContent()
+            return
         }
+        val today = LocalDate.now()
+        val isCompleted = entries.contains(today)
 
-        // Render it
-        provideContent {
-            GlanceTheme {
-                HabitWidgetContent()
-            }
+        // Render the widget subscribed to the flow data
+        WidgetPill(
+            habitName = habit!!.name,
+            iconName = habit!!.iconName,
+            isCompleted = isCompleted,
+            dayNumber = today.dayOfMonth
+        )
+    }
+
+    @Composable
+    private fun PlaceholderContent() {
+        Box(
+            modifier = GlanceModifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "?",
+                style = TextStyle(
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GlanceTheme.colors.onPrimaryContainer
+                )
+            )
         }
     }
 
     @Composable
-    private fun HabitWidgetContent() {
-        val prefs = currentState<Preferences>()
-        val habitId = prefs[KEY_HABIT_ID] ?: -1
-        val habitName = prefs[KEY_HABIT_NAME] ?: ""
-        val iconName = prefs[KEY_HABIT_ICON] ?: "none"
-        val isCompleted = prefs[KEY_IS_COMPLETED] ?: false
-        val dayNumber = prefs[KEY_DAY_NUMBER] ?: LocalDate.now().dayOfMonth
-
+    private fun WidgetPill(
+        habitName: String,
+        iconName: String,
+        isCompleted: Boolean,
+        dayNumber: Int
+    ) {
         val backgColor = GlanceTheme.colors.primaryContainer
         val backgIconColor = GlanceTheme.colors.onPrimaryContainer
 
