@@ -33,9 +33,11 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import com.markel.flowstate.core.designsystem.R as DesignR
 import com.markel.flowstate.core.domain.Habit
 import com.markel.flowstate.core.domain.HabitRepository
 import com.markel.flowstate.core.domain.HabitType
+import com.markel.flowstate.core.designsystem.icon.HabitIconMapper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -268,7 +270,7 @@ private fun HabitPickerItem(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                val iconRes = IconMapper.getDrawableRes(habit.iconName)
+                val iconRes = HabitIconMapper.getDrawableRes(habit.iconName)
                 if (iconRes != null) {
                     Icon(
                         painter = androidx.compose.ui.res.painterResource(iconRes),
@@ -310,7 +312,7 @@ private fun HabitPickerItem(
             Spacer(modifier = Modifier.width(8.dp))
 
             Icon(
-                painter = androidx.compose.ui.res.painterResource(R.drawable.add_24px),
+                painter = androidx.compose.ui.res.painterResource(DesignR.drawable.add_24px),
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)

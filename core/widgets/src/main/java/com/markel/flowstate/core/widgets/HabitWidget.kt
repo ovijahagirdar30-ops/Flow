@@ -36,10 +36,8 @@ import androidx.glance.ColorFilter
 import androidx.glance.layout.wrapContentSize
 import androidx.glance.text.TextAlign
 import dagger.hilt.android.EntryPointAccessors
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import com.markel.flowstate.core.designsystem.icon.HabitIconMapper
 
 // Key preferences for the widget
 val KEY_HABIT_ID = intPreferencesKey("habit_id")
@@ -179,7 +177,7 @@ class HabitWidget : GlanceAppWidget() {
                 modifier = GlanceModifier.fillMaxSize().padding(bottom = 22.dp, start = 13.dp),
                 contentAlignment = Alignment.BottomStart
             ) {
-                val iconRes = IconMapper.getDrawableRes(iconName)
+                val iconRes = HabitIconMapper.getDrawableRes(iconName)
                 if (iconRes != null) {
                     Image(
                         provider = ImageProvider(iconRes),

@@ -3,38 +3,27 @@ package com.markel.flowstate.feature.habits.components
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
-import com.markel.flowstate.feature.habits.R
-
+import com.markel.flowstate.core.designsystem.icon.HabitIconMapper
 
 /**
- * Icon mapping (Strings saved in DB) to drawables
+ * Convenience aliases that delegate to the shared [HabitIconMapper]
+ * in `core:designsystem`.
+ *
+ * Kept as top-level vals/funs so existing call-sites in the habits
+ * feature module don't need any import changes.
  */
-val HabitIconList = listOf(
-    "none" to null,
-    "self_improvement" to R.drawable.self_improvement_24px,
-    "fitness_center" to R.drawable.fitness_center_24px,
-    "directions_run" to R.drawable.directions_run_24px,
-    "directions_bike" to R.drawable.directions_bike_24px,
-    "book" to R.drawable.book_ribbon_24px,
-    "bedtime" to R.drawable.bedtime_24px,
-    "shower" to R.drawable.shower_24px,
-    "cleaning" to R.drawable.cleaning_24px,
-    "dentistry" to R.drawable.dentistry_24px,
-    "language" to R.drawable.language_chinese_dayi_24px,
-    "laundry" to R.drawable.local_laundry_service_24px,
-    "nutrition" to R.drawable.nutrition_24px,
-    "recycling" to R.drawable.recycling_24px,
-    "shopping" to R.drawable.shopping_basket_24px,
-    "water" to R.drawable.water_drop_24px,
-    "assignment" to R.drawable.assignment_24px,
-    "pets" to R.drawable.pets_24px,
-    "washoku" to R.drawable.washoku_24px
 
-)
+/** Full list of icon entries — used by [AddHabitDialog] icon picker. */
+val HabitIconList: List<Pair<String, Int?>> = HabitIconMapper.iconList
 
+/**
+ * Composable helper that resolves an icon name to an [ImageVector].
+ * Returns `null` when [iconName] is `"none"`, and falls back to
+ * [HabitIconMapper.fallbackIconRes] for unknown names.
+ */
 @Composable
 fun getHabitIcon(iconName: String): ImageVector? {
     if (iconName == "none") return null
-    val resId = HabitIconList.toMap()[iconName] ?: R.drawable.asterisk_24px
+    val resId = HabitIconMapper.getDrawableRes(iconName) ?: HabitIconMapper.fallbackIconRes
     return ImageVector.vectorResource(resId)
 }
