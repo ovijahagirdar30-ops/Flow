@@ -29,7 +29,7 @@ class CalendarViewModelTest {
 
     // Helper to create timestamps (milliseconds) from a LocalDate
     private fun LocalDate.toMillis(): Long {
-        return this.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        return this.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
     }
 
     @Test
