@@ -16,7 +16,6 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
-import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.fillMaxSize
@@ -27,15 +26,17 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.glance.ColorFilter
 import androidx.glance.LocalSize
+import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.layout.ContentScale
 import androidx.glance.text.TextAlign
 import dagger.hilt.android.EntryPointAccessors
 import java.time.LocalDate
 import com.markel.flowstate.core.designsystem.icon.HabitIconMapper
+import com.markel.flowstate.core.domain.Habit
+import kotlinx.coroutines.flow.first
 
 // Key preferences for the widget
 val KEY_HABIT_ID = intPreferencesKey("habit_id")
@@ -47,18 +48,34 @@ class HabitWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Preload data BEFORE provideContent so the first compose frame
+        // has real data and never shows the "?" placeholder.
+        val entryPoint = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            HabitWidgetEntryPoint::class.java
+        )
+        val repository = entryPoint.habitRepository()
+
+        val prefs = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
+        val habitId = prefs[KEY_HABIT_ID] ?: -1
+
+        val initialHabit: Habit? = if (habitId != -1) repository.getHabitById(habitId) else null
+        val initialEntries: List<LocalDate> = if (habitId != -1) repository.getEntriesForHabit(habitId).first() else emptyList()
+
         provideContent {
             GlanceTheme {
-                HabitWidgetContent(context)
+                HabitWidgetContent(context, habitId, initialHabit, initialEntries)
             }
         }
     }
 
     @Composable
-    private fun HabitWidgetContent(context: Context) {
-        val prefs = currentState<Preferences>()
-        val habitId = prefs[KEY_HABIT_ID] ?: -1
-
+    private fun HabitWidgetContent(
+        context: Context,
+        habitId: Int,
+        initialHabit: Habit?,
+        initialEntries: List<LocalDate>
+    ) {
         if (habitId == -1) {
             PlaceholderContent()
             return
@@ -70,10 +87,12 @@ class HabitWidget : GlanceAppWidget() {
         )
         val repository = entryPoint.habitRepository()
 
+        // Use preloaded data as initial values to avoid flickering with the placeholder
+        // The Flow will emit fresh data shortly after, updating the composition.
         val habit by repository.getHabitFlow(habitId)
-            .collectAsState(initial = null)
+            .collectAsState(initial = initialHabit)
         val entries by repository.getEntriesForHabit(habitId)
-            .collectAsState(initial = emptyList())
+            .collectAsState(initial = initialEntries)
 
         // If the habit was deleted show placeholder
         if (habit == null) {
