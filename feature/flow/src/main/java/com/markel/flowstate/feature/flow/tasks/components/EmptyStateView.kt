@@ -21,9 +21,9 @@ import androidx.compose.ui.unit.sp
 import com.markel.flowstate.feature.tasks.R
 
 @Composable
-fun EmptyStateView() {
+fun EmptyStateView(modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(bottom = 100.dp),
         verticalArrangement = Arrangement.Center,
