@@ -19,7 +19,6 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
-import androidx.glance.layout.Column
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
@@ -29,11 +28,10 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.ColorFilter
-import androidx.glance.layout.wrapContentSize
+import androidx.glance.LocalSize
+import androidx.glance.layout.ContentScale
 import androidx.glance.text.TextAlign
 import dagger.hilt.android.EntryPointAccessors
 import java.time.LocalDate
@@ -46,7 +44,7 @@ class HabitWidget : GlanceAppWidget() {
 
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
 
-    override val sizeMode = SizeMode.Single
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
@@ -128,72 +126,91 @@ class HabitWidget : GlanceAppWidget() {
             if (isCompleted) GlanceTheme.colors.onPrimary
             else GlanceTheme.colors.onPrimaryContainer
 
-        Box(
-            modifier = GlanceModifier.fillMaxSize().clickable(actionRunCallback<ToggleHabitAction>())
-        ) {
-            // pill tinted with theme color
-            Image(
-                provider = ImageProvider(R.drawable.pill),
-                contentDescription = null,
-                modifier = GlanceModifier.fillMaxSize(),
-                colorFilter = ColorFilter.tint(
-                    backgColor
-                )
-            )
+        val size = LocalSize.current
+        val widgetSize = if (size.width < size.height) size.width else size.height
 
-            // Day in the top right and badge if completed
-            Box(
-                modifier = GlanceModifier.fillMaxSize().padding(top = 16.dp, end = 12.dp),
-                contentAlignment = Alignment.TopEnd
-            ) {
+        val badgeBoxSize = (widgetSize.value * 0.35f).dp
+        val badgeTextSize = (widgetSize.value * 0.17f).sp
+        val iconSize = (widgetSize.value * 0.29f).dp
+        val iconTextSize = (widgetSize.value * 0.18f).sp
+
+        val topPad = (widgetSize.value * 0.15f).dp
+        val endPad = (widgetSize.value * 0.12f).dp
+        val bottomPad = (widgetSize.value * 0.20f).dp
+        val startPad = (widgetSize.value * 0.12f).dp
+
+        Box(
+            modifier = GlanceModifier
+                .fillMaxSize()
+                .clickable(actionRunCallback<ToggleHabitAction>()),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(modifier = GlanceModifier.size(widgetSize)) {
+                // pill tinted with theme color
+                Image(
+                    provider = ImageProvider(R.drawable.pill),
+                    contentDescription = null,
+                    modifier = GlanceModifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                    colorFilter = ColorFilter.tint(
+                        backgColor
+                    )
+                )
+
+                // Day in the top right and badge if completed
                 Box(
-                    modifier = GlanceModifier.size(36.dp),
-                    contentAlignment = Alignment.Center
+                    modifier = GlanceModifier.fillMaxSize().padding(top = topPad, end = endPad),
+                    contentAlignment = Alignment.TopEnd
                 ) {
-                    if (isCompleted) {
-                        Image(
-                            provider = ImageProvider(
-                                R.drawable.widget_badge_done
-                            ),
-                            contentDescription = "Completed",
-                            modifier = GlanceModifier.fillMaxSize(),
-                            colorFilter = ColorFilter.tint(badgeColor)
+                    Box(
+                        modifier = GlanceModifier.size(badgeBoxSize),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isCompleted) {
+                            Image(
+                                provider = ImageProvider(
+                                    R.drawable.widget_badge_done
+                                ),
+                                contentDescription = "Completed",
+                                modifier = GlanceModifier.fillMaxSize(),
+                                colorFilter = ColorFilter.tint(badgeColor)
+                            )
+                        }
+                        Text(
+                            text = dayNumber.toString(),
+                            style = TextStyle(
+                                fontSize = badgeTextSize,
+                                fontWeight = FontWeight.Bold,
+                                color = badgeTextColor,
+                                textAlign = TextAlign.Center
+                            )
                         )
                     }
-                    Text(
-                        text = dayNumber.toString(),
-                        style = TextStyle(
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = badgeTextColor,
-                            textAlign = TextAlign.Center
-                        )
-                    )
                 }
-            }
 
-            // Icon bottom left
-            Box(
-                modifier = GlanceModifier.fillMaxSize().padding(bottom = 22.dp, start = 13.dp),
-                contentAlignment = Alignment.BottomStart
-            ) {
-                val iconRes = HabitIconMapper.getDrawableRes(iconName)
-                if (iconRes != null) {
-                    Image(
-                        provider = ImageProvider(iconRes),
-                        contentDescription = habitName,
-                        modifier = GlanceModifier.size(28.dp),
-                        colorFilter = ColorFilter.tint(backgIconColor)
-                    )
-                } else {
-                    Text(
-                        text = habitName.take(2).uppercase(),
-                        style = TextStyle(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = backgIconColor
+                // Icon bottom left
+                Box(
+                    modifier = GlanceModifier.fillMaxSize().padding(bottom = bottomPad, start = startPad),
+                    contentAlignment = Alignment.BottomStart
+                ) {
+                    val iconRes = HabitIconMapper.getDrawableRes(iconName)
+                    if (iconRes != null) {
+                        Image(
+                            provider = ImageProvider(iconRes),
+                            contentDescription = habitName,
+                            modifier = GlanceModifier.size(iconSize),
+                            colorFilter = ColorFilter.tint(backgIconColor)
                         )
-                    )
+                    } else {
+                        Text(
+                            text = habitName.take(2).uppercase(),
+                            style = TextStyle(
+                                fontSize = iconTextSize,
+                                fontWeight = FontWeight.Bold,
+                                color = backgIconColor
+                            )
+                        )
+                    }
                 }
             }
         }
