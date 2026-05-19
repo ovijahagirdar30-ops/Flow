@@ -161,7 +161,7 @@ class HabitWidget : GlanceAppWidget() {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .clickable(actionRunCallback<ToggleHabitAction>()),
+                .clickable(actionRunCallback<ToggleHabitAction>(), R.drawable.no_ripple),
             contentAlignment = Alignment.Center
         ) {
             Box(modifier = GlanceModifier.size(widgetSize)) {
