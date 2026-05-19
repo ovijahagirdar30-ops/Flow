@@ -5,6 +5,7 @@ import java.time.LocalDate
 
 interface HabitRepository {
     fun getHabits(): Flow<List<Habit>>
+    fun getHabitFlow(id: Int): Flow<Habit?>
     fun getEntriesForHabit(habitId: Int): Flow<List<LocalDate>>
     suspend fun insertHabit(habit: Habit)
     suspend fun updateHabit(habit: Habit)

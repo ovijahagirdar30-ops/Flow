@@ -24,6 +24,7 @@ import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.flow.FlowUiState
 import com.markel.flowstate.feature.flow.tasks.components.AnimatableTaskItem
+import com.markel.flowstate.feature.flow.tasks.components.EmptyStateView
 import com.markel.flowstate.feature.flow.tasks.components.ReminderPermissionBanner
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -61,6 +62,16 @@ fun SectionedFlowView(
     modifier: Modifier = Modifier
 ) {
     if (uiState !is FlowUiState.Success) return
+
+    // Empty state when all lists are empty
+    val allEmpty = uiState.tasks.isEmpty()
+            && uiState.checkLists.isEmpty()
+            && uiState.ideas.isEmpty()
+
+    if (allEmpty) {
+        EmptyStateView(modifier = modifier.fillMaxSize())
+        return
+    }
 
     val outerListState = rememberLazyListState()
 

@@ -31,6 +31,9 @@ class HabitRepositoryImpl @Inject constructor(
     override suspend fun getHabitById(id: Int): Habit? =
         dao.getHabitById(id)?.toDomain()
 
+    override fun getHabitFlow(id: Int): Flow<Habit?> =
+        dao.getHabitFlow(id).map { it?.toDomain() }
+
     override suspend fun insertHabit(habit: Habit) =
         dao.insertHabit(habit.toEntity()).let { Unit }
 

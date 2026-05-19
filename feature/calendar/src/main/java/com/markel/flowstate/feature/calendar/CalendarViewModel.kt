@@ -63,12 +63,12 @@ class CalendarViewModel @Inject constructor(
                 val dateKey = when {
                     task.dueDate != null -> {
                         Instant.ofEpochMilli(task.dueDate!!)
-                            .atZone(ZoneId.systemDefault())
+                            .atZone(ZoneId.of("UTC"))
                             .toLocalDate()
                     }
                     task.isDone && task.completedAt != null -> {
                         Instant.ofEpochMilli(task.completedAt!!)
-                            .atZone(ZoneId.systemDefault())
+                            .atZone(ZoneId.of("UTC"))
                             .toLocalDate()
                     }
                     else -> null

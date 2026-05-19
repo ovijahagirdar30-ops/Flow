@@ -94,7 +94,7 @@ fun ReminderSelector(
         val selectableDates = object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
                 val selectedDate = Instant.ofEpochMilli(utcTimeMillis)
-                    .atZone(ZoneId.systemDefault())
+                    .atZone(ZoneId.of("UTC"))
                     .toLocalDate()
                 return !selectedDate.isBefore(LocalDate.now())
             }
@@ -139,7 +139,7 @@ fun ReminderSelector(
                             showDatePicker = false
                             datePickerState.selectedDateMillis?.let { millis ->
                                 pendingDate = Instant.ofEpochMilli(millis)
-                                    .atZone(ZoneId.systemDefault())
+                                    .atZone(ZoneId.of("UTC"))
                                     .toLocalDate()
                                 showTimePicker = true
                             }

@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.feature.habits.R
+import com.markel.flowstate.core.designsystem.R as DesignR
 
 private val habitColors = listOf(
     Color(0xFF6650A4), Color(0xFF0061A4), Color(0xFF006E1C),
@@ -217,7 +218,7 @@ fun AddHabitDialog(
                                 }
                                 else {
                                     Icon(
-                                        imageVector = ImageVector.vectorResource(R.drawable.block_24px),
+                                        imageVector = ImageVector.vectorResource(DesignR.drawable.block_24px),
                                         contentDescription = "No icon",
                                         tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                                     )

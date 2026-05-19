@@ -165,7 +165,7 @@ fun DateSelector(
 
 fun isDateOverdue(timestamp: Long): Boolean {
     val date = Instant.ofEpochMilli(timestamp)
-        .atZone(ZoneId.systemDefault())
+        .atZone(ZoneId.of("UTC"))
         .toLocalDate()
     val today = LocalDate.now()
     return date.isBefore(today)
@@ -173,7 +173,7 @@ fun isDateOverdue(timestamp: Long): Boolean {
 @Composable
 fun formatDate(timestamp: Long?): String {
     if (timestamp == null) return ""
-    val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+    val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.of("UTC")).toLocalDate()
     val today = LocalDate.now()
 
     return when(date) {

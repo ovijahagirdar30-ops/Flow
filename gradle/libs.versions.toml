@@ -12,7 +12,7 @@ composeBom = "2026.01.00"
 appcompat = "1.7.1"
 material = "1.13.0"
 room = "2.8.4"
-ksp = "2.1.10-1.0.30"
+ksp = "2.2.10-2.0.2"
 navigation = "2.9.6"
 hilt = "2.57.2"
 hiltNavigation = "1.3.0"
@@ -25,6 +25,7 @@ datastore = "1.2.0"
 material3ExpressiveAlpha = "1.5.0-alpha15"  # Keep the alpha until the FAB menu is stable (BOM update would be necessary)
 foundation = "1.10.4"
 animationCore = "1.10.5"
+glance = "1.1.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -61,6 +62,8 @@ turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCore" }
+glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
+glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

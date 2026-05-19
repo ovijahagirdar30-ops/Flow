@@ -26,11 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.markel.flowstate.core.domain.HabitWithStatus
 import com.markel.flowstate.feature.habits.R
+import com.markel.flowstate.core.designsystem.R as DesignR
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.format.TextStyle
-import java.util.Locale
-import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.times
 import com.markel.flowstate.core.domain.HabitNumericEntry
@@ -341,7 +339,7 @@ fun NumericHabitCard(
                             )
                         }
                         Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.edit_24px),
+                            imageVector = ImageVector.vectorResource(DesignR.drawable.edit_24px),
                             contentDescription = "Edit value",
                             modifier = Modifier
                                 .padding(start = 12.dp)
@@ -398,7 +396,7 @@ fun NumericHabitCard(
                         shape = decShape
                     ) {
                         Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.remove_24px),
+                            imageVector = ImageVector.vectorResource(DesignR.drawable.remove_24px),
                             contentDescription = "Decrement",
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.onSurface

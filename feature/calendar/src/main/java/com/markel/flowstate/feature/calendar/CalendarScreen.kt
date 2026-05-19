@@ -54,7 +54,7 @@ fun CalendarScreen(
                 onClick = {
                     // Use the selected date in the calendar by default when creating a task
                     (uiState as? CalendarUiState.Success)?.selectedDate?.let { date ->
-                        val millis = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        val millis = date.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
                         taskViewModel.updateDraftDueDate(millis)
                     }
                     showCreationSheet = true
