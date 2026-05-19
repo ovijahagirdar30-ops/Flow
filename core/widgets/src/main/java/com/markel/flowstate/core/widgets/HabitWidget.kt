@@ -6,6 +6,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -30,12 +31,14 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.glance.ColorFilter
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.state.getAppWidgetState
+import androidx.glance.currentState
 import androidx.glance.layout.ContentScale
 import androidx.glance.text.TextAlign
 import dagger.hilt.android.EntryPointAccessors
 import java.time.LocalDate
 import com.markel.flowstate.core.designsystem.icon.HabitIconMapper
 import com.markel.flowstate.core.domain.Habit
+import com.markel.flowstate.core.domain.HabitRepository
 import kotlinx.coroutines.flow.first
 
 // Key preferences for the widget
@@ -50,6 +53,12 @@ class HabitWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         // Preload data BEFORE provideContent so the first compose frame
         // has real data and never shows the "?" placeholder.
+        // On some devices (e.g. Android 12) getAppWidgetState may return
+        // empty preferences if the DataStore hasn't been initialized yet
+        // (process restart after being killed).  The reactive currentState()
+        // call inside provideContent acts as a safety-net: if the preloaded
+        // habitId is -1 but the real preferences arrive later, the widget
+        // recomposes with the correct habitId automatically.
         val entryPoint = EntryPointAccessors.fromApplication(
             context.applicationContext,
             HabitWidgetEntryPoint::class.java
@@ -57,35 +66,32 @@ class HabitWidget : GlanceAppWidget() {
         val repository = entryPoint.habitRepository()
 
         val prefs = getAppWidgetState(context, PreferencesGlanceStateDefinition, id)
-        val habitId = prefs[KEY_HABIT_ID] ?: -1
+        val preloadedHabitId = prefs[KEY_HABIT_ID] ?: -1
 
-        val initialHabit: Habit? = if (habitId != -1) repository.getHabitById(habitId) else null
-        val initialEntries: List<LocalDate> = if (habitId != -1) repository.getEntriesForHabit(habitId).first() else emptyList()
+        val initialHabit: Habit? = if (preloadedHabitId != -1) repository.getHabitById(preloadedHabitId) else null
+        val initialEntries: List<LocalDate> = if (preloadedHabitId != -1) repository.getEntriesForHabit(preloadedHabitId).first() else emptyList()
 
         provideContent {
             GlanceTheme {
-                HabitWidgetContent(context, habitId, initialHabit, initialEntries)
+                HabitWidgetContent(preloadedHabitId, initialHabit, initialEntries, repository)
             }
         }
     }
 
     @Composable
     private fun HabitWidgetContent(
-        context: Context,
-        habitId: Int,
+        preloadedHabitId: Int,
         initialHabit: Habit?,
-        initialEntries: List<LocalDate>
+        initialEntries: List<LocalDate>,
+        repository: HabitRepository
     ) {
+        val prefs = currentState<Preferences>()  // Observe preferences reactively
+        val habitId = prefs[KEY_HABIT_ID] ?: preloadedHabitId
+
         if (habitId == -1) {
             PlaceholderContent()
             return
         }
-
-        val entryPoint = EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            HabitWidgetEntryPoint::class.java
-        )
-        val repository = entryPoint.habitRepository()
 
         // Use preloaded data as initial values to avoid flickering with the placeholder
         // The Flow will emit fresh data shortly after, updating the composition.
@@ -95,17 +101,19 @@ class HabitWidget : GlanceAppWidget() {
             .collectAsState(initial = initialEntries)
 
         // If the habit was deleted show placeholder
-        if (habit == null) {
+        val currentHabit = habit
+        if (currentHabit == null) {
             PlaceholderContent()
             return
         }
+
         val today = LocalDate.now()
         val isCompleted = entries.contains(today)
 
         // Render the widget subscribed to the flow data
         WidgetPill(
-            habitName = habit!!.name,
-            iconName = habit!!.iconName,
+            habitName = currentHabit.name,
+            iconName = currentHabit.iconName,
             isCompleted = isCompleted,
             dayNumber = today.dayOfMonth
         )
