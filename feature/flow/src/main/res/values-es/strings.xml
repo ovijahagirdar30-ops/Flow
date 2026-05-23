@@ -35,8 +35,8 @@
     <string name="more">más</string>
     <string name="list_element">Elemento de la lista...</string>
     <plurals name="completed_items">
-        <item quantity="one">%d completado</item>
-        <item quantity="other">%d completados</item>
+        <item quantity="one">%d Completado</item>
+        <item quantity="other">%d Completados</item>
     </plurals>
     <string name="tasks_m">TAREAS</string>
     <string name="checklists_m">LISTAS</string>
