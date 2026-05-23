@@ -22,7 +22,13 @@ fun NumericInputDialog(
     onConfirm: (Float?) -> Unit
 ) {
     var valueText by remember {
-        mutableStateOf(currentValue?.let { if (it == 0f) "" else it.toInt().toString() } ?: "")
+        mutableStateOf(
+            currentValue?.let {
+                if (it == 0f) ""
+                else if (it % 1 == 0f) it.toInt().toString()
+                else it.toString()
+            } ?: ""
+        )
     }
     val focusRequester = remember { FocusRequester() }
 
