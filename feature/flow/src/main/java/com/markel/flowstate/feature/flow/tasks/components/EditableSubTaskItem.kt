@@ -202,7 +202,7 @@ fun EditableSubTaskItem(
                             ),
                             textDecoration = if (subTask.isDone) TextDecoration.LineThrough else null,
                             color = if (subTask.isDone)
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -230,7 +230,9 @@ fun EditableSubTaskItem(
                                     minLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                        alpha = if (subTask.isDone) 0.6f else 0.9f
+                                    )
                                 )
                             }
                             if (subTask.dueDate != null) {
@@ -239,9 +241,13 @@ fun EditableSubTaskItem(
                                     style = MaterialTheme.typography.labelSmall,
                                     color = subTask.dueDate!!.let { date ->
                                         if (isDateOverdue(date)) {
-                                            MaterialTheme.colorScheme.error
+                                            MaterialTheme.colorScheme.error.copy(
+                                                alpha = if (subTask.isDone) 0.6f else 0.9f
+                                            )
                                         } else {
-                                            MaterialTheme.colorScheme.tertiary
+                                            MaterialTheme.colorScheme.tertiary.copy(
+                                                alpha = if (subTask.isDone) 0.6f else 0.9f
+                                            )
                                         }
                                     }
                                 )
