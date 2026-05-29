@@ -29,6 +29,7 @@ import kotlin.math.abs
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import com.markel.flowstate.feature.habits.R
+import com.markel.flowstate.feature.habits.util.formatFloat
 
 @Composable
 fun NumericEvolutionCard(
@@ -82,7 +83,7 @@ fun NumericEvolutionCard(
                     letterSpacing = 1.sp
                 )
 
-                val formattedAvg = if (average % 1 == 0f) average.toInt().toString() else String.format("%.2f", average)
+                val formattedAvg = formatFloat(average)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = formattedAvg,
@@ -122,7 +123,7 @@ fun NumericEvolutionCard(
                 val displayValue = selectedDay?.second ?: dailyValues.lastOrNull()?.second ?: 0f
                 val displayDate = selectedDay?.first ?: dailyValues.lastOrNull()?.first
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val formattedValue = if (displayValue % 1 == 0f) displayValue.toInt().toString() else String.format("%.2f", displayValue)
+                    val formattedValue = formatFloat(displayValue)
                     Text(
                         text = formattedValue,
                         style = MaterialTheme.typography.titleLarge,
@@ -150,8 +151,7 @@ fun NumericEvolutionCard(
                 )
                 if (targetValue != null) {
                     val formattedTarget = remember(targetValue) {
-                        if (targetValue % 1 == 0f) targetValue.toInt().toString()
-                        else String.format("%.2f", targetValue)
+                        formatFloat(targetValue)
                     }
                     Text(
                         text = stringResource(R.string.habit_target_preview, formattedTarget, unit?: ""),

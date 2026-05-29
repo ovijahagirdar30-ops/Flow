@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.feature.habits.R
+import com.markel.flowstate.feature.habits.util.formatFloat
 import com.markel.flowstate.core.designsystem.R as DesignR
 
 private val habitColors = listOf(
@@ -64,8 +65,8 @@ fun AddHabitDialog(
     var selectedColor by remember { mutableStateOf( initialColor?.let { ic -> habitColors.firstOrNull { it == ic } } ?: habitColors.first()) }
     var habitType by remember { mutableStateOf(initialHabitType) }
     var unit by remember { mutableStateOf(initialUnit ?: "") }
-    var targetValueText by remember { mutableStateOf(initialTargetValue?.toString() ?: "") }
-    var stepText by remember { mutableStateOf(initialStep.toString())}
+    var targetValueText by remember { mutableStateOf(initialTargetValue?.let { formatFloat(it) } ?: "") }
+    var stepText by remember { mutableStateOf(formatFloat(initialStep))}
 
     val parsedTarget = targetValueText.toFloatOrNull()
     val parsedStep = stepText.toFloatOrNull()

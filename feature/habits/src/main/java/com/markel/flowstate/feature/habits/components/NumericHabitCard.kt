@@ -32,6 +32,7 @@ import java.time.LocalDate
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.times
 import com.markel.flowstate.core.domain.HabitNumericEntry
+import com.markel.flowstate.feature.habits.util.formatFloat
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.launch
 
@@ -199,7 +200,7 @@ fun NumericHabitCard(
                         Text(
                             text = stringResource(
                                 R.string.habit_target_preview,
-                                if (targetValue % 1 == 0f) targetValue.toInt().toString() else targetValue.toString(),
+                                formatFloat(targetValue),
                                 habit.unit ?: ""
                             ),
                             style = MaterialTheme.typography.bodySmall,
@@ -322,11 +323,7 @@ fun NumericHabitCard(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = if (selectedValue % 1 == 0f) {
-                                selectedValue.toInt().toString()
-                            } else {
-                                selectedValue.toString()
-                            },
+                            text = formatFloat(selectedValue),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )

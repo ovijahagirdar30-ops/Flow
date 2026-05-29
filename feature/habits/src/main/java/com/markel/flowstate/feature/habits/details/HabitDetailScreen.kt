@@ -33,6 +33,7 @@ import com.markel.flowstate.feature.habits.details.components.bool.WeeklyBarsCar
 import com.markel.flowstate.feature.habits.details.components.numeric.MonthlyGoalCard
 import com.markel.flowstate.feature.habits.details.components.numeric.NumericHeatmapCard
 import com.markel.flowstate.feature.habits.details.components.numeric.ValueDistributionCard
+import com.markel.flowstate.feature.habits.util.formatFloat
 
 @Composable
 fun HabitDetailScreen(
@@ -134,11 +135,7 @@ fun HabitDetailScreen(
             } else {
                 val avgValue = state.monthlyProgress?.dailyAverage ?: 0f
                 StatCard(
-                    value = if (avgValue % 1 == 0f) {
-                        avgValue.toInt().toString() + " " + (habit.unit ?: "")
-                    } else {
-                        String.format("%.2f", avgValue) + " " + (habit.unit ?: "")
-                    },
+                    value = formatFloat(avgValue) + " " + (habit.unit ?: ""),
                     label = stringResource(R.string.habit_detail_average),
                     modifier = Modifier.weight(1f)
                 )

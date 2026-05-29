@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.markel.flowstate.feature.habits.details.MonthlyProgress
 import kotlin.math.min
 import com.markel.flowstate.feature.habits.R
+import com.markel.flowstate.feature.habits.util.formatFloat
 
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -110,14 +111,14 @@ fun MonthlyGoalCard(
                 // Actual value
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "${if (progress.currentValue % 1 == 0f) progress.currentValue.toInt() else progress.currentValue} ${unit ?: ""}",
+                        text = "${formatFloat(progress.currentValue)} ${unit ?: ""}",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
                         color = habitColor
                     )
                     progress.targetValue?.let { target ->
                         Text(
-                            text = " / ${if (target % 1 == 0f) target.toInt() else target}",
+                            text = " / ${formatFloat(target)}",
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.padding(start = 4.dp)
@@ -139,11 +140,7 @@ fun MonthlyGoalCard(
                 
                 // Deficit
                 progress.deficit?.let { deficit ->
-                    val formattedDeficit = if (deficit % 1 == 0f) {
-                        deficit.toInt().toString()
-                    } else {
-                        String.format("%.2f", deficit)
-                    }
+                    val formattedDeficit = formatFloat(deficit)
                     Text(
                         text = stringResource(
                             R.string.habit_deficit_label,
