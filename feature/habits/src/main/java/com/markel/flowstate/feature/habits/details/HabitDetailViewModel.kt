@@ -21,6 +21,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
+import java.time.temporal.ChronoUnit
 import java.time.temporal.IsoFields
 import java.util.Locale
 import javax.inject.Inject
@@ -69,7 +70,7 @@ class HabitDetailViewModel @Inject constructor(
                     currentStreak = calculateCurrentStreak(epochDays),
                     bestStreak = calculateBestStreak(epochDays),
                     weeklyCompletions = calculateWeeklyCompletions(epochDays),
-                    dayOfWeekCompletions = calculateDayOfWeekCompletions(entries)
+                    dayOfWeekCompletions = calculateDayOfWeekCompletions(entries, state.habit?.createdAt)
                 )
             }
         }
@@ -207,15 +208,45 @@ class HabitDetailViewModel @Inject constructor(
         }
     }
 
-    private fun calculateDayOfWeekCompletions(entries: List<LocalDate>): Map<Int, Int> {
-        val counts = mutableMapOf<Int, Int>()
+    private fun calculateDayOfWeekCompletions(entries: List<LocalDate>, createdAt: LocalDate?): Map<Int, Float> {
+        if (createdAt == null) return emptyMap()
+        val today = LocalDate.now()
+        val start = if (createdAt.isAfter(today)) today else createdAt
+        // Count completions per day of week (only entries within the habit's lifetime)
+        val completionsByDow = mutableMapOf<Int, Int>()
         entries.forEach { date ->
-            val dow = date.dayOfWeek.value  // 1=Mon, 7=Sun
-            counts[dow] = (counts[dow] ?: 0) + 1
+            if (!date.isBefore(start) && !date.isAfter(today)) {
+                val dow = date.dayOfWeek.value  // 1=Mon, 7=Sun
+                completionsByDow[dow] = (completionsByDow[dow] ?: 0) + 1
+            }
+        }
+
+        // Count opportunities per day of week efficiently (O(7) instead of iterating day by day)
+        val opportunitiesByDow = countDaysOfWeekBetween(start, today)
+
+        // Calculate completion rate per day of week
+        return (1..7).associateWith { dow ->
+            val opportunities = opportunitiesByDow[dow] ?: 0
+            if (opportunities > 0) {
+                (completionsByDow[dow] ?: 0).toFloat() / opportunities
+            } else 0f
+        }
+    }
+
+    private fun countDaysOfWeekBetween(start: LocalDate, end: LocalDate): Map<Int, Int> {
+        if (start.isAfter(end)) return emptyMap()
+        val totalDays = ChronoUnit.DAYS.between(start, end) + 1  // inclusive
+        val startDow = start.dayOfWeek.value  // 1=Mon, 7=Sun
+
+        val counts = mutableMapOf<Int, Int>()
+        for (dow in 1..7) {
+            val diff = (dow - startDow + 7) % 7  // days until first occurrence of 'dow'
+            counts[dow] = if (diff < totalDays) {
+                1 + ((totalDays - 1 - diff) / 7).toInt()
+            } else 0
         }
         return counts
     }
-
 
     // ── Calculations for Numeric Habits ─────────────────────────────────────
 

@@ -15,7 +15,7 @@ data class HabitDetailUiState(
     val currentStreak: Int = 0,
     val bestStreak: Int = 0,
     val weeklyCompletions: List<Pair<LocalDate, Int>> = emptyList(),  // last 8 weeks
-    val dayOfWeekCompletions: Map<Int, Int> = emptyMap() , // 1=Mon..7=Sun -> count
+    val dayOfWeekCompletions: Map<Int, Float> = emptyMap(), // 1=Mon..7=Sun -> completion rate (0..1)
 
     // For the numeric habits
     val numericEntries: Map<LocalDate, Float> = emptyMap(),
