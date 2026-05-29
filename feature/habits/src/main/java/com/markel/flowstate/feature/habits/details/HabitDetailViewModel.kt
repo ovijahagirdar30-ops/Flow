@@ -86,7 +86,7 @@ class HabitDetailViewModel @Inject constructor(
                     dailyValues = calculateDailyValues(entries),
                     monthlyProgress = calculateMonthlyProgress(entries, state.habit),
                     heatmapData = calculateHeatmapData(entries),
-                    dayOfWeekAverages = calculateDayOfWeekAverages(entries),
+                    dayOfWeekAverages = calculateDayOfWeekAverages(entries, state.habit?.createdAt),
                     currentStreak = calculateNumericStreak(entries, state.habit?.targetValue),
                     bestStreak = calculateNumericBestStreak(entries, state.habit?.targetValue)
                 )
@@ -212,6 +212,7 @@ class HabitDetailViewModel @Inject constructor(
         if (createdAt == null) return emptyMap()
         val today = LocalDate.now()
         val start = if (createdAt.isAfter(today)) today else createdAt
+
         // Count completions per day of week (only entries within the habit's lifetime)
         val completionsByDow = mutableMapOf<Int, Int>()
         entries.forEach { date ->
@@ -248,6 +249,7 @@ class HabitDetailViewModel @Inject constructor(
         return counts
     }
 
+
     // ── Calculations for Numeric Habits ─────────────────────────────────────
 
     private fun calculateDailyValues(entries: List<HabitNumericEntry>): List<Pair<LocalDate, Float>> {
@@ -269,22 +271,19 @@ class HabitDetailViewModel @Inject constructor(
         habit ?: return null
         val now = LocalDate.now()
         val yearMonth = YearMonth.from(now)
-        val monthStart = yearMonth.atDay(1)
 
         val monthEntriesByDate = entries
             .filter { it.date.year == now.year && it.date.monthValue == now.monthValue }
             .groupBy { it.date }
 
-        val dailyValues = monthEntriesByDate.values
-            .mapNotNull { dayEntries ->
-                dayEntries.maxByOrNull { it.value }?.value
-            }
+        val dailyMaxValues = monthEntriesByDate.mapValues { (_, dayEntries) ->
+            dayEntries.maxByOrNull { it.value }?.value ?: 0f
+        }
 
-        val currentValue = dailyValues.sum()
+        val currentValue = dailyMaxValues.values.sum()
         val daysWithData = monthEntriesByDate.size
-        val daysCompleted = monthEntriesByDate.count { (_, dayEntries) ->
-            val dailyTotal = dayEntries.sumOf { it.value.toDouble() }.toFloat()
-            dailyTotal >= (habit.targetValue ?: 0f)
+        val daysCompleted = dailyMaxValues.count { (_, maxValue) ->
+            maxValue >= (habit.targetValue ?: 0f)
         }
         val totalDays = yearMonth.lengthOfMonth()
         val dailyAverage = if (daysWithData > 0) currentValue / daysWithData else 0f
@@ -310,15 +309,31 @@ class HabitDetailViewModel @Inject constructor(
         )
     }
 
-    private fun calculateDayOfWeekAverages(entries: List<HabitNumericEntry>): List<ValueRange> {
+    private fun calculateDayOfWeekAverages(entries: List<HabitNumericEntry>, createdAt: LocalDate? = null): List<ValueRange> {
         if (entries.isEmpty()) return emptyList()
+
+        val today = LocalDate.now()
+        val start = createdAt?.let { if (it.isAfter(today)) today else it } ?: today
         val daysOfWeek = DayOfWeek.entries.toTypedArray()
 
+        // Count how many opportunities (days) exist per day of week since habit creation
+        val opportunitiesByDow = countDaysOfWeekBetween(start, today)
+
+        // Sum values per day of week (only for days within the habit's lifetime)
+        val sumByDow = mutableMapOf<Int, Float>()
+        entries.forEach { entry ->
+            if (!entry.date.isBefore(start) && !entry.date.isAfter(today)) {
+                val dow = entry.date.dayOfWeek.value
+                sumByDow[dow] = (sumByDow[dow] ?: 0f) + entry.value
+            }
+        }
+
         return daysOfWeek.map { dow ->
-            val entriesForDay = entries.filter { it.date.dayOfWeek == dow }
-            println(entriesForDay)
-            val average = if (entriesForDay.isNotEmpty()) {
-                entriesForDay.map { it.value }.average().toFloat()
+            val dowValue = dow.value
+            val opportunities = opportunitiesByDow[dowValue] ?: 0
+            // Average over ALL opportunities: days without data count as 0
+            val average = if (opportunities > 0) {
+                (sumByDow[dowValue] ?: 0f) / opportunities
             } else 0f
 
             val label = dow.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault())
