@@ -9,12 +9,15 @@ import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.core.domain.IdeaRepository
 import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
 import com.markel.flowstate.core.notifications.ReminderScheduler
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,6 +35,7 @@ class FlowViewModelTest {
     private val checkListRepository: CheckListRepository = mockk(relaxed = true)
     private val userPreferencesRepository: UserPreferencesRepository = mockk(relaxed = true)
     private val reminderScheduler: ReminderScheduler = mockk(relaxed = true)
+    private val deleteTaskUseCase: DeleteTaskUseCase = mockk(relaxed = true)
 
     private lateinit var viewModel: FlowViewModel
 
@@ -43,7 +47,10 @@ class FlowViewModelTest {
         coEvery { taskRepository.getTasks() } returns flowOf(tasks)
         coEvery { ideaRepository.getIdeas() } returns flowOf(ideas)
         coEvery { checkListRepository.getLists() } returns flowOf(checkLists)
-        return FlowViewModel(taskRepository, ideaRepository, checkListRepository, userPreferencesRepository, reminderScheduler)
+        return FlowViewModel(
+            taskRepository, ideaRepository, checkListRepository,
+            userPreferencesRepository, reminderScheduler, deleteTaskUseCase
+        )
     }
 
     // ── Initialization & Combine logic ────────────────────────────────────────
@@ -74,6 +81,164 @@ class FlowViewModelTest {
             // Verify ideas and lists are received correctly
             assertEquals(1, successState.ideas.size)
             assertEquals(1, successState.checkLists.size)
+        }
+    }
+
+    // ── Deferred Deletion / Undo ──────────────────────────────────────────────
+
+    @Test
+    fun onTaskSwiped_filtersTaskFromUiState_andShowsUndoButton() = runTest {
+        // GIVEN
+        val t1 = Task(id = 1, title = "T1", isDone = false, position = 0)
+        val t2 = Task(id = 2, title = "T2", isDone = false, position = 1)
+        viewModel = createViewModel(tasks = listOf(t1, t2))
+
+        // Wait for initial state
+        viewModel.uiState.test {
+            val initial = awaitItem()
+            val success = if (initial is FlowUiState.Loading) awaitItem() as FlowUiState.Success else initial as FlowUiState.Success
+            assertEquals(2, success.tasks.size)
+
+            // WHEN
+            viewModel.onTaskSwiped(t1)
+
+            // THEN – task 1 is filtered out optimistically
+            val afterSwipe = awaitItem() as FlowUiState.Success
+            assertEquals(1, afterSwipe.tasks.size)
+            assertEquals("T2", afterSwipe.tasks[0].title)
+        }
+
+        // AND undo button is visible
+        viewModel.showUndoButton.test {
+            assertTrue(awaitItem())
+        }
+    }
+
+    @Test
+    fun onTaskSwiped_bumpsDeleteVersion() = runTest {
+        // GIVEN
+        val task = Task(id = 5, title = "Task", isDone = false, position = 0)
+        viewModel = createViewModel(tasks = listOf(task))
+
+        // Initially no versions
+        assertEquals(emptyMap<Int, Int>(), viewModel.taskDeleteVersions.value)
+
+        // WHEN
+        viewModel.onTaskSwiped(task)
+
+        // THEN
+        assertEquals(mapOf(5 to 1), viewModel.taskDeleteVersions.value)
+
+        // Swipe the same task again (if it reappears after undo)
+        viewModel.undoPendingDeletions()
+        viewModel.onTaskSwiped(task)
+
+        assertEquals(mapOf(5 to 2), viewModel.taskDeleteVersions.value)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun onTaskSwiped_deletesFromDb_afterUndoTimeout() = runTest {
+        // GIVEN
+        val task = Task(id = 1, title = "T", isDone = false, position = 0)
+        viewModel = createViewModel(tasks = listOf(task))
+
+        // WHEN
+        viewModel.onTaskSwiped(task)
+
+        // Advance time past the undo timeout (3.5 s)
+        advanceTimeBy(4_000L)
+
+        // THEN – task should be deleted from DB
+        coVerify { reminderScheduler.cancel(1) }
+        coVerify { deleteTaskUseCase(task) }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun undoPendingDeletions_cancelsDeleteAndRestoresTasks() = runTest {
+        // GIVEN
+        val t1 = Task(id = 1, title = "T1", isDone = false, position = 0)
+        val t2 = Task(id = 2, title = "T2", isDone = false, position = 1)
+        viewModel = createViewModel(tasks = listOf(t1, t2))
+
+        viewModel.uiState.test {
+            // Get initial state
+            val initial = awaitItem()
+            val startState = if (initial is FlowUiState.Loading) awaitItem() as FlowUiState.Success else initial as FlowUiState.Success
+            assertEquals(2, startState.tasks.size)
+
+            // Swipe both tasks
+            viewModel.onTaskSwiped(t1)
+            awaitItem() // intermediate state after t1 swiped
+
+            viewModel.onTaskSwiped(t2)
+            val afterSwipes = awaitItem() as FlowUiState.Success
+            assertTrue(afterSwipes.tasks.isEmpty())
+        }
+
+        // WHEN – undo
+        viewModel.undoPendingDeletions()
+
+        // THEN – tasks reappear in uiState
+        viewModel.uiState.test {
+            val state = awaitItem()
+            val success = if (state is FlowUiState.Loading) awaitItem() as FlowUiState.Success else state as FlowUiState.Success
+            assertEquals(2, success.tasks.size)
+        }
+
+        // AND undo button is hidden
+        viewModel.showUndoButton.test {
+            assertFalse(awaitItem())
+        }
+
+        // AND advancing time does NOT delete (jobs were canceled)
+        advanceTimeBy(4_000L)
+        coVerify(exactly = 0) { deleteTaskUseCase(any()) }
+    }
+
+    @Test
+    fun onTaskSwiped_supportsConsecutiveDeletions() = runTest {
+        // GIVEN
+        val t1 = Task(id = 1, title = "T1", isDone = false, position = 0)
+        val t2 = Task(id = 2, title = "T2", isDone = false, position = 1)
+        val t3 = Task(id = 3, title = "T3", isDone = false, position = 2)
+        viewModel = createViewModel(tasks = listOf(t1, t2, t3))
+
+        viewModel.uiState.test {
+            val initial = awaitItem()
+            val success = if (initial is FlowUiState.Loading) awaitItem() as FlowUiState.Success else initial as FlowUiState.Success
+            assertEquals(3, success.tasks.size)
+
+            // WHEN – swipe 3 tasks in quick succession
+            viewModel.onTaskSwiped(t1)
+            val after1 = awaitItem() as FlowUiState.Success
+            assertEquals(2, after1.tasks.size)
+
+            viewModel.onTaskSwiped(t2)
+            val after2 = awaitItem() as FlowUiState.Success
+            assertEquals(1, after2.tasks.size)
+
+            viewModel.onTaskSwiped(t3)
+            val afterAll = awaitItem() as FlowUiState.Success
+
+            // THEN – all tasks filtered out
+            assertTrue(afterAll.tasks.isEmpty())
+        }
+
+        // Undo button visible
+        viewModel.showUndoButton.test {
+            assertTrue(awaitItem())
+        }
+
+        // Undo all
+        viewModel.undoPendingDeletions()
+
+        // All 3 tasks come back
+        viewModel.uiState.test {
+            val state = awaitItem()
+            val success = if (state is FlowUiState.Loading) awaitItem() as FlowUiState.Success else state as FlowUiState.Success
+            assertEquals(3, success.tasks.size)
         }
     }
 
@@ -127,7 +292,7 @@ class FlowViewModelTest {
 
         viewModel.uiState.test {
             val initialState = awaitItem()
-            if (initialState is FlowUiState.Loading) awaitItem()
+            val startState = if (initialState is FlowUiState.Loading) awaitItem() as FlowUiState.Success else initialState as FlowUiState.Success
 
             // WHEN - Swap I1 and I2
             viewModel.onIdeaReorder(fromIndex = 0, toIndex = 1)
@@ -155,7 +320,7 @@ class FlowViewModelTest {
 
         viewModel.uiState.test {
             val initialState = awaitItem()
-            if (initialState is FlowUiState.Loading) awaitItem()
+            val startState = if (initialState is FlowUiState.Loading) awaitItem() as FlowUiState.Success else initialState as FlowUiState.Success
 
             // WHEN
             viewModel.onCheckListReorder(fromIndex = 1, toIndex = 0)

@@ -11,9 +11,11 @@ import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.IdeaRepository
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.core.domain.TaskRepository
+import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
 import com.markel.flowstate.core.notifications.ReminderScheduler
 import com.markel.flowstate.core.notifications.buildAlarmItems
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -45,7 +48,9 @@ class FlowViewModel @Inject constructor(
     private val ideaRepository: IdeaRepository,
     private val checkListRepository: CheckListRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val reminderScheduler: ReminderScheduler
+    private val reminderScheduler: ReminderScheduler,
+    private val deleteTaskUseCase: DeleteTaskUseCase
+
 ) : ViewModel(), DefaultLifecycleObserver {
 
     // ── Optimistic local state ─────────────────────────────────
@@ -62,15 +67,45 @@ class FlowViewModel @Inject constructor(
     // When it flips from false → true (user just granted it), we reschedule
     private var wasPermissionMissing = false
 
+    // ── Deferred deletion / Undo ──────────────────────────────────────────────
+
+    /** Tasks that have been swiped-to-dismiss but not yet permanently deleted. */
+    private val _pendingUndoTasks = MutableStateFlow<Map<Int, Task>>(emptyMap())
+
+    /** Whether the undo FAB should be visible – true while any deletion is pending. */
+    val showUndoButton: StateFlow<Boolean> = _pendingUndoTasks
+        .map { it.isNotEmpty() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /**
+     * Per-task monotonic counter incremented each time the user swipes-to-delete.
+     * Used as part of the `LazyColumn` item key so that, after an undo, Compose
+     * creates a **fresh** composable with a fresh `SwipeToDismissBoxState` instead
+     * of restoring the stale `EndToStart` saved-state that would immediately
+     * trigger `onDelete()` again.
+     */
+    private val _taskDeleteVersions = MutableStateFlow<Map<Int, Int>>(emptyMap())
+    val taskDeleteVersions: StateFlow<Map<Int, Int>> = _taskDeleteVersions
+
+    /**
+     * One [Job] per pending task, representing the 3.5 s countdown to permanent
+     * deletion.  When the job completes the task is removed from the DB; when the
+     * user taps undo the job is canceled.
+     */
+    private val deleteJobs = mutableMapOf<Int, Job>()
+
+    // ── Init: combine repos + pending-filter ──────────────────────────────────
     init {
         viewModelScope.launch {
             combine(
                 taskRepository.getTasks(),
                 ideaRepository.getIdeas(),
-                checkListRepository.getLists()
-            ) { tasks, ideas, lists ->
+                checkListRepository.getLists(),
+                _pendingUndoTasks
+            ) { tasks, ideas, lists, pendingMap ->
+                val pendingIds = pendingMap.keys
                 FlowUiState.Success(
-                    tasks = tasks.filter { !it.isDone },
+                    tasks = tasks.filter { !it.isDone && it.id !in pendingIds },
                     ideas = ideas,
                     checkLists = lists
                 )
@@ -79,6 +114,58 @@ class FlowViewModel @Inject constructor(
                 refreshBanner()
             }
         }
+    }
+
+    // ── Deferred deletion API ─────────────────────────────────────────────────
+
+    /**
+     * Called when the user swipes a task to dismiss it.
+     *
+     * The task is **not** deleted from the DB immediately. Instead, it is added
+     * to [_pendingUndoTasks] which causes the `combine` above to filter it out
+     * of the UI state optimistically.  A per-task countdown of 3500ms
+     * starts; if it expires the task is permanently deleted.  The user may cancel
+     * the countdown by pressing the undo FAB ([undoPendingDeletions]).
+     */
+    fun onTaskSwiped(task: Task) {
+        // Add to the pending map – the combine will filter it out of uiState
+        _pendingUndoTasks.update { it + (task.id to task) }
+
+        // Bump the delete version so the LazyColumn key changes.
+        // This prevents rememberSaveable from restoring the old
+        // SwipeToDismissBoxState (EndToStart) when the task is
+        // un-filtered after an undo.
+        _taskDeleteVersions.update { it + (task.id to (it[task.id] ?: 0) + 1) }
+
+        // Cancel any previous countdown for this same task (defensive)
+        deleteJobs[task.id]?.cancel()
+
+        // Start the countdown to permanent deletion
+        deleteJobs[task.id] = viewModelScope.launch {
+            delay(3500L)
+            // Time's up – permanently delete from DB
+            reminderScheduler.cancel(task.id)
+            deleteTaskUseCase(task)
+            // Clean up pending map; task is already gone from DB at this point
+            _pendingUndoTasks.update { it - task.id }
+            deleteJobs.remove(task.id)
+        }
+    }
+
+    /**
+     * Called when the user taps the undo FAB.
+     *
+     * Cancels **all** pending deletion countdowns and restores every task
+     * that was waiting to be deleted.  The tasks are still in the DB, so
+     * simply removing them from [_pendingUndoTasks] makes them reappear in
+     * the UI state automatically.
+     */
+    fun undoPendingDeletions() {
+        // Cancel every pending countdown
+        deleteJobs.values.forEach { it.cancel() }
+        deleteJobs.clear()
+        // Clear the pending map – tasks reappear in uiState via the combine
+        _pendingUndoTasks.update { emptyMap() }
     }
 
     // ── Lifecycle: called every time the app comes to the foreground ──────────

@@ -41,7 +41,6 @@ data class TaskDraftState(
 class TaskViewModel @Inject constructor(
     private val repository: TaskRepository,
     private val toggleTaskUseCase: ToggleTaskUseCase,
-    private val deleteTaskUseCase: DeleteTaskUseCase,
     private val reminderScheduler: ReminderScheduler
 ) : ViewModel() {
 
@@ -86,14 +85,6 @@ class TaskViewModel @Inject constructor(
             if (effectiveReminderTime != null) {
                 reminderScheduler.schedule(generatedId.toInt(), title, description, effectiveReminderTime)
             }
-        }
-    }
-
-    // Function to delete a task
-    fun deleteTask(task: Task) {
-        viewModelScope.launch {
-            reminderScheduler.cancel(task.id)
-            deleteTaskUseCase(task)
         }
     }
 

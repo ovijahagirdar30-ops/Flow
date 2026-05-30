@@ -3,11 +3,6 @@ package com.markel.flowstate.feature.flow
 import android.R.attr.data
 import android.content.Intent
 import android.content.res.Configuration
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -17,10 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -31,9 +23,7 @@ import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import com.markel.flowstate.feature.flow.components.SectionedFlowView
-import com.markel.flowstate.feature.tasks.R
-import androidx.core.net.toUri
-import kotlinx.coroutines.flow.flow
+import com.markel.flowstate.feature.flow.components.AnimatedUndoFab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +38,8 @@ fun FlowScreen(
 ) {
     val flowUiState by flowViewModel.uiState.collectAsStateWithLifecycle()
     val showPermissionBanner by flowViewModel.showReminderBanner.collectAsStateWithLifecycle()
+    val showUndoButton by flowViewModel.showUndoButton.collectAsStateWithLifecycle()
+    val taskDeleteVersions by flowViewModel.taskDeleteVersions.collectAsStateWithLifecycle()
     var isFabExpanded by remember { mutableStateOf(false) }
     var showCreationSheet by remember { mutableStateOf(false) }
 
@@ -69,14 +61,15 @@ fun FlowScreen(
                     uiState = flowUiState,
                     onScrolled = { isHeaderMinimized = true },
                     onTaskClick = { onNavigateToTaskEditor(it.id) },
-                    onTaskDelete = { taskViewModel.deleteTask(it) },
+                    onTaskDelete = { task -> flowViewModel.onTaskSwiped(task) },
                     onTaskToggle = { taskViewModel.toggleTaskDone(it) },
                     onTaskReorder = { from, to -> flowViewModel.onTaskReorder(from, to) },
                     onIdeaClick = { onNavigateToIdeaEditor(it.id) },
                     onIdeaReorder = { from, to -> flowViewModel.onIdeaReorder(from, to) },
                     onCheckListClick = { onNavigateToCheckListEditor(it.id) },
                     onCheckListReorder = { from, to -> flowViewModel.onCheckListReorder(from, to) },
-                    showPermissionBanner = showPermissionBanner
+                    showPermissionBanner = showPermissionBanner,
+                    taskDeleteVersions = taskDeleteVersions
                 )
             }
         }
@@ -125,5 +118,11 @@ fun FlowScreen(
                 onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null) }
             )
         }
+        AnimatedUndoFab(
+            visible = showUndoButton,
+            onUndoClick = { flowViewModel.undoPendingDeletions() },
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+        )
     }
 }
