@@ -14,8 +14,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.designsystem.R
+import com.markel.flowstate.core.designsystem.components.AnimatedUndoFab
 import com.markel.flowstate.core.domain.Task
-import com.markel.flowstate.feature.calendar.components.AnimatedUndoFab
 import com.markel.flowstate.feature.calendar.components.CalendarContent
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
