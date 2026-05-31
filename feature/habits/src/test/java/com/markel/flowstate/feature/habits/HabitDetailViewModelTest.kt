@@ -182,8 +182,8 @@ class HabitDetailViewModelTest {
     }
 
     @Test
-    fun calculateDayOfWeekCompletions_groupsCorrectly() = runTest {
-        // GIVEN - 2 Mondays (1) and 1 Friday (5)
+    fun calculateDayOfWeekCompletions_groupsCorrectlyAsRates() = runTest {
+        // GIVEN - 2 Mondays and 1 Friday, habit created 30 days ago
         val monday1 = LocalDate.now().with(DayOfWeek.MONDAY)
         val monday2 = monday1.minusWeeks(1)
         val friday = LocalDate.now().with(DayOfWeek.FRIDAY)
@@ -193,11 +193,19 @@ class HabitDetailViewModelTest {
         // WHEN
         viewModel = buildViewModel()
 
-        // THEN
+        // THEN - Should return completion rates (0..1) per day of week
         viewModel.uiState.test {
             val dowCompletions = awaitItem().dayOfWeekCompletions
-            assertEquals(2, dowCompletions[1])
-            assertEquals(1, dowCompletions[5])
+            // Monday has 2 completions, so rate > 0
+            assertTrue(dowCompletions[1]!! > 0f)
+            // Friday has 1 completion, so rate > 0
+            assertTrue(dowCompletions[5]!! > 0f)
+            // Monday rate should be higher than Friday (2 vs 1 completions)
+            assertTrue(dowCompletions[1]!! > dowCompletions[5]!!)
+            // All values should be valid rates between 0 and 1
+            dowCompletions.values.forEach { rate ->
+                assertTrue(rate in 0f..1f)
+            }
         }
     }
 
@@ -277,8 +285,8 @@ class HabitDetailViewModelTest {
     }
 
     @Test
-    fun calculateDayOfWeekAverages_averagesValuesPerDayOfWeek() = runTest {
-        // GIVEN - Two Mondays with values 10 and 20 (avg 15)
+    fun calculateDayOfWeekAverages_averagesOverAllOpportunities() = runTest {
+        // GIVEN - Two Mondays with values 10 and 20, habit created 30 days ag
         val monday1 = LocalDate.now().with(DayOfWeek.MONDAY)
         val monday2 = monday1.minusWeeks(1)
         val entries = listOf(
@@ -291,13 +299,18 @@ class HabitDetailViewModelTest {
         // WHEN
         viewModel = buildViewModel()
 
-        // THEN
+        // THEN - Monday average should include all Mondays since creation (not just 2)
+        // With 30 days of history, there are ~5 Mondays. Sum=30, so avg=30/5=6 (approx)
         viewModel.uiState.test {
             val averages = awaitItem().dayOfWeekAverages
             val mondayLabel = DayOfWeek.MONDAY.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault()).replaceFirstChar { it.uppercase() }
             val mondayData = averages.find { it.label == mondayLabel }
             assertNotNull(mondayData)
-            assertEquals(15f, mondayData!!.count)
+            // Average is over ALL opportunities, so it should be less than the simple
+            // average of the 2 entries (which would be 15)
+            assertTrue(mondayData!!.count < 15f)
+            // But it should be > 0 since we have data
+            assertTrue(mondayData.count > 0f)
         }
     }
 

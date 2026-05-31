@@ -117,12 +117,12 @@ fun EditableSubTaskItem(
                     else
                         editedPriority.asColor()
                     val checkBgColor by animateColorAsState(
-                        targetValue = if (subTask.isDone) MaterialTheme.colorScheme.tertiary else Color.Transparent,
+                        targetValue = if (subTask.isDone) MaterialTheme.colorScheme.primary else Color.Transparent,
                         animationSpec = spring(),
                         label = "check_bg"
                     )
                     val checkBorderColor by animateColorAsState(
-                        targetValue = if (subTask.isDone) MaterialTheme.colorScheme.tertiary else borderBaseColor,
+                        targetValue = if (subTask.isDone) MaterialTheme.colorScheme.primary else borderBaseColor,
                         animationSpec = spring(),
                         label = "check_border"
                     )
@@ -202,7 +202,7 @@ fun EditableSubTaskItem(
                             ),
                             textDecoration = if (subTask.isDone) TextDecoration.LineThrough else null,
                             color = if (subTask.isDone)
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                             else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -230,7 +230,9 @@ fun EditableSubTaskItem(
                                     minLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                        alpha = if (subTask.isDone) 0.6f else 0.9f
+                                    )
                                 )
                             }
                             if (subTask.dueDate != null) {
@@ -239,9 +241,13 @@ fun EditableSubTaskItem(
                                     style = MaterialTheme.typography.labelSmall,
                                     color = subTask.dueDate!!.let { date ->
                                         if (isDateOverdue(date)) {
-                                            MaterialTheme.colorScheme.error
+                                            MaterialTheme.colorScheme.error.copy(
+                                                alpha = if (subTask.isDone) 0.6f else 0.9f
+                                            )
                                         } else {
-                                            MaterialTheme.colorScheme.tertiary
+                                            MaterialTheme.colorScheme.primary.copy(
+                                                alpha = if (subTask.isDone) 0.6f else 0.9f
+                                            )
                                         }
                                     }
                                 )
@@ -363,7 +369,7 @@ fun EditableSubTaskItem(
                                 enabled = editedTitle.isNotBlank(),
                                 modifier = Modifier.size(40.dp),
                                 colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.tertiary,
+                                    containerColor = MaterialTheme.colorScheme.primary,
                                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
                             ) {
@@ -372,7 +378,7 @@ fun EditableSubTaskItem(
                                     contentDescription = "Save",
                                     modifier = Modifier.size(20.dp),
                                     tint = if (editedTitle.isNotBlank())
-                                        MaterialTheme.colorScheme.onTertiary
+                                        MaterialTheme.colorScheme.onPrimary
                                     else
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                 )

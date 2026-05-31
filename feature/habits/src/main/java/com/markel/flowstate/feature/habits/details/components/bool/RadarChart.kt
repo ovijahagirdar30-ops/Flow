@@ -21,10 +21,11 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.PI
 import androidx.compose.ui.platform.LocalLocale
+import kotlin.math.roundToInt
 
 @Composable
 fun RadarChart(
-    dayOfWeekCompletions: Map<Int, Int>,  // 1=Mon..7=Sun
+    dayOfWeekCompletions: Map<Int, Float>,  // 1=Mon..7=Sun, completion rate 0..1
     habitColor: Color,
     modifier: Modifier = Modifier
 ) {
@@ -32,9 +33,8 @@ fun RadarChart(
     val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    val maxVal = dayOfWeekCompletions.values.maxOrNull()?.takeIf { it > 0 } ?: 1
     val values = (1..7).map { dow ->
-        (dayOfWeekCompletions[dow] ?: 0).toFloat() / maxVal
+        dayOfWeekCompletions[dow] ?: 0f
     }
     val labels = (1..7).map { dow ->
         DayOfWeek.of(dow)
@@ -92,7 +92,7 @@ fun RadarChart(
             val p = point(i, labelRadius)
             val isStrong = v > 0.7f
             val dayLabel = labels[i]
-            val pctLabel = "${(v * 100).toInt()}%"
+            val pctLabel = "${(v * 100).roundToInt()}%"
 
             val dayMeasured = textMeasurer.measure(
                 dayLabel,

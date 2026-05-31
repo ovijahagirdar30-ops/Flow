@@ -1,6 +1,14 @@
 package com.markel.flowstate.feature.flow.tasks.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,11 +17,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +59,9 @@ fun TaskEditorSheetContent(
 
     // Track which subtask is expanded for inline editing
     var expandedSubTaskId by remember { mutableStateOf<String?>(null) }
+
+    // Controls whether the completed subtasks section is expanded
+    var completedExpanded by remember { mutableStateOf(false) }
 
     // States to show the creation sheet when creating a subtask
     var showCreationSheet by remember { mutableStateOf(false) }
@@ -192,9 +206,17 @@ fun TaskEditorSheetContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         // SUBTASKS
-        val visibleSubTasks = remember(subTasks.toList()) {
+        val pendingSubTasks = remember(subTasks.toList()) {
             subTasks.filter { !it.isDone }
         }
+        val completedSubTasks = remember(subTasks.toList()) {
+            subTasks.filter { it.isDone }
+        }
+
+        val chevronRotation by animateFloatAsState(
+            targetValue = if (completedExpanded) 180f else 0f,
+            label = "chevron_rotation"
+        )
 
         Text(
             stringResource(R.string.subtasks),
@@ -202,19 +224,19 @@ fun TaskEditorSheetContent(
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.sp
             ),
-            color = MaterialTheme.colorScheme.tertiary
+            color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-        // list of subtasks
-        if (visibleSubTasks.isNotEmpty()) {
+        // list of pending subtasks
+        if (pendingSubTasks.isNotEmpty()) {
             Column (
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ){
-                visibleSubTasks.forEachIndexed { index, subTask ->
+                pendingSubTasks.forEachIndexed { index, subTask ->
                     val isFirst = index == 0
-                    val isLast = index == visibleSubTasks.lastIndex
-                    val isSingle = visibleSubTasks.size == 1
+                    val isLast = index == pendingSubTasks.lastIndex
+                    val isSingle = pendingSubTasks.size == 1
                     val shape = when {
                         isSingle -> RoundedCornerShape(16.dp)
                         isFirst  -> RoundedCornerShape(
@@ -269,7 +291,7 @@ fun TaskEditorSheetContent(
                 showCreationSheet = true
             },
             colors = ButtonDefaults.textButtonColors(
-                contentColor = MaterialTheme.colorScheme.tertiary
+                contentColor = MaterialTheme.colorScheme.primary
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -281,6 +303,98 @@ fun TaskEditorSheetContent(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        // ── Completed subtasks section ──────────────────────────────────────
+        if (completedSubTasks.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { completedExpanded = !completedExpanded }
+                    )
+                    .padding(vertical = 12.dp)
+            ) {
+                Text(
+                    text = pluralStringResource(
+                        id = R.plurals.completed_items,
+                        count = completedSubTasks.size,
+                        completedSubTasks.size
+                    ),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = ImageVector.vectorResource(R.drawable.expand_more_40px),
+                    contentDescription = if (completedExpanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                    modifier = Modifier
+                        .size(20.dp)
+                        .rotate(chevronRotation)
+                )
+            }
+
+            // Animated completed subtasks list
+            AnimatedVisibility(
+                visible = completedExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    completedSubTasks.forEachIndexed { index, subTask ->
+                        val isFirst = index == 0
+                        val isLast = index == completedSubTasks.lastIndex
+                        val isSingle = completedSubTasks.size == 1
+                        val shape = when {
+                            isSingle -> RoundedCornerShape(16.dp)
+                            isFirst  -> RoundedCornerShape(
+                                topStart = 16.dp, topEnd = 16.dp,
+                                bottomStart = 4.dp, bottomEnd = 4.dp
+                            )
+                            isLast   -> RoundedCornerShape(
+                                topStart = 4.dp, topEnd = 4.dp,
+                                bottomStart = 16.dp, bottomEnd = 16.dp
+                            )
+                            else -> RoundedCornerShape(4.dp)
+                        }
+
+                        EditableSubTaskItem(
+                            subTask = subTask,
+                            isExpanded = expandedSubTaskId == subTask.id,
+                            itemShape = shape,
+                            onExpandChange = { shouldExpand ->
+                                expandedSubTaskId = if (shouldExpand) subTask.id else null
+                            },
+                            onUpdate = { updatedSubTask ->
+                                val realIndex = subTasks.indexOfFirst { it.id == updatedSubTask.id }
+                                if (realIndex != -1) {
+                                    subTasks[realIndex] = updatedSubTask
+                                }
+                            },
+                            onCheckedChange = {
+                                val realIndex = subTasks.indexOfFirst { it.id == subTask.id }
+                                if (realIndex != -1) {
+                                    subTasks[realIndex] = subTask.copy(isDone = !subTask.isDone)
+                                }
+                            },
+                            onDelete = {
+                                val realIndex = subTasks.indexOfFirst { it.id == subTask.id }
+                                if (realIndex != -1) subTasks.removeAt(realIndex)
+                                if (expandedSubTaskId == subTask.id) expandedSubTaskId = null
+                            }
+                        )
+                    }
+                }
+            }
+        }
     }
 
     if (showCreationSheet) {

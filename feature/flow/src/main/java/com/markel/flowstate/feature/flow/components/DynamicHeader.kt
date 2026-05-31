@@ -90,7 +90,7 @@ fun DynamicHeader(isMinimized: Boolean)
                     text = dateText,
                     style = MaterialTheme.typography.labelLarge.copy(
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.primary
                     ),
                     modifier = Modifier.animateContentSize() // Smooths the alignment change
                 )

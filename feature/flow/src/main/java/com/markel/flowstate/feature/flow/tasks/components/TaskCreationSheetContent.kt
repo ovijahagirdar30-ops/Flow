@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -57,12 +59,14 @@ fun TaskCreationSheetContent(
     onSave: (String, String, Priority, Long?, Long?) -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .imePadding()
+            .verticalScroll(scrollState)
             .padding(horizontal = 24.dp, vertical = 6.dp)
     ) {
         // Title
@@ -80,7 +84,8 @@ fun TaskCreationSheetContent(
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent
             ),
-            singleLine = true,
+            minLines = 1,
+            maxLines = 4,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next)
         )
 
@@ -98,7 +103,7 @@ fun TaskCreationSheetContent(
                 unfocusedIndicatorColor = Color.Transparent
             ),
             minLines = 1,
-            maxLines = 5,
+            maxLines = 8,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
 
@@ -144,7 +149,7 @@ fun TaskCreationSheetContent(
                 onClick = { if (title.isNotBlank()) onSave(title, description, priority, dueDate, reminderTime) },
                 enabled = title.isNotBlank(),
                 modifier = Modifier.size(44.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
                     imageVector = ImageVector.vectorResource(R.drawable.send),

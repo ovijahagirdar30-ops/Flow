@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.markel.flowstate.feature.habits.R
+import com.markel.flowstate.feature.habits.util.formatFloat
 
 @Composable
 fun NumericInputDialog(
@@ -22,7 +23,7 @@ fun NumericInputDialog(
     onConfirm: (Float?) -> Unit
 ) {
     var valueText by remember {
-        mutableStateOf(currentValue?.let { if (it == 0f) "" else it.toInt().toString() } ?: "")
+        mutableStateOf(currentValue?.let { if (it == 0f) "" else formatFloat(it) } ?: "")
     }
     val focusRequester = remember { FocusRequester() }
 

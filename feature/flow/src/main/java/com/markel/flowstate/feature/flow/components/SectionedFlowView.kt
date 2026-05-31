@@ -59,7 +59,10 @@ fun SectionedFlowView(
     onCheckListClick: (CheckList) -> Unit,
     onCheckListReorder: (from: Int, to: Int) -> Unit,
     showPermissionBanner : Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Tracks per-task swipe-to-delete versions so that undo restores a fresh
+    // SwipeToDismissBoxState instead of the stale EndToStart saved state.
+    taskDeleteVersions: Map<Int, Int> = emptyMap(),
 ) {
     if (uiState !is FlowUiState.Success) return
 
@@ -107,14 +110,21 @@ fun SectionedFlowView(
             item {
                 ReminderPermissionBanner(showPermissionBanner)
             }
-            itemsIndexed(items = uiState.tasks, key = { _, task -> task.id }) { index, task ->
+            itemsIndexed(
+                items = uiState.tasks,
+                key = { _, task ->
+                    // Include the delete version in the key so that after an undo the LazyColumn creates a fresh composable
+                    Pair(task.id, taskDeleteVersions[task.id] ?: 0)
+                }
+            ) { index, task ->
+                val itemKey = Pair(task.id, taskDeleteVersions[task.id] ?: 0)
                 val itemShape = when {
                     uiState.tasks.size == 1 -> RoundedCornerShape(16.dp)
                     index == 0 -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
                     index == uiState.tasks.lastIndex -> RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
                     else -> RoundedCornerShape(4.dp)
                 }
-                ReorderableItem(reorderableState, key = task.id) { isDragging ->
+                ReorderableItem(reorderableState, key = itemKey) { isDragging ->
                     val scale by animateFloatAsState(
                         targetValue = if (isDragging) 1.03f else 1f,
                         label = "task_drag_scale"

@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.markel.flowstate.feature.habits.R
+import com.markel.flowstate.feature.habits.util.formatFloat
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -80,7 +81,7 @@ fun NumericHeatmapCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = value.toString(),
+                        text = formatFloat(value),
                         style = MaterialTheme.typography.labelSmall,
                         color = habitColor,
                         fontWeight = FontWeight.Bold

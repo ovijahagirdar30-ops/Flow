@@ -152,7 +152,7 @@ private fun DayRow(
                 modifier = Modifier
                     .size(36.dp)
                     .background(
-                        color = if (isToday) MaterialTheme.colorScheme.tertiary
+                        color = if (isToday) MaterialTheme.colorScheme.primary
                                 else androidx.compose.ui.graphics.Color.Transparent,
                         shape = MaterialShapes.Pill.toShape()
                     ),

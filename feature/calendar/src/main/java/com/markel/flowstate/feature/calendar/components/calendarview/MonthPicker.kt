@@ -82,8 +82,8 @@ fun MonthPicker(
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.tertiary,
-                            selectedLabelColor = MaterialTheme.colorScheme.onTertiary,
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
                             containerColor = MaterialTheme.colorScheme.surfaceContainer,
                             labelColor = MaterialTheme.colorScheme.onSurface,
                         ),

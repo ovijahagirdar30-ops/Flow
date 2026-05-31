@@ -47,7 +47,7 @@ fun WeekDayCell(
                 .clip(shape)
                 .background(
                     color = when {
-                        isSelected -> MaterialTheme.colorScheme.tertiary
+                        isSelected -> MaterialTheme.colorScheme.primary
                         isToday -> MaterialTheme.colorScheme.surfaceVariant
                         else -> Color.Transparent
                     },
@@ -61,7 +61,7 @@ fun WeekDayCell(
                 text = day.date.dayOfMonth.toString(),
                 fontSize = 15.sp,
                 color = if (isSelected)
-                    MaterialTheme.colorScheme.onTertiary
+                    MaterialTheme.colorScheme.onPrimary
                 else if (isToday)
                     MaterialTheme.colorScheme.onSurfaceVariant
                 else
@@ -80,9 +80,9 @@ fun WeekDayCell(
                         .clip(CircleShape)
                         .background(
                             if (isSelected)
-                                MaterialTheme.colorScheme.onTertiary
+                                MaterialTheme.colorScheme.onPrimary
                             else
-                                MaterialTheme.colorScheme.tertiary
+                                MaterialTheme.colorScheme.primary
                         )
                 )
             }

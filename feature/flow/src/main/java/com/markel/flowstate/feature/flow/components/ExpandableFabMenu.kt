@@ -47,13 +47,13 @@ fun ExpandableFabMenu(
                 containerSize = { _ -> 54.dp },
                 containerCornerRadius = { _ -> 16.dp },
                 containerColor = ToggleFloatingActionButtonDefaults.containerColor(
-                    initialColor = MaterialTheme.colorScheme.tertiary,
-                    finalColor = MaterialTheme.colorScheme.tertiary
+                    initialColor = MaterialTheme.colorScheme.primary,
+                    finalColor = MaterialTheme.colorScheme.primary
                 ),
             ) {
                 Icon(
                     imageVector = addIcon,
-                    tint = MaterialTheme.colorScheme.onTertiary,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     contentDescription = if (expanded) "Close menu" else "Open menu",
                     modifier = Modifier.rotate(rotation)
                 )
@@ -64,35 +64,35 @@ fun ExpandableFabMenu(
             onClick = onCheckListClick,
             icon = { Icon(ImageVector.vectorResource(R.drawable.check_box_24px), modifier = Modifier.size(23.dp), contentDescription = null) },
             text = { Text(stringResource(R.string.checklist), fontSize = 16.sp) },
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(
-                red = MaterialTheme.colorScheme.tertiaryContainer.red + 0.1f,
-                green = MaterialTheme.colorScheme.tertiaryContainer.green + 0.1f,
-                blue = MaterialTheme.colorScheme.tertiaryContainer.blue + 0.1f
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
+                red = MaterialTheme.colorScheme.primaryContainer.red + 0.1f,
+                green = MaterialTheme.colorScheme.primaryContainer.green + 0.1f,
+                blue = MaterialTheme.colorScheme.primaryContainer.blue + 0.1f
             ),
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.padding(0.dp)
         )
         FloatingActionButtonMenuItem(
             onClick = onIdeaClick,
             icon = { Icon(ImageVector.vectorResource(R.drawable.lightbulb_24px), modifier = Modifier.size(23.dp), contentDescription = null) },
             text = { Text(stringResource(R.string.idea), fontSize = 16.sp) },
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(
-                red = MaterialTheme.colorScheme.tertiaryContainer.red + 0.1f,
-                green = MaterialTheme.colorScheme.tertiaryContainer.green + 0.1f,
-                blue = MaterialTheme.colorScheme.tertiaryContainer.blue + 0.1f
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
+                red = MaterialTheme.colorScheme.primaryContainer.red + 0.1f,
+                green = MaterialTheme.colorScheme.primaryContainer.green + 0.1f,
+                blue = MaterialTheme.colorScheme.primaryContainer.blue + 0.1f
             ),
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         )
         FloatingActionButtonMenuItem(
             onClick = onTaskClick,
             icon = { Icon(ImageVector.vectorResource(R.drawable.check_24px), modifier = Modifier.size(23.dp), contentDescription = null) },
             text = { Text(stringResource(R.string.task), fontSize = 16.sp) },
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(
-                red = MaterialTheme.colorScheme.tertiaryContainer.red + 0.1f,
-                green = MaterialTheme.colorScheme.tertiaryContainer.green + 0.1f,
-                blue = MaterialTheme.colorScheme.tertiaryContainer.blue + 0.1f
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
+                red = MaterialTheme.colorScheme.primaryContainer.red + 0.1f,
+                green = MaterialTheme.colorScheme.primaryContainer.green + 0.1f,
+                blue = MaterialTheme.colorScheme.primaryContainer.blue + 0.1f
             ),
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         )
     }
 }

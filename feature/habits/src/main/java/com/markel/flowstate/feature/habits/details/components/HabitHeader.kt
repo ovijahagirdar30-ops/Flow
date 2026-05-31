@@ -32,9 +32,9 @@ fun HabitHeader(
     val habitProgress = if (totalHabits > 0) completedToday.toFloat() / totalHabits else 0f
     val allDone = completedToday == totalHabits && totalHabits > 0
 
-    val outerColor = MaterialTheme.colorScheme.secondary // day time
+    val outerColor = MaterialTheme.colorScheme.tertiary // day time
     val innerColor = if (allDone)  // completed habits
-        MaterialTheme.colorScheme.tertiaryContainer
+        MaterialTheme.colorScheme.primaryContainer
     else
         MaterialTheme.colorScheme.error
 
@@ -67,7 +67,7 @@ fun HabitHeader(
                     fontStyle = FontStyle.Italic,
                 ),
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.tertiary,
+                color = MaterialTheme.colorScheme.primary,
                 lineHeight = 20.sp
             )
             Text(

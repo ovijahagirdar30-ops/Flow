@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.markel.flowstate.feature.habits.details.ValueRange
 import com.markel.flowstate.feature.habits.R
+import com.markel.flowstate.feature.habits.util.formatFloat
 
 @Composable
 fun ValueDistributionCard(
@@ -84,11 +85,7 @@ fun ValueDistributionCard(
                         
                         // Count
                         Text(
-                            text = if (range.count % 1 == 0f) {
-                                range.count.toInt().toString()
-                            } else {
-                                String.format("%.2f", range.count)
-                            },
+                            text = formatFloat(range.count),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = habitColor,

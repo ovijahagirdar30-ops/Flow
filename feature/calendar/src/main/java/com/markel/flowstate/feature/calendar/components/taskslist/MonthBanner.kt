@@ -31,7 +31,7 @@ fun MonthBanner(date: LocalDate) {
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
                 shape = RoundedCornerShape(topStart = 28.dp, bottomEnd = 28.dp, topEnd = 4.dp, bottomStart = 4.dp)
             )
             .padding(16.dp)
@@ -49,7 +49,7 @@ fun MonthBanner(date: LocalDate) {
             Text(
                 text = date.year.toString(),
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
     }

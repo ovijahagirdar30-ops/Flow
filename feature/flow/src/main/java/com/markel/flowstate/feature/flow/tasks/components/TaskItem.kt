@@ -267,12 +267,12 @@ fun TaskItemContent(
             else
                 priorityColor
             val checkBgColor by animateColorAsState(
-                targetValue = if (isDone) MaterialTheme.colorScheme.tertiary else Color.Transparent,
+                targetValue = if (isDone) MaterialTheme.colorScheme.primary else Color.Transparent,
                 animationSpec = spring(),
                 label = "check_bg"
             )
             val checkBorderColor by animateColorAsState(
-                targetValue = if (isDone) MaterialTheme.colorScheme.tertiary else borderBaseColor,
+                targetValue = if (isDone) MaterialTheme.colorScheme.primary else borderBaseColor,
                 animationSpec = spring(),
                 label = "check_border"
             )
@@ -387,7 +387,7 @@ fun TaskItemContent(
                                         if (isDateOverdue(date)) {
                                             MaterialTheme.colorScheme.error
                                         } else {
-                                            MaterialTheme.colorScheme.tertiary
+                                            MaterialTheme.colorScheme.primary
                                         }
                                     }
                                 )
@@ -399,7 +399,7 @@ fun TaskItemContent(
                                         if (isDateOverdue(date)) {
                                             MaterialTheme.colorScheme.error
                                         } else {
-                                            MaterialTheme.colorScheme.tertiary
+                                            MaterialTheme.colorScheme.primary
                                         }
                                     }
                                 )
@@ -417,13 +417,13 @@ fun TaskItemContent(
                                     imageVector = ImageVector.vectorResource(R.drawable.notifications_24px),
                                     contentDescription = null,
                                     modifier = Modifier.size(14.dp),
-                                    tint = MaterialTheme.colorScheme.secondary
+                                    tint = MaterialTheme.colorScheme.tertiary
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = formatReminderDateTime(reminderTime),
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.secondary
+                                    color = MaterialTheme.colorScheme.tertiary
                                 )
                             }
                         }

@@ -209,8 +209,8 @@ fun HabitScreen(
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 16.dp),
                     shape = RoundedCornerShape(16.dp),
-                    containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
                     Icon(
                         imageVector = ImageVector.vectorResource(DesignR.drawable.add_24px),
