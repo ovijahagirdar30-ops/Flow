@@ -1,66 +1,74 @@
 package com.markel.flowstate.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationItemIconPosition
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarArrangement
+import androidx.compose.material3.ShortNavigationBarDefaults
+import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.material3.ShortNavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.markel.flowstate.bottomNavItems
-import com.markel.flowstate.navigation.Screen
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
     // We get the current route to know which item to select
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val navBarHeightDp = with(LocalDensity.current) {
-        WindowInsets.navigationBars.getBottom(this).toDp()
-    }
-    val isGestureNav = navBarHeightDp <= 16.dp
-    val barHeight = when {
-        isLandscape -> 56.dp
-        isGestureNav -> 90.dp  // gesture nav: shorter, the system bar area is minimal
-        else -> 110.dp
-    }
-
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Divider to separate bottom bar from content, both have the same surface color
         HorizontalDivider(
             thickness = 0.3.dp,
             color = MaterialTheme.colorScheme.outlineVariant
         )
-        NavigationBar(
-            containerColor = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.height(barHeight)
+
+        // ── ShortNavigationBar (M3 Expressive, 64dp) ──────────────
+        ShortNavigationBar(
+            arrangement = if (isLandscape) {
+                ShortNavigationBarArrangement.Centered
+            } else {
+                ShortNavigationBarArrangement.EqualWeight
+            },
+            containerColor = Color.Transparent,
+            windowInsets = ShortNavigationBarDefaults.windowInsets,
         ) {
             bottomNavItems.forEach { screen ->
                 val selected = currentRoute == screen.route
                 val label = stringResource(screen.labelRes)
-                NavigationBarItem(
+                ShortNavigationBarItem(
+                    selected = selected,
+                    onClick = {
+                        // Navigate to the new screen
+                        if (currentRoute != screen.route) {
+                            navController.navigate(screen.route) {
+                                // Avoid accumulating screens in the back stack
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    },
                     icon = {
                         val iconDrawable = if (selected) screen.iconSelectedRes else screen.iconRes
                         Icon(
@@ -68,24 +76,22 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
                             contentDescription = label
                         )
                     },
-                    label = if (!isLandscape) { { Text(label) } } else null,
-                    selected = selected,
-                    onClick = {
-                        // Navigate to the new screen
-                        navController.navigate(screen.route) {
-                            // Avoid accumulating screens in the back stack
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                    label = { Text(label) },
+                    // Portrait: icon above label (Top)
+                    // Landscape: icon beside label (Start)
+                    iconPosition = if (isLandscape) {
+                        NavigationItemIconPosition.Start
+                    } else {
+                        NavigationItemIconPosition.Top
                     },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                        indicatorColor = Color.Transparent,
+                    colors = ShortNavigationBarItemDefaults.colors(
+                        selectedIndicatorColor = Color.Transparent,
                         selectedIconColor = MaterialTheme.colorScheme.primary,
-                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            .copy(alpha = 0.7f),
+                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            .copy(alpha = 0.9f)
                     )
                 )
             }
