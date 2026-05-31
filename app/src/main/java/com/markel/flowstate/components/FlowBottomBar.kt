@@ -84,7 +84,7 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
                     colors = NavigationBarItemDefaults.colors(
                         selectedTextColor = MaterialTheme.colorScheme.onSurface,
                         indicatorColor = Color.Transparent,
-                        selectedIconColor = MaterialTheme.colorScheme.tertiary,
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
                         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 )

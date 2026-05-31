@@ -37,8 +37,8 @@ fun AnimatedUndoFab(
     ) {
         FloatingActionButton(
             onClick = onUndoClick,
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.padding(start = 16.dp, bottom = 64.dp),
             shape = CircleShape
         ) {

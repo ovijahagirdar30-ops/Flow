@@ -101,7 +101,7 @@ fun CalendarMonthHeader(
                             style = SpanStyle(
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.tertiary
+                                color = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             append(displayMonth.year.toString())
@@ -126,7 +126,7 @@ fun CalendarMonthHeader(
             ) {
                 TodayIcon(
                     outlineColor = MaterialTheme.colorScheme.onSurface,
-                    dotColor = MaterialTheme.colorScheme.tertiary
+                    dotColor = MaterialTheme.colorScheme.primary
                 )
             }
         }

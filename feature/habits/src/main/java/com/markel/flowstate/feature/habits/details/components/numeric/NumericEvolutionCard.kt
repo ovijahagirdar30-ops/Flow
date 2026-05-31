@@ -107,7 +107,7 @@ fun NumericEvolutionCard(
                             text = if (isPositive) "↑ $dailyChange%" else "↓ ${abs(dailyChange)}%",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = if (isPositive) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error
+                            color = if (isPositive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                         )
                         Text(
                             text = stringResource(R.string.habit_detail_vs),

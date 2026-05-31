@@ -117,12 +117,12 @@ fun EditableSubTaskItem(
                     else
                         editedPriority.asColor()
                     val checkBgColor by animateColorAsState(
-                        targetValue = if (subTask.isDone) MaterialTheme.colorScheme.tertiary else Color.Transparent,
+                        targetValue = if (subTask.isDone) MaterialTheme.colorScheme.primary else Color.Transparent,
                         animationSpec = spring(),
                         label = "check_bg"
                     )
                     val checkBorderColor by animateColorAsState(
-                        targetValue = if (subTask.isDone) MaterialTheme.colorScheme.tertiary else borderBaseColor,
+                        targetValue = if (subTask.isDone) MaterialTheme.colorScheme.primary else borderBaseColor,
                         animationSpec = spring(),
                         label = "check_border"
                     )
@@ -245,7 +245,7 @@ fun EditableSubTaskItem(
                                                 alpha = if (subTask.isDone) 0.6f else 0.9f
                                             )
                                         } else {
-                                            MaterialTheme.colorScheme.tertiary.copy(
+                                            MaterialTheme.colorScheme.primary.copy(
                                                 alpha = if (subTask.isDone) 0.6f else 0.9f
                                             )
                                         }
@@ -369,7 +369,7 @@ fun EditableSubTaskItem(
                                 enabled = editedTitle.isNotBlank(),
                                 modifier = Modifier.size(40.dp),
                                 colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.tertiary,
+                                    containerColor = MaterialTheme.colorScheme.primary,
                                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
                             ) {
@@ -378,7 +378,7 @@ fun EditableSubTaskItem(
                                     contentDescription = "Save",
                                     modifier = Modifier.size(20.dp),
                                     tint = if (editedTitle.isNotBlank())
-                                        MaterialTheme.colorScheme.onTertiary
+                                        MaterialTheme.colorScheme.onPrimary
                                     else
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                 )

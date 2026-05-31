@@ -59,7 +59,7 @@ fun CalendarScreen(
                     }
                     showCreationSheet = true
                 },
-                containerColor = MaterialTheme.colorScheme.tertiary
+                containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(
                     ImageVector.vectorResource(R.drawable.add_24px),

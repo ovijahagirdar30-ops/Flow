@@ -149,7 +149,7 @@ fun TaskCreationSheetContent(
                 onClick = { if (title.isNotBlank()) onSave(title, description, priority, dueDate, reminderTime) },
                 enabled = title.isNotBlank(),
                 modifier = Modifier.size(44.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
                     imageVector = ImageVector.vectorResource(R.drawable.send),

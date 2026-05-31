@@ -50,10 +50,10 @@ fun DateSelector(
     var showDatePicker by remember { mutableStateOf(false) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val mainColor = MaterialTheme.colorScheme.tertiary
+    val mainColor = MaterialTheme.colorScheme.primary
     val datePickerColors = DatePickerDefaults.colors(
         selectedDayContainerColor = mainColor,
-        selectedDayContentColor = MaterialTheme.colorScheme.onTertiary,
+        selectedDayContentColor = MaterialTheme.colorScheme.onPrimary,
         todayDateBorderColor = mainColor,
         todayContentColor = mainColor,
         dayContentColor = MaterialTheme.colorScheme.onSurface,
@@ -122,7 +122,7 @@ fun DateSelector(
                     color = if (isDateOverdue(dueDate)) {
                         MaterialTheme.colorScheme.error
                     } else {
-                        MaterialTheme.colorScheme.onTertiary
+                        MaterialTheme.colorScheme.onPrimary
                     }
                 )
             },
@@ -134,7 +134,7 @@ fun DateSelector(
                     tint = if (isDateOverdue(dueDate)) {
                         MaterialTheme.colorScheme.error
                     } else {
-                        MaterialTheme.colorScheme.onTertiary
+                        MaterialTheme.colorScheme.onPrimary
                     }
                 )
             },
@@ -142,7 +142,7 @@ fun DateSelector(
                 containerColor = if (isDateOverdue(dueDate)) {
                     MaterialTheme.colorScheme.errorContainer
                 } else {
-                    MaterialTheme.colorScheme.tertiary
+                    MaterialTheme.colorScheme.primary
                 }
             ),
             border = null,
@@ -156,7 +156,7 @@ fun DateSelector(
             Icon(
                 imageVector = ImageVector.vectorResource(R.drawable.calendar_today_24px),
                 "Date",
-                tint = if (dueDate != null) MaterialTheme.colorScheme.tertiary
+                tint = if (dueDate != null) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

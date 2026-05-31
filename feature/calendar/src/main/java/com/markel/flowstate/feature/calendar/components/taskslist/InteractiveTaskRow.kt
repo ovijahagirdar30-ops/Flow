@@ -96,13 +96,13 @@ fun InteractiveTaskRow(
          )   {
              // Interactive checkbox
              val checkBgColor by animateColorAsState(
-                 targetValue = if (task.isDone) MaterialTheme.colorScheme.tertiary else androidx.compose.ui.graphics.Color.Transparent,
+                 targetValue = if (task.isDone) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent,
                  animationSpec = spring(),
                  label = "check_bg"
              )
              val checkBorderColor by animateColorAsState(
                  targetValue = if (task.isDone)
-                     MaterialTheme.colorScheme.tertiary
+                     MaterialTheme.colorScheme.primary
                  else
                      MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                  animationSpec = spring(),
@@ -195,13 +195,13 @@ fun InteractiveTaskRow(
                                  imageVector = ImageVector.vectorResource(R.drawable.notifications_24px),
                                  contentDescription = null,
                                  modifier = Modifier.size(12.dp),
-                                 tint = MaterialTheme.colorScheme.secondary
+                                 tint = MaterialTheme.colorScheme.tertiary
                              )
                              Spacer(modifier = Modifier.width(4.dp))
                              Text(
                                  text = formatCalendarReminderTime(task.reminderTime),
                                  style = MaterialTheme.typography.labelSmall,
-                                 color = MaterialTheme.colorScheme.secondary
+                                 color = MaterialTheme.colorScheme.tertiary
                              )
                          }
                      }

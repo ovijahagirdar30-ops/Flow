@@ -135,10 +135,9 @@ fun NumericWeekBar(
             Text(
                 text = dayOfWeek.getDisplayName(TextStyle.SHORT, LocalLocale.current.platformLocale).uppercase(),
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (isToday) FontWeight.ExtraBold else FontWeight.Normal,
                 color = when {
                     isSelected && !isFuture -> color
-                    isToday -> MaterialTheme.colorScheme.primary
                     isFuture -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },

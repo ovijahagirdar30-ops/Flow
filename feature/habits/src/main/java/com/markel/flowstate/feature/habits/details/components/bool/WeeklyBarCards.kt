@@ -45,7 +45,7 @@ fun WeeklyBarsCard(
     )
 
     val badgeSize = if (barsMode == WeeklyBarsMode.SIXTEEN) 16.dp else 24.dp
-    val badgeSizeSecondary = if (barsMode == WeeklyBarsMode.SIXTEEN) 13.dp else 20.dp
+    val badgeSizeTertiary = if (barsMode == WeeklyBarsMode.SIXTEEN) 13.dp else 20.dp
     val barSpacing = if (barsMode == WeeklyBarsMode.SIXTEEN) 1.dp else 2.dp
 
     Column(modifier = modifier) {
@@ -141,7 +141,7 @@ fun WeeklyBarsCard(
                                         modifier = Modifier
                                             .align(Alignment.TopCenter)
                                             .padding(top = 4.dp)
-                                            .size(badgeSizeSecondary)
+                                            .size(badgeSizeTertiary)
                                             .background(
                                                 color = badgeBgColor.copy(alpha = 0.7f),
                                                 shape = MaterialShapes.Circle.toShape()

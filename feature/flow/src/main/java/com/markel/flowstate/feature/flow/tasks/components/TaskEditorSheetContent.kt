@@ -224,7 +224,7 @@ fun TaskEditorSheetContent(
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.sp
             ),
-            color = MaterialTheme.colorScheme.tertiary
+            color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -291,7 +291,7 @@ fun TaskEditorSheetContent(
                 showCreationSheet = true
             },
             colors = ButtonDefaults.textButtonColors(
-                contentColor = MaterialTheme.colorScheme.tertiary
+                contentColor = MaterialTheme.colorScheme.primary
             ),
             modifier = Modifier
                 .fillMaxWidth()

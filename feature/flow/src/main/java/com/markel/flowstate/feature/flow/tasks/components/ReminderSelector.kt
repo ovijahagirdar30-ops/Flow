@@ -84,7 +84,7 @@ fun ReminderSelector(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    val accentColor = MaterialTheme.colorScheme.secondary
+    val accentColor = MaterialTheme.colorScheme.tertiary
     val textButtonColors = ButtonDefaults.textButtonColors(contentColor = accentColor)
 
     // ── Step 1: Date picker ───────────────────────────────────────────────────
@@ -107,7 +107,7 @@ fun ReminderSelector(
         )
         val datePickerColors = DatePickerDefaults.colors(
             selectedDayContainerColor = accentColor,
-            selectedDayContentColor = MaterialTheme.colorScheme.onSecondary,
+            selectedDayContentColor = MaterialTheme.colorScheme.onTertiary,
             todayDateBorderColor = accentColor,
             todayContentColor = accentColor
         )
@@ -172,8 +172,8 @@ fun ReminderSelector(
         // Toggle between clock face (Picker) and text input (Keyboard) mode
         var isKeyboardMode by remember { mutableStateOf(false) }
 
-        val timeAccentColor = MaterialTheme.colorScheme.secondary
-        val onTimeAccentColor = MaterialTheme.colorScheme.onSecondary
+        val timeAccentColor = MaterialTheme.colorScheme.tertiary
+        val onTimeAccentColor = MaterialTheme.colorScheme.onTertiary
 
         val timePickerColors = TimePickerDefaults.colors(
             // Clock dial
@@ -278,7 +278,7 @@ fun ReminderSelector(
             label = {
                 Text(
                     formatReminderDateTime(reminderTime),
-                    color = MaterialTheme.colorScheme.onSecondary
+                    color = MaterialTheme.colorScheme.onTertiary
                 )
             },
             leadingIcon = {
@@ -286,11 +286,11 @@ fun ReminderSelector(
                     imageVector = ImageVector.vectorResource(R.drawable.notifications_active_24px),
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSecondary
+                    tint = MaterialTheme.colorScheme.onTertiary
                 )
             },
             colors = AssistChipDefaults.assistChipColors(
-                containerColor = MaterialTheme.colorScheme.secondary
+                containerColor = MaterialTheme.colorScheme.tertiary
             ),
             border = null,
             modifier = modifier

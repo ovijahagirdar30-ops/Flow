@@ -42,7 +42,7 @@ fun DayCell(
     val showSelection = isSelected && isCurrentMonth
 
     val textColor = when {
-        showSelection -> MaterialTheme.colorScheme.onTertiary
+        showSelection -> MaterialTheme.colorScheme.onPrimary
         isToday -> MaterialTheme.colorScheme.onSurfaceVariant
         isCurrentMonth -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
@@ -60,7 +60,7 @@ fun DayCell(
             .clip(shape)
             .background(
                 color = when {
-                    showSelection -> MaterialTheme.colorScheme.tertiary
+                    showSelection -> MaterialTheme.colorScheme.primary
                     isToday && isCurrentMonth -> MaterialTheme.colorScheme.surfaceVariant
                     else -> Color.Transparent
                 },
@@ -87,7 +87,7 @@ fun DayCell(
                         .padding(bottom = 5.dp)
                         .size(3.5.dp)
                         .clip(CircleShape)
-                        .background(if (showSelection) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.tertiary)
+                        .background(if (showSelection) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary)
                 )
             }
         }
