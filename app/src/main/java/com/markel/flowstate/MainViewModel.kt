@@ -2,8 +2,9 @@ package com.markel.flowstate
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.markel.flowstate.core.data.MainTab
 import com.markel.flowstate.core.data.UserPreferencesRepository
-import com.markel.flowstate.navigation.Screen
+import com.markel.flowstate.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,21 +16,20 @@ class MainViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    private val _startDestination = MutableStateFlow<String?>(null)
+    private val _startDestination = MutableStateFlow<Any?>(null)
     val startDestination = _startDestination.asStateFlow()
 
     init {
         viewModelScope.launch {
-            userPreferencesRepository.lastTabRoute.collect { route ->
-                // If there isn't a saved route, go to Tasks by default
-                _startDestination.value = route ?: Screen.Tasks.route
+            userPreferencesRepository.lastTab.collect { tab ->
+                _startDestination.value = tab.toRoute()
             }
         }
     }
 
-    fun saveLastTab(route: String) {
+    fun saveLastTab(tab: MainTab) {
         viewModelScope.launch {
-            userPreferencesRepository.saveLastTabRoute(route)
+            userPreferencesRepository.saveLastTab(tab)
         }
     }
 }

@@ -19,8 +19,8 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class UserPreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    val lastTabRoute: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[stringPreferencesKey("last_tab_route")]
+    val lastTab: Flow<MainTab> = context.dataStore.data.map { preferences ->
+        MainTab.fromName(preferences[stringPreferencesKey("last_tab_route")])
     }
     private val CALENDAR_VIEW_MODE = stringPreferencesKey("calendar_view_mode")
 
@@ -28,9 +28,9 @@ class UserPreferencesRepository @Inject constructor(
         prefs[CALENDAR_VIEW_MODE]
     }
 
-    suspend fun saveLastTabRoute(route: String) {
+    suspend fun saveLastTab(tab: MainTab) {
         context.dataStore.edit { preferences ->
-            preferences[stringPreferencesKey("last_tab_route")] = route
+            preferences[stringPreferencesKey("last_tab_route")] = tab.name
         }
     }
 

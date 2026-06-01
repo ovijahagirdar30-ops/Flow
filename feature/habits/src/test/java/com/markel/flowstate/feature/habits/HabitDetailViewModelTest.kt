@@ -70,7 +70,7 @@ class HabitDetailViewModelTest {
     )
 
     private fun savedStateHandle(habitId: Int = 1) =
-        SavedStateHandle(mapOf("habitId" to habitId.toString()))
+        SavedStateHandle(mapOf("habitId" to habitId))
 
     private fun buildViewModel(habitId: Int = 1) = HabitDetailViewModel(
         savedStateHandle = savedStateHandle(habitId),

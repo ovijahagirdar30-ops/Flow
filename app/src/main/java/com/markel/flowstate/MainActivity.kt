@@ -23,29 +23,24 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavDestination.Companion.hasRoute
 import com.markel.flowstate.components.FlowBottomBar
 import com.markel.flowstate.components.PlaceholderScreen
 import com.markel.flowstate.core.designsystem.theme.FlowStateTheme
 import com.markel.flowstate.core.designsystem.ui.LocalAnimatedVisibilityScope
 import com.markel.flowstate.core.designsystem.ui.LocalSharedTransitionScope
-import com.markel.flowstate.feature.calendar.CalendarScreen
-import com.markel.flowstate.feature.calendar.CalendarViewModel
-import com.markel.flowstate.feature.flow.FlowScreen
-import com.markel.flowstate.feature.flow.FlowViewModel
-import com.markel.flowstate.feature.flow.checklists.CheckListEditorScreen
-import com.markel.flowstate.feature.flow.ideas.IdeaEditorScreen
-import com.markel.flowstate.feature.flow.tasks.components.TaskEditorScreen
+import com.markel.flowstate.core.data.MainTab
+import com.markel.flowstate.navigation.fromRoute
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
-import com.markel.flowstate.feature.habits.HabitScreen
-import com.markel.flowstate.feature.habits.details.HabitDetailScreen
-import com.markel.flowstate.navigation.Screen
+import com.markel.flowstate.navigation.FlowStateNavHost
+import com.markel.flowstate.navigation.BottomNavScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 val bottomNavItems = listOf(
-    Screen.Tasks,
-    Screen.Calendar,
-    Screen.Habits,
-    Screen.Mood
+    BottomNavScreen.Tasks,
+    BottomNavScreen.Calendar,
+    BottomNavScreen.Habits,
+    BottomNavScreen.Mood
 )
 
 // Routes where the bottom bar should be displayed
@@ -75,12 +70,16 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     // The bottom bar is controlled BY ROUTE, not by manual state
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentRoute = navBackStackEntry?.destination?.route
+                    val destination = navBackStackEntry?.destination
+                    // Navigation 2.8 Type-Safe routes generate fully qualified class names
+                    val isBottomBarVisible = routesWithBottomBar.any { destination?.hasRoute(it::class) == true }
                     // We show the bottom bar only if the current route is one of the main tabs
-                    val isBottomBarVisible = currentRoute in routesWithBottomBar
-                    LaunchedEffect(currentRoute) {
-                        if (isBottomBarVisible && currentRoute != null) {
-                            mainViewModel.saveLastTab(currentRoute)
+                    LaunchedEffect(destination) {
+                        if (isBottomBarVisible && destination != null) {
+                            val activeItem = bottomNavItems.firstOrNull { destination.hasRoute(it.route::class) }
+                            if (activeItem != null) {
+                                MainTab.fromRoute(activeItem.route)?.let { mainViewModel.saveLastTab(it) }
+                            }
                         }
                     }
 
@@ -98,112 +97,12 @@ class MainActivity : ComponentActivity() {
                                 },
                                 contentWindowInsets = WindowInsets(0.dp)
                             ) { innerPadding ->
-                                // Navigation host: decides which screen to show
-                                // based on the route
-                                NavHost(
+                                // Navigation host: decides which screen to show based on the route
+                                FlowStateNavHost(
                                     navController = navController,
                                     startDestination = startDestination!!,
                                     modifier = Modifier.padding(innerPadding)
-                                ) {
-                                    // --- Main tabs ---
-                                    composable(Screen.Tasks.route) {
-                                        val flowViewModel: FlowViewModel = hiltViewModel()
-                                        // Register as lifecycle observer so onResume() fires correctly.
-                                        val lifecycleOwner = LocalLifecycleOwner.current
-                                        DisposableEffect(lifecycleOwner) {
-                                            lifecycleOwner.lifecycle.addObserver(flowViewModel)
-                                            onDispose { lifecycleOwner.lifecycle.removeObserver(flowViewModel) }
-                                        }
-                                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                            FlowScreen(
-                                                flowViewModel = flowViewModel,
-                                                onNavigateToTaskEditor = { taskId ->
-                                                    navController.navigate(
-                                                        Screen.Detail.taskEditor(
-                                                            taskId
-                                                        )
-                                                    )
-                                                },
-                                                onNavigateToIdeaEditor = { ideaId ->
-                                                    navController.navigate(
-                                                        Screen.Detail.ideaEditor(
-                                                            ideaId
-                                                        )
-                                                    )
-                                                },
-                                                onNavigateToNewIdea = {
-                                                    navController.navigate(Screen.Detail.newIdea())
-                                                },
-                                                onNavigateToCheckListEditor = { checkListId ->
-                                                    navController.navigate(
-                                                        Screen.Detail.checkListEditor(
-                                                            checkListId
-                                                        )
-                                                    )
-                                                }
-                                            )
-                                        }
-                                    }
-                                    composable(Screen.Calendar.route) {
-                                        val calendarViewModel: CalendarViewModel = hiltViewModel()
-                                        CalendarScreen(viewModel = calendarViewModel)
-                                    }
-                                    composable(Screen.Habits.route) {
-                                        HabitScreen(
-                                            onNavigateToDetail = { habitId ->
-                                                navController.navigate(
-                                                    Screen.Detail.habitDetail(
-                                                        habitId
-                                                    )
-                                                )
-                                            }
-                                        )
-                                    }
-                                    composable(Screen.Mood.route) {
-                                        PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.mood))
-                                    }
-
-                                    // ── Detail screens (without bottom bar) ─────────────
-                                    composable(Screen.Detail.TASK_EDITOR) { backStackEntry ->
-                                        val taskId = backStackEntry.arguments
-                                            ?.getString("taskId")
-                                            ?.toIntOrNull() ?: return@composable
-                                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                            TaskEditorScreen(
-                                                taskId = taskId,
-                                                onBack = { navController.popBackStack() }
-                                            )
-                                        }
-                                    }
-                                    composable(Screen.Detail.IDEA_EDITOR) { backStackEntry ->
-                                        val ideaIdArg =
-                                            backStackEntry.arguments?.getString("ideaId")
-                                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                            IdeaEditorScreen(
-                                                ideaId = ideaIdArg?.toIntOrNull(), // null = new idea
-                                                onBack = { navController.popBackStack() }
-                                            )
-                                        }
-                                    }
-                                    composable(Screen.Detail.CHECKLIST_EDITOR) { backStackEntry ->
-                                        val checkListIdArg =
-                                            backStackEntry.arguments?.getString("checkListId")
-                                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                                            CheckListEditorScreen(
-                                                checkListId = checkListIdArg?.toIntOrNull(), // null = new checklist
-                                                onBack = { navController.popBackStack() }
-                                            )
-                                        }
-                                    }
-                                    composable(Screen.Detail.HABIT_DETAIL) { backStackEntry ->
-                                        val habitId = backStackEntry.arguments?.getString("habitId")
-                                            ?.toIntOrNull() ?: return@composable
-                                        HabitDetailScreen(
-                                            habitId = habitId,
-                                            onBack = { navController.popBackStack() }
-                                        )
-                                    }
-                                }
+                                )
                             }
                         }
                     }

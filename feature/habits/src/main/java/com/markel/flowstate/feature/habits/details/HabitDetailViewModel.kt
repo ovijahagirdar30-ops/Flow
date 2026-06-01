@@ -36,7 +36,7 @@ class HabitDetailViewModel @Inject constructor(
     private val userPreferences: UserPreferencesRepository
 ) : ViewModel() {
 
-    private val habitId: Int = checkNotNull(savedStateHandle.get<String>("habitId")).toInt()
+    private val habitId: Int = checkNotNull(savedStateHandle.get<Int>("habitId"))
     private val _uiState = MutableStateFlow(HabitDetailUiState())
     val uiState: StateFlow<HabitDetailUiState> = _uiState.asStateFlow()
 
