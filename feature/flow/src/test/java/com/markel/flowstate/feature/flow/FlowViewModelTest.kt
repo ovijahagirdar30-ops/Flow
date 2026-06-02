@@ -15,8 +15,11 @@ import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -39,17 +42,28 @@ class FlowViewModelTest {
 
     private lateinit var viewModel: FlowViewModel
 
+    /**
+     * Default application scope for tests that don't need virtual time control.
+     * Uses its own UnconfinedTestDispatcher so coroutines start eagerly up to
+     * the first suspension point (delay), which is sufficient for UI-state checks.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val defaultTestApplicationScope: CoroutineScope =
+        CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher())
+
     private fun createViewModel(
         tasks: List<Task> = emptyList(),
         ideas: List<Idea> = emptyList(),
-        checkLists: List<CheckList> = emptyList()
+        checkLists: List<CheckList> = emptyList(),
+        applicationScope: CoroutineScope = defaultTestApplicationScope
     ): FlowViewModel {
         coEvery { taskRepository.getTasks() } returns flowOf(tasks)
         coEvery { ideaRepository.getIdeas() } returns flowOf(ideas)
         coEvery { checkListRepository.getLists() } returns flowOf(checkLists)
         return FlowViewModel(
             taskRepository, ideaRepository, checkListRepository,
-            userPreferencesRepository, reminderScheduler, deleteTaskUseCase
+            userPreferencesRepository, reminderScheduler, deleteTaskUseCase,
+            applicationScope
         )
     }
 
@@ -139,9 +153,13 @@ class FlowViewModelTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun onTaskSwiped_deletesFromDb_afterUndoTimeout() = runTest {
+        // Use a scope that shares the runTest scheduler so advanceTimeBy
+        // controls the delay inside the application-scoped coroutine
+        val testApplicationScope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher(testScheduler))
+
         // GIVEN
         val task = Task(id = 1, title = "T", isDone = false, position = 0)
-        viewModel = createViewModel(tasks = listOf(task))
+        viewModel = createViewModel(tasks = listOf(task), applicationScope = testApplicationScope)
 
         // WHEN
         viewModel.onTaskSwiped(task)
@@ -157,10 +175,14 @@ class FlowViewModelTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun undoPendingDeletions_cancelsDeleteAndRestoresTasks() = runTest {
+        // Use a scope that shares the runTest scheduler so advanceTimeBy
+        // controls the delay inside the application-scoped coroutine
+        val testApplicationScope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher(testScheduler))
+
         // GIVEN
         val t1 = Task(id = 1, title = "T1", isDone = false, position = 0)
         val t2 = Task(id = 2, title = "T2", isDone = false, position = 1)
-        viewModel = createViewModel(tasks = listOf(t1, t2))
+        viewModel = createViewModel(tasks = listOf(t1, t2), applicationScope = testApplicationScope)
 
         viewModel.uiState.test {
             // Get initial state
