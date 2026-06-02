@@ -2,6 +2,9 @@ package com.markel.flowstate
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * Custom Application class.
@@ -12,4 +15,5 @@ import dagger.hilt.android.HiltAndroidApp
 @HiltAndroidApp
 class FlowStateApp : Application() {
     // Hilt generates the necessary code in the background.
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }
