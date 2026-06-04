@@ -40,7 +40,8 @@ val bottomNavItems = listOf(
     BottomNavScreen.Tasks,
     BottomNavScreen.Calendar,
     BottomNavScreen.Habits,
-    BottomNavScreen.Mood
+    BottomNavScreen.Mood,
+    BottomNavScreen.Settings
 )
 
 // Routes where the bottom bar should be displayed

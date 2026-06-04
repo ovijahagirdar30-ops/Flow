@@ -23,6 +23,9 @@ import com.markel.flowstate.feature.flow.ideas.IdeaEditorScreen
 import com.markel.flowstate.feature.flow.tasks.components.TaskEditorScreen
 import com.markel.flowstate.feature.habits.HabitScreen
 import com.markel.flowstate.feature.habits.details.HabitDetailScreen
+import com.markel.flowstate.feature.settings.AboutScreen
+import com.markel.flowstate.feature.settings.SettingsScreen
+import com.markel.flowstate.BuildConfig
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -75,6 +78,21 @@ fun FlowStateNavHost(
         }
         composable<MoodRoute> {
             PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.mood))
+        }
+        composable<SettingsRoute> {
+            SettingsScreen(
+                appVersion = BuildConfig.VERSION_NAME,
+                onNavigateToNotifications = { /* TODO */ },
+                onNavigateToAppearance = { /* TODO */ },
+                onNavigateToLanguage = { /* TODO */ },
+                onNavigateToAbout = { navController.navigate(AboutRoute) }
+            )
+        }
+        composable<AboutRoute> {
+            AboutScreen(
+                appVersion = BuildConfig.VERSION_NAME,
+                onBack = { navController.popBackStack() }
+            )
         }
 
         composable<TaskEditorRoute> { backStackEntry ->

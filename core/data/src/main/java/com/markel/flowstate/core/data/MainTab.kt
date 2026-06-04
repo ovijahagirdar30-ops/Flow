@@ -4,7 +4,8 @@ enum class MainTab {
     TASKS,
     CALENDAR,
     HABITS,
-    MOOD;
+    MOOD,
+    SETTINGS;
 
     companion object {
         fun fromName(name: String?): MainTab {

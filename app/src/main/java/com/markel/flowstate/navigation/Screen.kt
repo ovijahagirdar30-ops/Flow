@@ -20,6 +20,12 @@ object HabitsRoute
 object MoodRoute
 
 @Serializable
+object SettingsRoute
+
+@Serializable
+object AboutRoute
+
+@Serializable
 data class TaskEditorRoute(val taskId: Int)
 
 @Serializable
@@ -37,6 +43,7 @@ fun MainTab.toRoute(): Any = when (this) {
     MainTab.CALENDAR -> CalendarRoute
     MainTab.HABITS -> HabitsRoute
     MainTab.MOOD -> MoodRoute
+    MainTab.SETTINGS -> SettingsRoute
 }
 
 fun MainTab.Companion.fromRoute(route: Any): MainTab? = when {
@@ -44,6 +51,7 @@ fun MainTab.Companion.fromRoute(route: Any): MainTab? = when {
     route is CalendarRoute || route::class == CalendarRoute::class -> MainTab.CALENDAR
     route is HabitsRoute || route::class == HabitsRoute::class -> MainTab.HABITS
     route is MoodRoute || route::class == MoodRoute::class -> MainTab.MOOD
+    route is SettingsRoute || route::class == SettingsRoute::class -> MainTab.SETTINGS
     else -> null
 }
 
@@ -77,5 +85,12 @@ sealed class BottomNavScreen(
         labelRes = com.markel.flowstate.feature.tasks.R.string.mood,
         iconRes = R.drawable.self_improvement_24px,
         iconSelectedRes = R.drawable.self_improvement_24px
+    )
+
+    data object Settings : BottomNavScreen(
+        route = SettingsRoute,
+        labelRes = com.markel.flowstate.feature.tasks.R.string.settings,
+        iconRes = R.drawable.settings_out_24px,
+        iconSelectedRes = R.drawable.settings_24px
     )
 }

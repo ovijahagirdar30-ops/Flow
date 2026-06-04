@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings main screen -->
+    <string name="settings">Ajustes</string>
+    <string name="settings_general">General</string>
+    <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_notifications_description">Gestionar notificaciones de recordatorios</string>
+    <string name="settings_appearance">Apariencia</string>
+    <string name="settings_appearance_description">Tema, colores</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_description">Cambiar idioma de la app</string>
+    <string name="settings_info">Información</string>
+    <string name="settings_about">Acerca de</string>
+    <string name="settings_about_description">FlowState v%1$s</string>
+
+    <!-- About screen -->
+    <string name="about_title">Acerca de</string>
+    <string name="about_app_name">FlowState</string>
+    <string name="about_developer">Desarrollador</string>
+    <string name="about_developer_name">Markel</string>
+    <string name="about_license">Licencia</string>
+    <string name="about_license_description">Apache-2.0</string>
+</resources>

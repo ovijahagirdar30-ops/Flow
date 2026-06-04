@@ -16,7 +16,7 @@ android {
         minSdk = 31 // Android 12
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "3.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -41,6 +41,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -50,6 +51,7 @@ dependencies {
     implementation(project(":feature:flow"))
     implementation(project(":feature:calendar"))
     implementation(project(":feature:habits"))
+    implementation(project(":feature:settings"))
     implementation(project(":core:data"))
     implementation(project(":core:domain"))
     implementation(project(":core:designsystem"))
