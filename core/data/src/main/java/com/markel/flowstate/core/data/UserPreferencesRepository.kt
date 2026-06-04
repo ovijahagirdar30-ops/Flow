@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -36,5 +37,57 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun saveCalendarViewMode(mode: String) {
         context.dataStore.edit { it[CALENDAR_VIEW_MODE] = mode }
+    }
+
+    // ── Bottom navigation configuration ───────────────────────────────────
+
+    /** Ordered list of tab names (e.g. ["TASKS","CALENDAR","HABITS","MOOD","SETTINGS"]). */
+    private val BOTTOM_NAV_ORDER = stringPreferencesKey("bottom_nav_order")
+
+    /** Set of hidden (removed) tab names (e.g. ["MOOD"]). */
+    private val BOTTOM_NAV_HIDDEN = stringSetPreferencesKey("bottom_nav_hidden")
+
+    /** Emits the current ordered list of tabs. Falls back to [MainTab.DEFAULT_ORDER]. */
+    val bottomNavOrder: Flow<List<MainTab>> = context.dataStore.data.map { preferences ->
+        val raw = preferences[BOTTOM_NAV_ORDER]
+        if (raw.isNullOrBlank()) {
+            MainTab.DEFAULT_ORDER
+        } else {
+            raw.split(",")
+                .mapNotNull { MainTab.fromNameOrNull(it.trim()) }
+                .ifEmpty { MainTab.DEFAULT_ORDER }
+        }
+    }
+
+    /** Emits the current set of hidden tabs. Defaults to empty. */
+    val bottomNavHidden: Flow<Set<MainTab>> = context.dataStore.data.map { preferences ->
+        val raw = preferences[BOTTOM_NAV_HIDDEN]
+        if (raw.isNullOrEmpty()) {
+            emptySet()
+        } else {
+            raw.mapNotNull { MainTab.fromNameOrNull(it) }.toSet()
+        }
+    }
+
+    /** Saves the full bottom-nav order (comma-separated tab names). */
+    suspend fun saveBottomNavOrder(order: List<MainTab>) {
+        context.dataStore.edit { preferences ->
+            preferences[BOTTOM_NAV_ORDER] = order.joinToString(",") { it.name }
+        }
+    }
+
+    /** Saves the set of hidden tabs. */
+    suspend fun saveBottomNavHidden(hidden: Set<MainTab>) {
+        context.dataStore.edit { preferences ->
+            preferences[BOTTOM_NAV_HIDDEN] = hidden.map { it.name }.toSet()
+        }
+    }
+
+    /** Convenience: save order and hidden in a single DataStore edit. */
+    suspend fun saveBottomNavConfig(order: List<MainTab>, hidden: Set<MainTab>) {
+        context.dataStore.edit { preferences ->
+            preferences[BOTTOM_NAV_ORDER] = order.joinToString(",") { it.name }
+            preferences[BOTTOM_NAV_HIDDEN] = hidden.map { it.name }.toSet()
+        }
     }
 }

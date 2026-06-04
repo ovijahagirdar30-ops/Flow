@@ -35,7 +35,7 @@ fun SettingsScreen(
     appVersion: String,
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToAppearance: () -> Unit = {},
-    onNavigateToLanguage: () -> Unit = {},
+    onNavigateToBottomNavConfig: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {}
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -43,7 +43,7 @@ fun SettingsScreen(
         when (item) {
             SettingsItemData.Notifications -> onNavigateToNotifications()
             SettingsItemData.Appearance -> onNavigateToAppearance()
-            SettingsItemData.Language -> onNavigateToLanguage()
+            SettingsItemData.BottomNavConfig -> onNavigateToBottomNavConfig()
             SettingsItemData.About -> onNavigateToAbout()
         }
     }
@@ -88,7 +88,7 @@ fun SettingsScreen(
                 val generalItems = listOf(
                     SettingsItemData.Notifications,
                     SettingsItemData.Appearance,
-                    SettingsItemData.Language
+                    SettingsItemData.BottomNavConfig
                 )
                 SettingsGroup(
                     items = generalItems,
@@ -129,7 +129,7 @@ private fun SettingsGroupLabel(label: String) {
 private sealed interface SettingsItemData {
     data object Notifications : SettingsItemData
     data object Appearance : SettingsItemData
-    data object Language : SettingsItemData
+    data object BottomNavConfig : SettingsItemData
     data object About : SettingsItemData
 }
 
@@ -191,18 +191,18 @@ private fun SettingsGroup(
                     )
                 }
 
-                is SettingsItemData.Language -> {
+                is SettingsItemData.BottomNavConfig -> {
                     SettingsNavigationItem(
                         icon = {
                             Icon(
                                 imageVector = ImageVector.Companion.vectorResource(
-                                    R.drawable.language_24px
+                                    R.drawable.bottom_navigation_24px
                                 ),
-                                contentDescription = stringResource(R.string.settings_language)
+                                contentDescription = stringResource(R.string.bottom_nav_config_title)
                             )
                         },
-                        headline = stringResource(R.string.settings_language),
-                        supporting = stringResource(R.string.settings_language_description),
+                        headline = stringResource(R.string.bottom_nav_config_title),
+                        supporting = stringResource(R.string.settings_bottom_nav_description),
                         shape = shape,
                         colors = itemColors,
                         onClick = onClick

@@ -27,11 +27,11 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.markel.flowstate.bottomNavItems
+import com.markel.flowstate.navigation.BottomNavScreen
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
+fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean, items: List<BottomNavScreen> = emptyList()) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val destination = navBackStackEntry?.destination
 
@@ -50,7 +50,7 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
             containerColor = Color.Transparent,
             windowInsets = ShortNavigationBarDefaults.windowInsets,
         ) {
-            bottomNavItems.forEach { screen ->
+            items.forEach { screen ->
                 val selected = destination?.hasRoute(screen.route::class) == true
                 val label = stringResource(screen.labelRes)
                 ShortNavigationBarItem(

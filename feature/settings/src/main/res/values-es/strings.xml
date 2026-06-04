@@ -13,6 +13,21 @@
     <string name="settings_about">Acerca de</string>
     <string name="settings_about_description">FlowState v%1$s</string>
 
+    <!-- Bottom nav config screen -->
+    <string name="bottom_nav_config_title">Navegación inferior</string>
+    <string name="settings_bottom_nav_description">Cambiar la configuración de la navegación inferior</string>
+    <string name="bottom_nav_visible_tabs">Pestañas visibles</string>
+    <string name="bottom_nav_hidden_tabs">Pestañas ocultas</string>
+    <string name="bottom_nav_show">Mostrar</string>
+    <string name="bottom_nav_hide">Ocultar</string>
+    <string name="bottom_nav_required">Obligatorio</string>
+    <string name="bottom_nav_drag_hint">Arrastra para reordenar</string>
+    <string name="tab_flow">Flow</string>
+    <string name="tab_calendar">Calendario</string>
+    <string name="tab_habits">Hábitos</string>
+    <string name="tab_mood">Ánimo</string>
+    <string name="tab_settings">Ajustes</string>
+
     <!-- About screen -->
     <string name="about_title">Acerca de</string>
     <string name="about_app_name">FlowState</string>

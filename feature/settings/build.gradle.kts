@@ -39,6 +39,7 @@ android {
 
 dependencies {
     implementation(project(":core:designsystem"))
+    implementation(project(":core:data"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -55,4 +56,5 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
 
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.reorderable)
 }

@@ -26,13 +26,18 @@ import com.markel.flowstate.feature.habits.details.HabitDetailScreen
 import com.markel.flowstate.feature.settings.AboutScreen
 import com.markel.flowstate.feature.settings.SettingsScreen
 import com.markel.flowstate.BuildConfig
+import com.markel.flowstate.core.data.MainTab
+import com.markel.flowstate.feature.settings.BottomNavConfigScreen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun FlowStateNavHost(
     navController: NavHostController,
     startDestination: Any,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    bottomNavOrder: List<MainTab> = MainTab.DEFAULT_ORDER,
+    bottomNavHidden: Set<MainTab> = emptySet(),
+    onBottomNavConfigChanged: (order: List<MainTab>, hidden: Set<MainTab>) -> Unit = { _, _ -> }
 ) {
     NavHost(
         navController = navController,
@@ -84,13 +89,23 @@ fun FlowStateNavHost(
                 appVersion = BuildConfig.VERSION_NAME,
                 onNavigateToNotifications = { /* TODO */ },
                 onNavigateToAppearance = { /* TODO */ },
-                onNavigateToLanguage = { /* TODO */ },
+                onNavigateToBottomNavConfig = {
+                    navController.navigate(BottomNavConfigRoute)
+                },
                 onNavigateToAbout = { navController.navigate(AboutRoute) }
             )
         }
         composable<AboutRoute> {
             AboutScreen(
                 appVersion = BuildConfig.VERSION_NAME,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable<BottomNavConfigRoute> {
+            BottomNavConfigScreen(
+                currentOrder = bottomNavOrder,
+                currentHidden = bottomNavHidden,
+                onConfigChanged = onBottomNavConfigChanged,
                 onBack = { navController.popBackStack() }
             )
         }

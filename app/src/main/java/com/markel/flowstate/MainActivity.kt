@@ -36,7 +36,8 @@ import com.markel.flowstate.navigation.FlowStateNavHost
 import com.markel.flowstate.navigation.BottomNavScreen
 import dagger.hilt.android.AndroidEntryPoint
 
-val bottomNavItems = listOf(
+// All possible bottom nav screens, used as a lookup map
+private val allBottomNavScreens = listOf(
     BottomNavScreen.Tasks,
     BottomNavScreen.Calendar,
     BottomNavScreen.Habits,
@@ -44,8 +45,6 @@ val bottomNavItems = listOf(
     BottomNavScreen.Settings
 )
 
-// Routes where the bottom bar should be displayed
-private val routesWithBottomBar = bottomNavItems.map { it.route }.toSet()
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -56,6 +55,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             val mainViewModel: MainViewModel = hiltViewModel()
             val startDestination by mainViewModel.startDestination.collectAsState()
+            val bottomNavOrder by mainViewModel.bottomNavOrder.collectAsState()
+            val bottomNavHidden by mainViewModel.bottomNavHidden.collectAsState()
+
             splashScreen.setKeepOnScreenCondition {
                 startDestination == null
             }
@@ -72,12 +74,31 @@ class MainActivity : ComponentActivity() {
                     // The bottom bar is controlled BY ROUTE, not by manual state
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val destination = navBackStackEntry?.destination
+
+                    // Build the dynamic bottom nav items based on user configuration
+                    val visibleBottomNavItems = remember(bottomNavOrder, bottomNavHidden) {
+                        val screenMap = allBottomNavScreens.associateBy { screen ->
+                            MainTab.fromRoute(screen.route)
+                        }
+                        bottomNavOrder
+                            .filter { it !in bottomNavHidden }
+                            .mapNotNull { screenMap[it] }
+                    }
+
+                    // All routes (visible + hidden) where the bottom bar should be shown
+                    val routesWithBottomBar = remember(bottomNavOrder) {
+                        val screenMap = allBottomNavScreens.associateBy { screen ->
+                            MainTab.fromRoute(screen.route)
+                        }
+                        bottomNavOrder.mapNotNull { screenMap[it]?.route }.toSet()
+                    }
+
                     // Navigation 2.8 Type-Safe routes generate fully qualified class names
                     val isBottomBarVisible = routesWithBottomBar.any { destination?.hasRoute(it::class) == true }
                     // We show the bottom bar only if the current route is one of the main tabs
                     LaunchedEffect(destination) {
                         if (isBottomBarVisible && destination != null) {
-                            val activeItem = bottomNavItems.firstOrNull { destination.hasRoute(it.route::class) }
+                            val activeItem = allBottomNavScreens.firstOrNull { destination.hasRoute(it.route::class) }
                             if (activeItem != null) {
                                 MainTab.fromRoute(activeItem.route)?.let { mainViewModel.saveLastTab(it) }
                             }
@@ -92,7 +113,8 @@ class MainActivity : ComponentActivity() {
                                     if (isBottomBarVisible) {
                                         FlowBottomBar(
                                             navController = navController,
-                                            isLandscape = isLandscape
+                                            isLandscape = isLandscape,
+                                            items = visibleBottomNavItems
                                         )
                                     }
                                 },
@@ -102,7 +124,13 @@ class MainActivity : ComponentActivity() {
                                 FlowStateNavHost(
                                     navController = navController,
                                     startDestination = startDestination!!,
-                                    modifier = Modifier.padding(innerPadding)
+                                    modifier = Modifier.padding(innerPadding),
+                                    bottomNavOrder = bottomNavOrder,
+                                    bottomNavHidden = bottomNavHidden,
+                                    onBottomNavConfigChanged = { order, hidden ->
+                                        mainViewModel.saveBottomNavConfig(order, hidden)
+                                    }
+
                                 )
                             }
                         }
