@@ -35,4 +35,8 @@
     <string name="about_developer_name">Markel</string>
     <string name="about_license">Licencia</string>
     <string name="about_license_description">Apache-2.0</string>
+
+    <!-- Notifications -->
+    <string name="settings_notifications_enabled">Haz click para desactivar desde los ajustes del sistema</string>
+    <string name="settings_notifications_disabled">Haz click para activar desde los ajustes del sistema</string>
 </resources>

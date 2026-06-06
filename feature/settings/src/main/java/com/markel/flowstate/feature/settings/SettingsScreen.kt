@@ -36,7 +36,8 @@ fun SettingsScreen(
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToAppearance: () -> Unit = {},
     onNavigateToBottomNavConfig: () -> Unit = {},
-    onNavigateToAbout: () -> Unit = {}
+    onNavigateToAbout: () -> Unit = {},
+    notificationsEnabled: Boolean = true,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val handleItemClick: (SettingsItemData) -> Unit = { item ->
@@ -93,7 +94,8 @@ fun SettingsScreen(
                 SettingsGroup(
                     items = generalItems,
                     appVersion = appVersion,
-                    onItemClick = handleItemClick
+                    onItemClick = handleItemClick,
+                    notificationsEnabled = notificationsEnabled
                 )
             }
 
@@ -103,7 +105,8 @@ fun SettingsScreen(
                 SettingsGroup(
                     items = infoItems,
                     appVersion = appVersion,
-                    onItemClick = handleItemClick
+                    onItemClick = handleItemClick,
+                    notificationsEnabled = notificationsEnabled
                 )
             }
         }
@@ -141,7 +144,8 @@ private sealed interface SettingsItemData {
 private fun SettingsGroup(
     items: List<SettingsItemData>,
     appVersion: String,
-    onItemClick: (SettingsItemData) -> Unit
+    onItemClick: (SettingsItemData) -> Unit,
+    notificationsEnabled: Boolean
 ) {
     Column(
         modifier = Modifier.Companion.fillMaxWidth(),
@@ -159,14 +163,16 @@ private fun SettingsGroup(
                     SettingsNavigationItem(
                         icon = {
                             Icon(
-                                imageVector = ImageVector.Companion.vectorResource(
-                                    R.drawable.notifications_24px
-                                ),
+                                imageVector =
+                                    if (notificationsEnabled) ImageVector.Companion.vectorResource(R.drawable.notifications_24px)
+                                    else ImageVector.Companion.vectorResource(R.drawable.notifications_off_24px),
                                 contentDescription = stringResource(R.string.settings_notifications)
                             )
                         },
                         headline = stringResource(R.string.settings_notifications),
-                        supporting = stringResource(R.string.settings_notifications_description),
+                        supporting =
+                            if (notificationsEnabled) stringResource(R.string.settings_notifications_enabled)
+                            else stringResource(R.string.settings_notifications_disabled),
                         shape = shape,
                         colors = itemColors,
                         onClick = onClick
