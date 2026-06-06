@@ -28,6 +28,7 @@ object AboutRoute
 @Serializable
 object BottomNavConfigRoute
 
+@Serializable object AppearanceRoute
 @Serializable
 data class TaskEditorRoute(val taskId: Int)
 

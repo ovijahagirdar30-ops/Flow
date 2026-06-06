@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -57,13 +58,18 @@ class MainActivity : ComponentActivity() {
             val startDestination by mainViewModel.startDestination.collectAsState()
             val bottomNavOrder by mainViewModel.bottomNavOrder.collectAsState()
             val bottomNavHidden by mainViewModel.bottomNavHidden.collectAsState()
+            val themeMode by mainViewModel.themeMode.collectAsStateWithLifecycle()
+            val dynamicColor by mainViewModel.dynamicColor.collectAsStateWithLifecycle()
 
             splashScreen.setKeepOnScreenCondition {
                 startDestination == null
             }
 
             if (startDestination != null) {
-                FlowStateTheme {
+                FlowStateTheme(
+                    themeMode = themeMode,
+                    dynamicColor = dynamicColor
+                ) {
                     // Check Orientation
                     val configuration = LocalConfiguration.current
                     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -129,8 +135,11 @@ class MainActivity : ComponentActivity() {
                                     bottomNavHidden = bottomNavHidden,
                                     onBottomNavConfigChanged = { order, hidden ->
                                         mainViewModel.saveBottomNavConfig(order, hidden)
-                                    }
-
+                                    },
+                                    themeMode = themeMode,
+                                    dynamicColor = dynamicColor,
+                                    onThemeModeChange = { mainViewModel.saveThemeMode(it) },
+                                    onDynamicColorChange = { mainViewModel.saveDynamicColor(it) },
                                 )
                             }
                         }

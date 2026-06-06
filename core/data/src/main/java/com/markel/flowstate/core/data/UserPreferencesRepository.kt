@@ -90,4 +90,34 @@ class UserPreferencesRepository @Inject constructor(
             preferences[BOTTOM_NAV_HIDDEN] = hidden.map { it.name }.toSet()
         }
     }
+
+    // ── Theme configuration ───────────────────────────────────
+
+    private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
+    private val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
+
+    val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
+        val name = preferences[THEME_MODE_KEY] ?: ThemeMode.SYSTEM.name
+        try {
+            ThemeMode.valueOf(name)
+        } catch (_: IllegalArgumentException) {
+            ThemeMode.SYSTEM
+        }
+    }
+
+    val dynamicColor: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[DYNAMIC_COLOR_KEY] ?: false
+    }
+
+    suspend fun saveThemeMode(mode: ThemeMode) {
+        context.dataStore.edit { preferences ->
+            preferences[THEME_MODE_KEY] = mode.name
+        }
+    }
+
+    suspend fun saveDynamicColor(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[DYNAMIC_COLOR_KEY] = enabled
+        }
+    }
 }

@@ -3,6 +3,7 @@ package com.markel.flowstate
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.data.MainTab
+import com.markel.flowstate.core.data.ThemeMode
 import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +31,22 @@ class MainViewModel @Inject constructor(
     /** Current set of hidden tabs. */
     val bottomNavHidden: StateFlow<Set<MainTab>> = userPreferencesRepository.bottomNavHidden
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** Current theme mode (system, light, dark)*/
+    val themeMode: StateFlow<ThemeMode> = userPreferencesRepository.themeMode
+    .stateIn(
+    scope = viewModelScope,
+    started = SharingStarted.WhileSubscribed(5000),
+    initialValue = ThemeMode.SYSTEM
+    )
+
+    /** Whether the dynamic color is activated or not*/
+    val dynamicColor: StateFlow<Boolean> = userPreferencesRepository.dynamicColor
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
 
     init {
         viewModelScope.launch {
@@ -60,6 +77,18 @@ class MainViewModel @Inject constructor(
     fun saveBottomNavConfig(order: List<MainTab>, hidden: Set<MainTab>) {
         viewModelScope.launch {
             userPreferencesRepository.saveBottomNavConfig(order, hidden)
+        }
+    }
+
+    fun saveThemeMode(mode: ThemeMode) {
+        viewModelScope.launch {
+            userPreferencesRepository.saveThemeMode(mode)
+        }
+    }
+
+    fun saveDynamicColor(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.saveDynamicColor(enabled)
         }
     }
 

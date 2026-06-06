@@ -34,8 +34,10 @@ import com.markel.flowstate.feature.settings.AboutScreen
 import com.markel.flowstate.feature.settings.SettingsScreen
 import com.markel.flowstate.BuildConfig
 import com.markel.flowstate.core.data.MainTab
+import com.markel.flowstate.core.data.ThemeMode
 import com.markel.flowstate.feature.settings.BottomNavConfigScreen
 import com.markel.flowstate.core.notifications.NotificationSettingsIntentProvider
+import com.markel.flowstate.feature.settings.AppearanceScreen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -45,7 +47,11 @@ fun FlowStateNavHost(
     modifier: Modifier = Modifier,
     bottomNavOrder: List<MainTab> = MainTab.DEFAULT_ORDER,
     bottomNavHidden: Set<MainTab> = emptySet(),
-    onBottomNavConfigChanged: (order: List<MainTab>, hidden: Set<MainTab>) -> Unit = { _, _ -> }
+    onBottomNavConfigChanged: (order: List<MainTab>, hidden: Set<MainTab>) -> Unit = { _, _ -> },
+    themeMode: ThemeMode,
+    dynamicColor: Boolean,
+    onThemeModeChange: (ThemeMode) -> Unit,
+    onDynamicColorChange: (Boolean) -> Unit,
 ) {
     NavHost(
         navController = navController,
@@ -121,7 +127,7 @@ fun FlowStateNavHost(
                         context.startActivity(intent)
                     }
                 },
-                onNavigateToAppearance = { /* TODO */ },
+                onNavigateToAppearance = { navController.navigate(AppearanceRoute) },
                 onNavigateToBottomNavConfig = {
                     navController.navigate(BottomNavConfigRoute)
                 },
@@ -140,6 +146,15 @@ fun FlowStateNavHost(
                 currentOrder = bottomNavOrder,
                 currentHidden = bottomNavHidden,
                 onConfigChanged = onBottomNavConfigChanged,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable<AppearanceRoute> {
+            AppearanceScreen(
+                currentThemeMode = themeMode,
+                currentDynamicColor = dynamicColor,
+                onThemeModeChange = onThemeModeChange,
+                onDynamicColorChange = onDynamicColorChange,
                 onBack = { navController.popBackStack() }
             )
         }
