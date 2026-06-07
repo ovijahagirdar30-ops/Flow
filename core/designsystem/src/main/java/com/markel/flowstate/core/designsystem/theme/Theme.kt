@@ -321,7 +321,9 @@ fun FlowStateTheme(
         SideEffect {
             val window = (view.context as Activity).window
             window.isNavigationBarContrastEnforced = false  // remove translucent scrim behind button navigation bars
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 
