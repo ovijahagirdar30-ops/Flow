@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.markel.flowstate.core.designsystem.theme.LocalDarkTheme
 import com.markel.flowstate.feature.tasks.R
 
 @Composable
@@ -53,7 +54,7 @@ fun Icon(
     size: Dp,
     modifier: Modifier = Modifier
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = LocalDarkTheme.current
     val surfaceColor = MaterialTheme.colorScheme.surface
 
     val baseColor = if (isDark) {

@@ -287,6 +287,8 @@ val LocalPriorityColors = staticCompositionLocalOf {
     )
 }
 
+val LocalDarkTheme = staticCompositionLocalOf { false }
+
 val unspecified_scheme = ColorFamily(
     Color.Unspecified, Color.Unspecified, Color.Unspecified, Color.Unspecified
 )
@@ -316,16 +318,15 @@ fun FlowStateTheme(
     val priorityColorScheme = if (darkTheme) darkPriorityScheme else lightPriorityScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
-        val darkMode = isSystemInDarkTheme()
         SideEffect {
             val window = (view.context as Activity).window
             window.isNavigationBarContrastEnforced = false  // remove translucent scrim behind button navigation bars
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkMode
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
         }
     }
 
     CompositionLocalProvider(
-        values = arrayOf(LocalPriorityColors provides priorityColorScheme)
+        values = arrayOf(LocalPriorityColors provides priorityColorScheme, LocalDarkTheme provides darkTheme)
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
