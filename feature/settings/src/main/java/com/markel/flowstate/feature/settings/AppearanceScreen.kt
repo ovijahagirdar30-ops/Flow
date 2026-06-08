@@ -81,40 +81,44 @@ fun AppearanceScreen(
             // ── App theme ──
             ListItem(
                 headlineContent = {
-                    Text(text = stringResource(R.string.settings_app_theme))
+                    Text(
+                        text = stringResource(R.string.settings_app_theme),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
+                supportingContent = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(groupContainerColor)
+                            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                    ) {
+                        ThemeMode.entries.forEach { mode ->
+                            ToggleButton(
+                                checked = currentThemeMode == mode,
+                                onCheckedChange = { onThemeModeChange(mode) },
+                                modifier = Modifier.weight(1f),
+                                colors = ToggleButtonDefaults.toggleButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                                ),
+                            ) {
+                                Text(
+                                    text = when (mode) {
+                                        ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                                        ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                                        ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                                    }
+                                )
+                            }
+                        }
+                    }
                 },
                 colors = ListItemDefaults.colors(
                     containerColor = groupContainerColor
                 ),
                 modifier = Modifier.clip(settingsItemShape(index = 0, totalItems = 2))
             )
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(groupContainerColor)
-                    .padding(start = 16.dp, end = 16.dp, top=0.dp, bottom = 12.dp),
-            ) {
-                ThemeMode.entries.forEach { mode ->
-                    ToggleButton(
-                        checked = currentThemeMode == mode,
-                        onCheckedChange = { onThemeModeChange(mode) },
-                        modifier = Modifier.weight(1f),
-                        colors = ToggleButtonDefaults.toggleButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        ),
-                    ) {
-                        Text(
-                            text = when (mode) {
-                                ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
-                                ThemeMode.LIGHT -> stringResource(R.string.theme_light)
-                                ThemeMode.DARK -> stringResource(R.string.theme_dark)
-                            }
-                        )
-                    }
-                }
-            }
 
             // ── Dynamic color ──
             ListItem(
