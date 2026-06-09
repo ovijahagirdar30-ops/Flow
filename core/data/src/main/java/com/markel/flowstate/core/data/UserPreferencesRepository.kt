@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -19,8 +20,8 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class UserPreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    val lastTabRoute: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[stringPreferencesKey("last_tab_route")]
+    val lastTab: Flow<MainTab> = context.dataStore.data.map { preferences ->
+        MainTab.fromName(preferences[stringPreferencesKey("last_tab_route")])
     }
     private val CALENDAR_VIEW_MODE = stringPreferencesKey("calendar_view_mode")
 
@@ -28,13 +29,95 @@ class UserPreferencesRepository @Inject constructor(
         prefs[CALENDAR_VIEW_MODE]
     }
 
-    suspend fun saveLastTabRoute(route: String) {
+    suspend fun saveLastTab(tab: MainTab) {
         context.dataStore.edit { preferences ->
-            preferences[stringPreferencesKey("last_tab_route")] = route
+            preferences[stringPreferencesKey("last_tab_route")] = tab.name
         }
     }
 
     suspend fun saveCalendarViewMode(mode: String) {
         context.dataStore.edit { it[CALENDAR_VIEW_MODE] = mode }
+    }
+
+    // ── Bottom navigation configuration ───────────────────────────────────
+
+    /** Ordered list of tab names (e.g. ["TASKS","CALENDAR","HABITS","MOOD","SETTINGS"]). */
+    private val BOTTOM_NAV_ORDER = stringPreferencesKey("bottom_nav_order")
+
+    /** Set of hidden (removed) tab names (e.g. ["MOOD"]). */
+    private val BOTTOM_NAV_HIDDEN = stringSetPreferencesKey("bottom_nav_hidden")
+
+    /** Emits the current ordered list of tabs. Falls back to [MainTab.DEFAULT_ORDER]. */
+    val bottomNavOrder: Flow<List<MainTab>> = context.dataStore.data.map { preferences ->
+        val raw = preferences[BOTTOM_NAV_ORDER]
+        if (raw.isNullOrBlank()) {
+            MainTab.DEFAULT_ORDER
+        } else {
+            raw.split(",")
+                .mapNotNull { MainTab.fromNameOrNull(it.trim()) }
+                .ifEmpty { MainTab.DEFAULT_ORDER }
+        }
+    }
+
+    /** Emits the current set of hidden tabs. Defaults to empty. */
+    val bottomNavHidden: Flow<Set<MainTab>> = context.dataStore.data.map { preferences ->
+        val raw = preferences[BOTTOM_NAV_HIDDEN]
+        if (raw.isNullOrEmpty()) {
+            emptySet()
+        } else {
+            raw.mapNotNull { MainTab.fromNameOrNull(it) }.toSet()
+        }
+    }
+
+    /** Saves the full bottom-nav order (comma-separated tab names). */
+    suspend fun saveBottomNavOrder(order: List<MainTab>) {
+        context.dataStore.edit { preferences ->
+            preferences[BOTTOM_NAV_ORDER] = order.joinToString(",") { it.name }
+        }
+    }
+
+    /** Saves the set of hidden tabs. */
+    suspend fun saveBottomNavHidden(hidden: Set<MainTab>) {
+        context.dataStore.edit { preferences ->
+            preferences[BOTTOM_NAV_HIDDEN] = hidden.map { it.name }.toSet()
+        }
+    }
+
+    /** Convenience: save order and hidden in a single DataStore edit. */
+    suspend fun saveBottomNavConfig(order: List<MainTab>, hidden: Set<MainTab>) {
+        context.dataStore.edit { preferences ->
+            preferences[BOTTOM_NAV_ORDER] = order.joinToString(",") { it.name }
+            preferences[BOTTOM_NAV_HIDDEN] = hidden.map { it.name }.toSet()
+        }
+    }
+
+    // ── Theme configuration ───────────────────────────────────
+
+    private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
+    private val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
+
+    val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
+        val name = preferences[THEME_MODE_KEY] ?: ThemeMode.SYSTEM.name
+        try {
+            ThemeMode.valueOf(name)
+        } catch (_: IllegalArgumentException) {
+            ThemeMode.SYSTEM
+        }
+    }
+
+    val dynamicColor: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[DYNAMIC_COLOR_KEY] ?: false
+    }
+
+    suspend fun saveThemeMode(mode: ThemeMode) {
+        context.dataStore.edit { preferences ->
+            preferences[THEME_MODE_KEY] = mode.name
+        }
+    }
+
+    suspend fun saveDynamicColor(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[DYNAMIC_COLOR_KEY] = enabled
+        }
     }
 }

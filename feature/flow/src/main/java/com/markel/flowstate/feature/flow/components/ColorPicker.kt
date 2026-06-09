@@ -55,7 +55,7 @@ private val ideaColorPairs: List<Pair<Long, Long>> = listOf(
 @Composable
 fun Long.resolveIdeaColor(): Long {
     if (this == COLOR_TRANSPARENT) return COLOR_TRANSPARENT
-    val dark = isSystemInDarkTheme()
+    val dark = com.markel.flowstate.core.designsystem.theme.LocalDarkTheme.current
     val pair = ideaColorPairs.find { it.first == this || it.second == this }
     return when {
         pair == null -> this  // unknown color, use as-is

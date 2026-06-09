@@ -15,6 +15,7 @@ import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
 import com.markel.flowstate.core.notifications.ReminderScheduler
 import com.markel.flowstate.core.notifications.buildAlarmItems
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,7 +50,8 @@ class FlowViewModel @Inject constructor(
     private val checkListRepository: CheckListRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val reminderScheduler: ReminderScheduler,
-    private val deleteTaskUseCase: DeleteTaskUseCase
+    private val deleteTaskUseCase: DeleteTaskUseCase,
+    private val applicationScope: CoroutineScope
 
 ) : ViewModel(), DefaultLifecycleObserver {
 
@@ -141,7 +143,7 @@ class FlowViewModel @Inject constructor(
         deleteJobs[task.id]?.cancel()
 
         // Start the countdown to permanent deletion
-        deleteJobs[task.id] = viewModelScope.launch {
+        deleteJobs[task.id] = applicationScope.launch {
             delay(3500L)
             // Time's up – permanently delete from DB
             reminderScheduler.cancel(task.id)

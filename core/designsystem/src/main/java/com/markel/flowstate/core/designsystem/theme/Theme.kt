@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.markel.flowstate.core.data.ThemeMode
 
 private val lightScheme = lightColorScheme(
     primary = primaryLight,
@@ -286,17 +287,25 @@ val LocalPriorityColors = staticCompositionLocalOf {
     )
 }
 
+val LocalDarkTheme = staticCompositionLocalOf { false }
+
 val unspecified_scheme = ColorFamily(
     Color.Unspecified, Color.Unspecified, Color.Unspecified, Color.Unspecified
 )
 
 @Composable
 fun FlowStateTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
     content: @Composable() () -> Unit
 ) {
+    val darkTheme = when (themeMode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+
     val colorScheme = when {
       dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
           val context = LocalContext.current
@@ -309,16 +318,17 @@ fun FlowStateTheme(
     val priorityColorScheme = if (darkTheme) darkPriorityScheme else lightPriorityScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
-        val darkMode = isSystemInDarkTheme()
         SideEffect {
             val window = (view.context as Activity).window
             window.isNavigationBarContrastEnforced = false  // remove translucent scrim behind button navigation bars
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkMode
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 
     CompositionLocalProvider(
-        values = arrayOf(LocalPriorityColors provides priorityColorScheme)
+        values = arrayOf(LocalPriorityColors provides priorityColorScheme, LocalDarkTheme provides darkTheme)
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

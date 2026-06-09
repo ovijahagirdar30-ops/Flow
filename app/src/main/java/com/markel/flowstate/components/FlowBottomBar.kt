@@ -25,15 +25,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.markel.flowstate.bottomNavItems
+import com.markel.flowstate.navigation.BottomNavScreen
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
-    // We get the current route to know which item to select
+fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean, items: List<BottomNavScreen> = emptyList()) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val destination = navBackStackEntry?.destination
 
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalDivider(
@@ -41,7 +41,6 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
             color = MaterialTheme.colorScheme.outlineVariant
         )
 
-        // ── ShortNavigationBar (M3 Expressive, 64dp) ──────────────
         ShortNavigationBar(
             arrangement = if (isLandscape) {
                 ShortNavigationBarArrangement.Centered
@@ -51,14 +50,13 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean) {
             containerColor = Color.Transparent,
             windowInsets = ShortNavigationBarDefaults.windowInsets,
         ) {
-            bottomNavItems.forEach { screen ->
-                val selected = currentRoute == screen.route
+            items.forEach { screen ->
+                val selected = destination?.hasRoute(screen.route::class) == true
                 val label = stringResource(screen.labelRes)
                 ShortNavigationBarItem(
                     selected = selected,
                     onClick = {
-                        // Navigate to the new screen
-                        if (currentRoute != screen.route) {
+                        if (!selected) {
                             navController.navigate(screen.route) {
                                 // Avoid accumulating screens in the back stack
                                 popUpTo(navController.graph.startDestinationId) {

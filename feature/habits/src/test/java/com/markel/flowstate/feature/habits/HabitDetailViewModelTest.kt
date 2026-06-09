@@ -70,7 +70,7 @@ class HabitDetailViewModelTest {
     )
 
     private fun savedStateHandle(habitId: Int = 1) =
-        SavedStateHandle(mapOf("habitId" to habitId.toString()))
+        SavedStateHandle(mapOf("habitId" to habitId))
 
     private fun buildViewModel(habitId: Int = 1) = HabitDetailViewModel(
         savedStateHandle = savedStateHandle(habitId),
@@ -184,9 +184,9 @@ class HabitDetailViewModelTest {
     @Test
     fun calculateDayOfWeekCompletions_groupsCorrectlyAsRates() = runTest {
         // GIVEN - 2 Mondays and 1 Friday, habit created 30 days ago
-        val monday1 = LocalDate.now().with(DayOfWeek.MONDAY)
-        val monday2 = monday1.minusWeeks(1)
-        val friday = LocalDate.now().with(DayOfWeek.FRIDAY)
+        val monday1 = LocalDate.now().minusWeeks(1).with(DayOfWeek.MONDAY)
+        val monday2 = monday1.minusWeeks(2)
+        val friday = LocalDate.now().minusWeeks(1).with(DayOfWeek.FRIDAY)
         coEvery { getHabitById(1) } returns habit()
         coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(listOf(monday1, monday2, friday))
 
@@ -216,7 +216,7 @@ class HabitDetailViewModelTest {
         // GIVEN - Target is 10f
         val today = LocalDate.now()
         val entries = listOf(
-            numericEntry(today, 12f),               // Valid
+            numericEntry(today, 12f),  // Valid
             numericEntry(today.minusDays(1), 10f),  // Valid
             numericEntry(today.minusDays(2), 5f),   // Invalid (breaks streak)
             numericEntry(today.minusDays(3), 15f)   // Valid but broken
@@ -260,6 +260,7 @@ class HabitDetailViewModelTest {
     @Test
     fun calculateMonthlyProgress_calculatesCorrectlyForCurrentMonth() = runTest {
         // GIVEN - Target is 5f daily
+        val today = LocalDate.now()
         val currentMonth = YearMonth.now()
         val day1 = currentMonth.atDay(1)
         val day2 = currentMonth.atDay(2)
@@ -278,15 +279,21 @@ class HabitDetailViewModelTest {
         viewModel.uiState.test {
             val progress = awaitItem().monthlyProgress
             assertNotNull(progress)
-            assertEquals(12f, progress!!.currentValue) // 10 + 2
-            assertEquals(1, progress.daysCompleted) // Only one day met the 5f target
-            assertEquals(6f, progress.dailyAverage) // 12f / 2 days with data
+            if (today.dayOfMonth == 1) {
+                assertEquals(10f, progress!!.currentValue)
+                assertEquals(1, progress.daysCompleted)
+                assertEquals(10f, progress.dailyAverage) // 10f / 1 day
+            } else {
+                assertEquals(12f, progress!!.currentValue) // 10 + 2
+                assertEquals(1, progress.daysCompleted) // Only one day met the 5f target
+                assertEquals(6f, progress.dailyAverage) // 12f / 2 days with data
+            }
         }
     }
 
     @Test
     fun calculateDayOfWeekAverages_averagesOverAllOpportunities() = runTest {
-        // GIVEN - Two Mondays with values 10 and 20, habit created 30 days ag
+        // GIVEN - Two Mondays with values 10 and 20, habit created 30 days ago
         val monday1 = LocalDate.now().with(DayOfWeek.MONDAY)
         val monday2 = monday1.minusWeeks(1)
         val entries = listOf(
