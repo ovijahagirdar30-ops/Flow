@@ -36,9 +36,10 @@
 - **Calendar** view
 - **Habit Tracking**: Build daily routines and track streaks
 - **Reminders**
+- **Widgets** for basic habits
 
 ### In Development
-- **Widgets**: Home screen widgets for quick access
+- **Widgets**: More widgets
 - **Mood Tracking**: Log daily emotions and view trends
 - **Improve UI**: in the tasks and habits module
 - **Themes**: More customization options
