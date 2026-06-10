@@ -19,4 +19,9 @@ interface IdeaDao {
 
     @Update
     suspend fun updateIdeas(ideas: List<IdeaEntity>)
+
+    // ── One-shot query (for backup) ──────────────────────────────────
+
+    @Query("SELECT * FROM ideas ORDER BY position ASC, createdAt DESC")
+    suspend fun getAllIdeasOnce(): List<IdeaEntity>
 }

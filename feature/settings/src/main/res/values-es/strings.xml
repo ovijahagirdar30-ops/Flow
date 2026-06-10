@@ -50,4 +50,16 @@
     <string name="settings_dynamic_color">Color dinámico</string>
     <string name="settings_dynamic_color_desc">Adaptar colores al fondo de pantalla (Android 12+)</string>
     <string name="settings_dynamic_color_unavailable">Requiere Android 12 o superior</string>
+
+
+    <!-- Integrations -->
+    <string name="settings_integrations">Integraciones</string>
+    <string name="settings_integrations_description">Exporta y restaura tus datos</string>
+
+    <!-- Backup screen -->
+    <string name="backup_title">Copia de seguridad</string>
+    <string name="backup_export">Exportar datos</string>
+    <string name="backup_export_description">Guarda todos tus datos a un archivo JSON</string>
+    <string name="backup_restore">Restaurar</string>
+    <string name="backup_restore_description">Restaurar datos desde un archivo JSON</string>
 </resources>
