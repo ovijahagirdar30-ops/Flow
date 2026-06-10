@@ -120,6 +120,9 @@ fun SettingsScreen(
 
             // ── Info group ─────────────────────────────────────
             item {
+                SettingsGroupLabel(stringResource(R.string.settings_info))
+            }
+            item {
                 val infoItems = listOf(SettingsItemData.About)
                 SettingsGroup(
                     items = infoItems,
