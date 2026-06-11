@@ -61,4 +61,7 @@ dependencies {
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
+
+    testImplementation(project(":core:testing"))
+    testImplementation(libs.mockk)
 }
