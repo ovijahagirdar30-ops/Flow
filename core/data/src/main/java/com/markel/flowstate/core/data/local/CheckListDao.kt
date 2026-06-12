@@ -41,4 +41,10 @@ interface CheckListDao {
 
         return finalId
     }
+
+    // ── One-shot query (for backup) ──────────────────────────────────
+
+    @Transaction
+    @Query("SELECT * FROM checklists ORDER BY position ASC")
+    suspend fun getAllListsOnce(): List<CheckListWithItems>
 }

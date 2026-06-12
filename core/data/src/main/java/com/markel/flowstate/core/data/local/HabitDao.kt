@@ -31,7 +31,7 @@ interface HabitDao {
     @Query("SELECT * FROM habit_entries WHERE habitId = :habitId AND completedAt = :epochDay")
     suspend fun getEntry(habitId: Int, epochDay: Long): HabitEntryEntity?
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEntry(entry: HabitEntryEntity)
 
     @Query("DELETE FROM habit_entries WHERE habitId = :habitId AND completedAt = :epochDay")
@@ -65,5 +65,17 @@ interface HabitDao {
 
     @Query("DELETE FROM habit_numeric_entries WHERE habitId = :habitId AND epochDay = :epochDay")
     suspend fun deleteNumericEntry(habitId: Int, epochDay: Long)
+
+    // ── One-shot queries (for backup) ────────────────────────────────
+
+    @Transaction
+    @Query("SELECT * FROM habits")
+    suspend fun getAllHabitsOnce(): List<HabitWithEntries>
+
+    @Query("SELECT * FROM habit_entries")
+    suspend fun getAllEntriesOnce(): List<HabitEntryEntity>
+
+    @Query("SELECT * FROM habit_numeric_entries")
+    suspend fun getAllNumericEntriesOnce(): List<HabitNumericEntryEntity>
 
 }

@@ -36,6 +36,7 @@ fun SettingsScreen(
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToAppearance: () -> Unit = {},
     onNavigateToBottomNavConfig: () -> Unit = {},
+    onNavigateToIntegrations: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
     notificationsEnabled: Boolean = true,
 ) {
@@ -45,6 +46,7 @@ fun SettingsScreen(
             SettingsItemData.Notifications -> onNavigateToNotifications()
             SettingsItemData.Appearance -> onNavigateToAppearance()
             SettingsItemData.BottomNavConfig -> onNavigateToBottomNavConfig()
+            SettingsItemData.Integrations -> onNavigateToIntegrations()
             SettingsItemData.About -> onNavigateToAbout()
         }
     }
@@ -99,7 +101,27 @@ fun SettingsScreen(
                 )
             }
 
+            // ── Integrations group ──────────────────────────────
+            item {
+                SettingsGroupLabel(stringResource(R.string.settings_integrations))
+            }
+
+            item {
+                val integrationItems = listOf(
+                    SettingsItemData.Integrations
+                )
+                SettingsGroup(
+                    items = integrationItems,
+                    appVersion = appVersion,
+                    onItemClick = handleItemClick,
+                    notificationsEnabled = notificationsEnabled
+                )
+            }
+
             // ── Info group ─────────────────────────────────────
+            item {
+                SettingsGroupLabel(stringResource(R.string.settings_info))
+            }
             item {
                 val infoItems = listOf(SettingsItemData.About)
                 SettingsGroup(
@@ -133,6 +155,7 @@ private sealed interface SettingsItemData {
     data object Notifications : SettingsItemData
     data object Appearance : SettingsItemData
     data object BottomNavConfig : SettingsItemData
+    data object Integrations : SettingsItemData
     data object About : SettingsItemData
 }
 
@@ -209,6 +232,24 @@ private fun SettingsGroup(
                         },
                         headline = stringResource(R.string.bottom_nav_config_title),
                         supporting = stringResource(R.string.settings_bottom_nav_description),
+                        shape = shape,
+                        colors = itemColors,
+                        onClick = onClick
+                    )
+                }
+
+                is SettingsItemData.Integrations -> {
+                    SettingsNavigationItem(
+                        icon = {
+                            Icon(
+                                imageVector = ImageVector.Companion.vectorResource(
+                                    R.drawable.download_for_offline_24px
+                                ),
+                                contentDescription = stringResource(R.string.backup_title)
+                            )
+                        },
+                        headline = stringResource(R.string.backup_title),
+                        supporting = stringResource(R.string.settings_integrations_description),
                         shape = shape,
                         colors = itemColors,
                         onClick = onClick

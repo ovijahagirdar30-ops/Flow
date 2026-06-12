@@ -75,4 +75,10 @@ interface TaskDao {
 
     @Query("UPDATE subtasks SET reminderTime = NULL WHERE id = :subTaskId")
     suspend fun clearSubTaskReminder(subTaskId: String)
+
+    // ── One-shot queries (for backup) ────────────────────────────────
+
+    @Transaction
+    @Query("SELECT * FROM tasks ORDER BY position ASC")
+    suspend fun getAllTasksOnce(): List<TaskWithSubTasks>
 }

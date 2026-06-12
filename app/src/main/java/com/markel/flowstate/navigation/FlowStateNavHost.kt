@@ -38,6 +38,7 @@ import com.markel.flowstate.core.data.ThemeMode
 import com.markel.flowstate.feature.settings.BottomNavConfigScreen
 import com.markel.flowstate.core.notifications.NotificationSettingsIntentProvider
 import com.markel.flowstate.feature.settings.AppearanceScreen
+import com.markel.flowstate.feature.settings.BackupScreen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -131,6 +132,9 @@ fun FlowStateNavHost(
                 onNavigateToBottomNavConfig = {
                     navController.navigate(BottomNavConfigRoute)
                 },
+                onNavigateToIntegrations = {
+                    navController.navigate(IntegrationsRoute)
+                },
                 onNavigateToAbout = { navController.navigate(AboutRoute) },
                 notificationsEnabled = notificationsEnabled,
             )
@@ -155,6 +159,11 @@ fun FlowStateNavHost(
                 currentDynamicColor = dynamicColor,
                 onThemeModeChange = onThemeModeChange,
                 onDynamicColorChange = onDynamicColorChange,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable<IntegrationsRoute> {
+            BackupScreen(
                 onBack = { navController.popBackStack() }
             )
         }

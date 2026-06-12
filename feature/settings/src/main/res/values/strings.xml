@@ -50,4 +50,16 @@
     <string name="settings_dynamic_color">Dynamic color</string>
     <string name="settings_dynamic_color_desc">Adapt app colors to your wallpaper (Android 12+)</string>
     <string name="settings_dynamic_color_unavailable">Requires Android 12 or above</string>
+
+
+    <!-- Integrations -->
+    <string name="settings_integrations">Integrations</string>
+    <string name="settings_integrations_description">Export and restore your data</string>
+
+    <!-- Backup screen -->
+    <string name="backup_title">Backup</string>
+    <string name="backup_export">Export data</string>
+    <string name="backup_export_description">Save all your data to a JSON file</string>
+    <string name="backup_restore">Restore</string>
+    <string name="backup_restore_description">Restore data from a backup file</string>
 </resources>
