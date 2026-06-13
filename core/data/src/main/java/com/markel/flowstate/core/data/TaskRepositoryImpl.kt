@@ -77,7 +77,8 @@ class TaskRepositoryImpl @Inject constructor(
             dueDate = this.task.dueDate,
             completedAt = this.task.completedAt,
             reminderTime = this.task.reminderTime,
-            subTasks = this.subTasks.map { it.toDomain() }
+            subTasks = this.subTasks.map { it.toDomain() },
+            categoryId = this.task.categoryId
         )
     }
 
@@ -105,7 +106,8 @@ class TaskRepositoryImpl @Inject constructor(
             priority = this.priority.ordinal,
             dueDate = this.dueDate,
             completedAt = this.completedAt,
-            reminderTime = this.reminderTime
+            reminderTime = this.reminderTime,
+            categoryId = this.categoryId
         )
     }
 

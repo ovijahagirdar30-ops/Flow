@@ -1,5 +1,6 @@
 package com.markel.flowstate.core.data.backup
 
+import com.markel.flowstate.core.data.local.CategoryDao
 import com.markel.flowstate.core.data.local.CheckListDao
 import com.markel.flowstate.core.data.local.HabitDao
 import com.markel.flowstate.core.data.local.IdeaDao
@@ -13,7 +14,8 @@ class BackupRepositoryImpl @Inject constructor(
     private val taskDao: TaskDao,
     private val ideaDao: IdeaDao,
     private val checkListDao: CheckListDao,
-    private val habitDao: HabitDao
+    private val habitDao: HabitDao,
+    private val categoryDao: CategoryDao
 ) : BackupRepository {
 
     /** Lenient parser — ignores unknown keys so older backups still load. */
@@ -36,7 +38,8 @@ class BackupRepositoryImpl @Inject constructor(
             checkListItems = allListsWithItems.flatMap { it.items.map { i -> i.toSchema() } },
             habits = habitDao.getAllHabitsOnce().map { it.habit.toSchema() },
             habitEntries = habitDao.getAllEntriesOnce().map { it.toSchema() },
-            habitNumericEntries = habitDao.getAllNumericEntriesOnce().map { it.toSchema() }
+            habitNumericEntries = habitDao.getAllNumericEntriesOnce().map { it.toSchema() },
+            categories = categoryDao.getAllCategoriesOnce().map { it.toSchema() }
         )
 
         exportJson.encodeToString(FlowStateExport.serializer(), export)
@@ -49,11 +52,12 @@ class BackupRepositoryImpl @Inject constructor(
             try {
                 val data = lenientJson.decodeFromString<FlowStateExport>(json)
 
-                if (data.schemaVersion != FlowStateExport.CURRENT_SCHEMA_VERSION) {
+                if (data.schemaVersion > FlowStateExport.CURRENT_SCHEMA_VERSION) {
                     return@withContext RestoreResult.Error(RestoreErrorType.SCHEMA_MISMATCH)
                 }
 
                 // Additive restore — upsert everything
+                data.categories.map { it.toEntity() }.forEach { categoryDao.upsertCategory(it) }
                 data.tasks.map { it.toEntity() }.forEach { taskDao.upsertTaskEntity(it) }
                 if (data.subTasks.isNotEmpty()) taskDao.insertSubTasks(data.subTasks.map { it.toEntity() })
                 data.ideas.map { it.toEntity() }.forEach { ideaDao.upsertIdea(it) }

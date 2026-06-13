@@ -32,5 +32,6 @@ data class Task(
     val dueDate: Long? = null,
     val completedAt: Long? = null,
     val reminderTime: Long? = null,
+    val categoryId: Int? = null,
     val subTasks: List<SubTask> = emptyList()
 )

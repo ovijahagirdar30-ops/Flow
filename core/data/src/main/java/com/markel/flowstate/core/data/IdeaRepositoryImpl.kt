@@ -27,6 +27,6 @@ class IdeaRepositoryImpl @Inject constructor(
     }
 
     // Mappers
-    private fun IdeaEntity.toDomain() = Idea(id, title, content, createdAt, color, position)
-    private fun Idea.toEntity() = IdeaEntity(id, title, content, createdAt, color, position)
+    private fun IdeaEntity.toDomain() = Idea(id, title, content, createdAt, color, position, categoryId)
+    private fun Idea.toEntity() = IdeaEntity(id, title, content, createdAt, color, position, categoryId)
 }

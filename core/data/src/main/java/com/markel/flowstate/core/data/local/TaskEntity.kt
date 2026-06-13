@@ -18,5 +18,6 @@ data class TaskEntity(
     val priority: Int = 0,
     val dueDate: Long? = null,
     val completedAt: Long? = null,
-    val reminderTime: Long? = null
+    val reminderTime: Long? = null,
+    val categoryId: Int? = null
 )

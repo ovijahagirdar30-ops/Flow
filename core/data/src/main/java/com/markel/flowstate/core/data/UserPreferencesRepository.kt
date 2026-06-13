@@ -120,4 +120,18 @@ class UserPreferencesRepository @Inject constructor(
             preferences[DYNAMIC_COLOR_KEY] = enabled
         }
     }
+
+    // ── Categories configuration ───────────────────────────────────
+
+    private val CATEGORIES_ENABLED_KEY = booleanPreferencesKey("categories_enabled")
+
+    val categoriesEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[CATEGORIES_ENABLED_KEY] ?: false
+    }
+
+    suspend fun saveCategoriesEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[CATEGORIES_ENABLED_KEY] = enabled
+        }
+    }
 }

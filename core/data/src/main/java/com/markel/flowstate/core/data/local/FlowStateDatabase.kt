@@ -12,8 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * and which version of the database we are using.
  */
 @Database(
-    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class ], // List of all tables
-    version = 17,
+    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class], // List of all tables
+    version = 18,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -23,6 +23,7 @@ abstract class FlowStateDatabase : RoomDatabase() {
     abstract val ideaDao: IdeaDao
     abstract val checkListDao: CheckListDao
     abstract val habitDao: HabitDao
+    abstract val categoryDao: CategoryDao
 
     // Room will use this to create the DB instance.
     companion object {
@@ -190,6 +191,21 @@ abstract class FlowStateDatabase : RoomDatabase() {
         val MIGRATION_16_17 = object : Migration(16, 17) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE subtasks ADD COLUMN reminderTime INTEGER DEFAULT NULL")
+            }
+        }
+
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS categories (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL,
+                        position INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+                db.execSQL("ALTER TABLE tasks ADD COLUMN categoryId INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE ideas ADD COLUMN categoryId INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE checklists ADD COLUMN categoryId INTEGER DEFAULT NULL")
             }
         }
     }

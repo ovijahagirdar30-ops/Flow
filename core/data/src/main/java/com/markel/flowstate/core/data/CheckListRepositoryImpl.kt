@@ -31,8 +31,9 @@ class CheckListRepositoryImpl @Inject constructor(
         title = list.title,
         color = list.color,
         position = list.position,
-        items = items.map { CheckListItem(it.id, it.text, it.isDone, it.position) }
+        items = items.map { CheckListItem(it.id, it.text, it.isDone, it.position) },
+        categoryId = list.categoryId
     )
-    private fun CheckList.toEntity() = CheckListEntity(id, title, color, position)
+    private fun CheckList.toEntity() = CheckListEntity(id, title, color, position, categoryId)
     private fun CheckListItem.toEntity(listId: Int) = CheckListItemEntity(id, listId, text, isDone, position)
 }

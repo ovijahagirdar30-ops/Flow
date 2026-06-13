@@ -10,5 +10,6 @@ data class IdeaEntity(
     val content: String,
     val createdAt: Long,
     val color: Long,
-    val position: Int = 0
+    val position: Int = 0,
+    val categoryId: Int? = null
 )
