@@ -33,6 +33,8 @@ object BottomNavConfigRoute
 @Serializable
 object IntegrationsRoute
 @Serializable
+object CategoriesRoute
+@Serializable
 data class TaskEditorRoute(val taskId: Int)
 
 @Serializable

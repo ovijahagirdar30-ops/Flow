@@ -36,6 +36,7 @@ fun SettingsScreen(
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToAppearance: () -> Unit = {},
     onNavigateToBottomNavConfig: () -> Unit = {},
+    onNavigateToCategories: () -> Unit = {},
     onNavigateToIntegrations: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
     notificationsEnabled: Boolean = true,
@@ -46,6 +47,7 @@ fun SettingsScreen(
             SettingsItemData.Notifications -> onNavigateToNotifications()
             SettingsItemData.Appearance -> onNavigateToAppearance()
             SettingsItemData.BottomNavConfig -> onNavigateToBottomNavConfig()
+            SettingsItemData.Categories -> onNavigateToCategories()
             SettingsItemData.Integrations -> onNavigateToIntegrations()
             SettingsItemData.About -> onNavigateToAbout()
         }
@@ -91,6 +93,7 @@ fun SettingsScreen(
                 val generalItems = listOf(
                     SettingsItemData.Notifications,
                     SettingsItemData.Appearance,
+                    SettingsItemData.Categories,
                     SettingsItemData.BottomNavConfig
                 )
                 SettingsGroup(
@@ -155,6 +158,7 @@ private sealed interface SettingsItemData {
     data object Notifications : SettingsItemData
     data object Appearance : SettingsItemData
     data object BottomNavConfig : SettingsItemData
+    data object Categories : SettingsItemData
     data object Integrations : SettingsItemData
     data object About : SettingsItemData
 }
@@ -214,6 +218,24 @@ private fun SettingsGroup(
                         },
                         headline = stringResource(R.string.settings_appearance),
                         supporting = stringResource(R.string.settings_appearance_description),
+                        shape = shape,
+                        colors = itemColors,
+                        onClick = onClick
+                    )
+                }
+
+                is SettingsItemData.Categories -> {
+                    SettingsNavigationItem(
+                        icon = {
+                            Icon(
+                                imageVector = ImageVector.Companion.vectorResource(
+                                    R.drawable.category_24px
+                                ),
+                                contentDescription = stringResource(R.string.categories_title)
+                            )
+                        },
+                        headline = stringResource(R.string.categories_title),
+                        supporting = stringResource(R.string.categories_settings_description),
                         shape = shape,
                         colors = itemColors,
                         onClick = onClick

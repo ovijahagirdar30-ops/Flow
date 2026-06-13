@@ -39,6 +39,7 @@ import com.markel.flowstate.feature.settings.BottomNavConfigScreen
 import com.markel.flowstate.core.notifications.NotificationSettingsIntentProvider
 import com.markel.flowstate.feature.settings.AppearanceScreen
 import com.markel.flowstate.feature.settings.BackupScreen
+import com.markel.flowstate.feature.settings.CategoriesScreen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -132,6 +133,9 @@ fun FlowStateNavHost(
                 onNavigateToBottomNavConfig = {
                     navController.navigate(BottomNavConfigRoute)
                 },
+                onNavigateToCategories = {
+                    navController.navigate(CategoriesRoute)
+                },
                 onNavigateToIntegrations = {
                     navController.navigate(IntegrationsRoute)
                 },
@@ -164,6 +168,11 @@ fun FlowStateNavHost(
         }
         composable<IntegrationsRoute> {
             BackupScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable<CategoriesRoute> {
+            CategoriesScreen(
                 onBack = { navController.popBackStack() }
             )
         }

@@ -12,6 +12,8 @@
     <string name="settings_info">Información</string>
     <string name="settings_about">Acerca de</string>
     <string name="settings_about_description">FlowState v%1$s</string>
+    <string name="ok">Vale</string>
+    <string name="cancel">Cancelar</string>
 
     <!-- Bottom nav config screen -->
     <string name="bottom_nav_config_title">Navegación inferior</string>
@@ -62,4 +64,20 @@
     <string name="backup_export_description">Guarda todos tus datos a un archivo JSON</string>
     <string name="backup_restore">Restaurar</string>
     <string name="backup_restore_description">Restaurar datos desde un archivo JSON</string>
+
+    <!-- Categorías -->
+    <string name="categories_title">Categorías</string>
+    <string name="categories_settings_description">Organiza elementos con pestañas de categoría</string>
+    <string name="categories_enabled">Habilitar categorías</string>
+    <string name="categories_enabled_description">Mostrar pestañas de categoría en la pantalla Flow</string>
+    <string name="categories_list">Categorías</string>
+    <string name="categories_add">Añadir categoría</string>
+    <string name="categories_create">Nueva categoría</string>
+    <string name="categories_name_label">Nombre de la categoría</string>
+    <string name="categories_delete">Eliminar</string>
+    <string name="categories_delete_title">¿Eliminar \"%1$s\"?</string>
+    <string name="categories_delete_message">¿Qué quieres hacer con los elementos de esta categoría?</string>
+    <string name="categories_move_to_general">Mover a General</string>
+    <string name="categories_delete_permanently">Eliminar elementos</string>
+    <string name="category_general">General</string>
 </resources>
