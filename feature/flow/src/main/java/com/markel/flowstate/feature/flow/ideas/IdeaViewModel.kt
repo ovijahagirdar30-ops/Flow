@@ -20,7 +20,8 @@ data class IdeaEditorState(
     val idea: Idea? = null,
     val title: String = "",
     val content: String = "",
-    val color: Long = COLOR_TRANSPARENT // default: no background color
+    val color: Long = COLOR_TRANSPARENT, // default: no background color
+    val categoryId: Int? = null
 )
 
 @OptIn(FlowPreview::class)
@@ -45,8 +46,8 @@ class IdeaEditorViewModel @Inject constructor(
     // ── Open / Close ──────────────────────────────────────────────────────────
 
     /** Opens the overlay to CREATE a new blank idea. */
-    fun openNew() {
-        _editor.value = IdeaEditorState()
+    fun openNew(categoryId: Int? = null) {
+        _editor.value = IdeaEditorState(categoryId = categoryId)
     }
 
     /** Opens the overlay to EDIT an existing idea. */
@@ -55,7 +56,8 @@ class IdeaEditorViewModel @Inject constructor(
             idea = idea,
             title = idea.title,
             content = idea.content,
-            color = idea.color
+            color = idea.color,
+            categoryId = idea.categoryId
         )
     }
 
@@ -116,7 +118,8 @@ class IdeaEditorViewModel @Inject constructor(
                     title = state.title,
                     content = state.content,
                     color = state.color,
-                    createdAt = System.currentTimeMillis()
+                    createdAt = System.currentTimeMillis(),
+                    categoryId = state.categoryId
                 )
             )
             // Save the reference with the ID so subsequent autosaves don't create duplicates (existing != null)
@@ -125,7 +128,8 @@ class IdeaEditorViewModel @Inject constructor(
                 title = state.title,
                 content = state.content,
                 color = state.color,
-                createdAt = System.currentTimeMillis()
+                createdAt = System.currentTimeMillis(),
+                categoryId = state.categoryId
             )) }
         }
     }

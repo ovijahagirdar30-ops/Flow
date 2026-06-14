@@ -65,8 +65,11 @@ fun CategoriesScreen(
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
+    // Filter out legacy "General" categories from the list — "General" is now a virtual tab
     val localCategories = remember(categories) {
-        mutableStateListOf<Category>().apply { addAll(categories) }
+        mutableStateListOf<Category>().apply {
+            addAll(categories.filter { !it.name.equals("General", ignoreCase = true) })
+        }
     }
 
     var showCreateDialog by remember { mutableStateOf(false) }
@@ -277,6 +280,7 @@ fun CategoriesScreen(
     // ── Create category dialog ──────────────────────────────────
     if (showCreateDialog) {
         var categoryName by remember { mutableStateOf("") }
+        val isGeneralName = categoryName.trim().equals("General", ignoreCase = true)
 
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
@@ -287,18 +291,22 @@ fun CategoriesScreen(
                     onValueChange = { categoryName = it },
                     label = { Text(stringResource(R.string.categories_name_label)) },
                     singleLine = true,
+                    isError = isGeneralName,
+                    supportingText = if (isGeneralName) {
+                        { Text(stringResource(R.string.categories_name_reserved)) }
+                    } else null,
                     modifier = Modifier.fillMaxWidth()
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (categoryName.isNotBlank()) {
+                        if (categoryName.isNotBlank() && !isGeneralName) {
                             viewModel.createCategory(categoryName.trim())
                             showCreateDialog = false
                         }
                     },
-                    enabled = categoryName.isNotBlank()
+                    enabled = categoryName.isNotBlank() && !isGeneralName
                 ) {
                     Text(stringResource(R.string.ok))
                 }

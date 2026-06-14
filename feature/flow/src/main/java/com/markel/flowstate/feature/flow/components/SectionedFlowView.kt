@@ -63,6 +63,7 @@ fun SectionedFlowView(
     // Tracks per-task swipe-to-delete versions so that undo restores a fresh
     // SwipeToDismissBoxState instead of the stale EndToStart saved state.
     taskDeleteVersions: Map<Int, Int> = emptyMap(),
+    categoriesEnabled: Boolean = false,
 ) {
     if (uiState !is FlowUiState.Success) return
 

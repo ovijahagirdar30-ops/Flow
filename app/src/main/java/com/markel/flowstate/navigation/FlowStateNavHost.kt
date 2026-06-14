@@ -77,11 +77,11 @@ fun FlowStateNavHost(
                     onNavigateToIdeaEditor = { ideaId ->
                         navController.navigate(IdeaEditorRoute(ideaId))
                     },
-                    onNavigateToNewIdea = {
-                        navController.navigate(IdeaEditorRoute(null))
+                    onNavigateToNewIdea = { categoryId ->
+                        navController.navigate(IdeaEditorRoute(null, categoryId))
                     },
-                    onNavigateToCheckListEditor = { checkListId ->
-                        navController.navigate(CheckListEditorRoute(checkListId))
+                    onNavigateToCheckListEditor = { checkListId, categoryId ->
+                        navController.navigate(CheckListEditorRoute(checkListId, categoryId))
                     }
                 )
             }
@@ -191,6 +191,7 @@ fun FlowStateNavHost(
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                 IdeaEditorScreen(
                     ideaId = args.ideaId,
+                    categoryId = args.categoryId,
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -200,6 +201,7 @@ fun FlowStateNavHost(
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                 CheckListEditorScreen(
                     checkListId = args.checkListId,
+                    categoryId = args.categoryId,
                     onBack = { navController.popBackStack() }
                 )
             }

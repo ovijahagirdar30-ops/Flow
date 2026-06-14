@@ -56,6 +56,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun CheckListEditorScreen(
     checkListId: Int?,
+    categoryId: Int? = null,
     onBack: () -> Unit,
     viewModel: CheckListViewModel = hiltViewModel()
 ) {
@@ -67,7 +68,7 @@ fun CheckListEditorScreen(
     val editorState by viewModel.editor.collectAsStateWithLifecycle()
 
     LaunchedEffect(checkListId) {
-        if (checkListId == null) viewModel.openNew()
+        if (checkListId == null) viewModel.openNew(categoryId)
         else viewModel.loadForEditing(checkListId)
     }
 

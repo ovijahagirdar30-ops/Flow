@@ -63,6 +63,7 @@ import com.markel.flowstate.feature.tasks.R
 @Composable
 fun IdeaEditorScreen(
     ideaId: Int?, // null = new idea
+    categoryId: Int? = null,
     onBack: () -> Unit,
     viewModel: IdeaEditorViewModel = hiltViewModel()
 ) {
@@ -75,7 +76,7 @@ fun IdeaEditorScreen(
 
     // We initialize the editor's state depending on whether we are creating or editing
     LaunchedEffect(ideaId) {
-        if (ideaId == null) viewModel.openNew()
+        if (ideaId == null) viewModel.openNew(categoryId)
         else viewModel.loadIdeaForEditing(ideaId)
     }
     

@@ -18,6 +18,7 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.designsystem.components.AnimatedUndoFab
+import com.markel.flowstate.feature.flow.components.CategoryTabRow
 import com.markel.flowstate.feature.flow.components.DynamicHeader
 import com.markel.flowstate.feature.flow.components.ExpandableFabMenu
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
@@ -33,8 +34,8 @@ fun FlowScreen(
     // Nvigation Callbacks to detail screens (edition)
     onNavigateToTaskEditor: (taskId: Int) -> Unit,
     onNavigateToIdeaEditor: (ideaId: Int) -> Unit,
-    onNavigateToNewIdea: () -> Unit,
-    onNavigateToCheckListEditor: (checkListId: Int?) -> Unit
+    onNavigateToNewIdea: (categoryId: Int?) -> Unit,
+    onNavigateToCheckListEditor: (checkListId: Int?, categoryId: Int?) -> Unit
 ) {
     val flowUiState by flowViewModel.uiState.collectAsStateWithLifecycle()
     val showPermissionBanner by flowViewModel.showReminderBanner.collectAsStateWithLifecycle()
@@ -48,6 +49,11 @@ fun FlowScreen(
 
     val draft by taskViewModel.draft.collectAsStateWithLifecycle()  // State with all the info for the new task
 
+    // Extract category info from state
+    val categoriesEnabled = (flowUiState as? FlowUiState.Success)?.categoriesEnabled == true
+    val categories = (flowUiState as? FlowUiState.Success)?.categories ?: emptyList()
+    val selectedCategoryId = (flowUiState as? FlowUiState.Success)?.selectedCategoryId
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             contentWindowInsets = WindowInsets(0.dp),  // To avoid big gaps of surface at the top & bottom
@@ -56,6 +62,14 @@ fun FlowScreen(
                 DynamicHeader(
                     isMinimized = isHeaderMinimized
                 )
+                // ── Category tabs (only when enabled) ───────────────
+                if (categoriesEnabled && categories.isNotEmpty()) {
+                    CategoryTabRow(
+                        categories = categories,
+                        selectedCategoryId = selectedCategoryId,
+                        onCategorySelected = { flowViewModel.selectCategory(it) }
+                    )
+                }
 
                 SectionedFlowView(
                     uiState = flowUiState,
@@ -66,10 +80,11 @@ fun FlowScreen(
                     onTaskReorder = { from, to -> flowViewModel.onTaskReorder(from, to) },
                     onIdeaClick = { onNavigateToIdeaEditor(it.id) },
                     onIdeaReorder = { from, to -> flowViewModel.onIdeaReorder(from, to) },
-                    onCheckListClick = { onNavigateToCheckListEditor(it.id) },
+                    onCheckListClick = { onNavigateToCheckListEditor(it.id, it.categoryId) },
                     onCheckListReorder = { from, to -> flowViewModel.onCheckListReorder(from, to) },
                     showPermissionBanner = showPermissionBanner,
-                    taskDeleteVersions = taskDeleteVersions
+                    taskDeleteVersions = taskDeleteVersions,
+                    categoriesEnabled = categoriesEnabled
                 )
             }
         }
@@ -97,7 +112,7 @@ fun FlowScreen(
                     reminderTime = draft.reminderTime,
                     onReminderTimeChange = { taskViewModel.updateDraftReminderTime(it) },
                     onSave = { _, _, _, _, _ ->
-                        taskViewModel.submitDraft()
+                        taskViewModel.submitDraft(categoryId = if (categoriesEnabled) selectedCategoryId else null)
                         showCreationSheet = false
                     }
                 )
@@ -114,8 +129,8 @@ fun FlowScreen(
                 expanded = isFabExpanded,
                 onToggle = { isFabExpanded = !isFabExpanded },
                 onTaskClick = { isFabExpanded = false; showCreationSheet = true },
-                onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea() },
-                onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null) }
+                onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea(selectedCategoryId) },
+                onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null, selectedCategoryId) }
             )
         }
         AnimatedUndoFab(

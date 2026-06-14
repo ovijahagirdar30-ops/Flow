@@ -80,4 +80,5 @@
     <string name="categories_move_to_general">Mover a General</string>
     <string name="categories_delete_permanently">Eliminar elementos</string>
     <string name="category_general">General</string>
+    <string name="categories_name_reserved">"General" es un nombre reservado</string>
 </resources>

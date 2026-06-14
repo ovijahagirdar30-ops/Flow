@@ -62,7 +62,7 @@ class TaskViewModel @Inject constructor(
     }
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
-    fun addTask(title: String, description: String, priority: Priority, dueDate: Long?, reminderTime: Long?, subTasks: List<SubTask>) {
+    fun addTask(title: String, description: String, priority: Priority, dueDate: Long?, reminderTime: Long?, subTasks: List<SubTask>, categoryId: Int? = null) {
         if (title.isBlank()) return
         viewModelScope.launch {
             val currentTasks = (uiState.value as? TasksUiState.Success)?.tasks ?: emptyList()
@@ -77,7 +77,8 @@ class TaskViewModel @Inject constructor(
                 priority = priority,
                 dueDate = dueDate,
                 reminderTime = reminderTime,
-                subTasks = subTasks
+                subTasks = subTasks,
+                categoryId = categoryId
             )
             val generatedId = repository.upsertTask(newTask)
 
@@ -107,9 +108,9 @@ class TaskViewModel @Inject constructor(
     fun updateDraftDueDate(value: Long?) { _draft.update { it.copy(dueDate = value) } }
     fun updateDraftReminderTime(value: Long?) { _draft.update { it.copy(reminderTime = value) } }
 
-    fun submitDraft() {
+    fun submitDraft(categoryId: Int? = null) {
         val d = _draft.value
-        addTask(d.title, d.description, d.priority, d.dueDate, d.reminderTime, emptyList())
+        addTask(d.title, d.description, d.priority, d.dueDate, d.reminderTime, emptyList(), categoryId)
         _draft.value = TaskDraftState() // reset
     }
 }

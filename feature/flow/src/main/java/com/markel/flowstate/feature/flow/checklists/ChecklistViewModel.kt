@@ -23,7 +23,8 @@ data class CheckListEditorState(
     val checkList: CheckList? = null,
     val title: String = "",
     val color: Long = COLOR_TRANSPARENT,
-    val items: List<CheckListItem> = emptyList()
+    val items: List<CheckListItem> = emptyList(),
+    val categoryId: Int? = null
 )
 
 @OptIn(FlowPreview::class)
@@ -47,8 +48,8 @@ class CheckListViewModel @Inject constructor(
 
     // ── Open / Close ──────────────────────────────────────────────────────────
 
-    fun openNew() {
-        _editor.value = CheckListEditorState()
+    fun openNew(categoryId: Int? = null) {
+        _editor.value = CheckListEditorState(categoryId = categoryId)
     }
 
     fun loadForEditing(checkListId: Int) {
@@ -59,7 +60,8 @@ class CheckListViewModel @Inject constructor(
                 checkList = found,
                 title = found.title,
                 color = found.color,
-                items = found.items
+                items = found.items,
+                categoryId = found.categoryId
             )
         }
     }
@@ -149,7 +151,8 @@ class CheckListViewModel @Inject constructor(
             val newList = CheckList(
                 title = state.title,
                 color = state.color,
-                items = itemsToSave
+                items = itemsToSave,
+                categoryId = state.categoryId
             )
             val assignedId = checkListRepository.upsertList(newList)
 

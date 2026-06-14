@@ -5,6 +5,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.domain.Category
+import com.markel.flowstate.core.domain.CategoryRepository
 import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.core.domain.Idea
@@ -48,6 +50,7 @@ class FlowViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val ideaRepository: IdeaRepository,
     private val checkListRepository: CheckListRepository,
+    private val categoryRepository: CategoryRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val reminderScheduler: ReminderScheduler,
     private val deleteTaskUseCase: DeleteTaskUseCase,
@@ -96,26 +99,74 @@ class FlowViewModel @Inject constructor(
      */
     private val deleteJobs = mutableMapOf<Int, Job>()
 
+    private val _selectedCategoryId = MutableStateFlow<Int?>(null)
     // ── Init: combine repos + pending-filter ──────────────────────────────────
     init {
         viewModelScope.launch {
-            combine(
+            val coreDataFlow = combine(
                 taskRepository.getTasks(),
                 ideaRepository.getIdeas(),
                 checkListRepository.getLists(),
-                _pendingUndoTasks
-            ) { tasks, ideas, lists, pendingMap ->
+                categoryRepository.getCategories()
+            ) { tasks, ideas, lists, categories ->
+                // Combine these into a temporary data class
+                CoreData(tasks, ideas, lists, categories)
+            }
+            // Combine like this to not lose type-safe navigation
+            combine(
+                coreDataFlow,
+                userPreferencesRepository.categoriesEnabled,
+                _pendingUndoTasks,
+                _selectedCategoryId
+            ) { coreData, categoriesEnabled, pendingMap, selectedCategoryId ->
+
                 val pendingIds = pendingMap.keys
+
+                // Filter tasks: exclude done + pending deletions, then filter by category if enabled
+                val filteredTasks = coreData.tasks
+                    .filter { !it.isDone && it.id !in pendingIds }
+                    .let { filtered ->
+                        if (categoriesEnabled && selectedCategoryId != null) {
+                            filtered.filter { it.categoryId == selectedCategoryId }
+                        } else filtered
+                    }
+
+                // Filter ideas by category if enabled
+                val filteredIdeas = coreData.ideas.let { list ->
+                    if (categoriesEnabled && selectedCategoryId != null) {
+                        list.filter { it.categoryId == selectedCategoryId }
+                    } else list
+                }
+
+                // Filter checklists by category if enabled
+                val filteredLists = coreData.lists.let { list ->
+                    if (categoriesEnabled && selectedCategoryId != null) {
+                        list.filter { it.categoryId == selectedCategoryId }
+                    } else list
+                }
+
+                // When categories are enabled but no category is selected, select null (= General/unassigned)
+                val effectiveSelectedId = if (categoriesEnabled) selectedCategoryId else null
+
                 FlowUiState.Success(
-                    tasks = tasks.filter { !it.isDone && it.id !in pendingIds },
-                    ideas = ideas,
-                    checkLists = lists
+                    tasks = filteredTasks,
+                    ideas = filteredIdeas,
+                    checkLists = filteredLists,
+                    categories = coreData.categories,
+                    selectedCategoryId = effectiveSelectedId,
+                    categoriesEnabled = categoriesEnabled
                 )
             }.collect { state ->
                 _uiState.value = state
                 refreshBanner()
             }
         }
+    }
+
+    // ── Category actions ──────────────────────────────────────────────────────
+
+    fun selectCategory(id: Int?) {
+        _selectedCategoryId.value = id
     }
 
     // ── Deferred deletion API ─────────────────────────────────────────────────
@@ -253,5 +304,11 @@ class FlowViewModel @Inject constructor(
             _bannerVisible.value = hasAnyFutureReminder && !canSchedule
         }
     }
-
 }
+
+data class CoreData(
+    val tasks: List<Task>,
+    val ideas: List<Idea>,
+    val lists: List<CheckList>,
+    val categories: List<Category>
+)

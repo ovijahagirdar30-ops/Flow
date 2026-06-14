@@ -27,16 +27,8 @@ class CategoriesViewModel @Inject constructor(
     fun setCategoriesEnabled(enabled: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.saveCategoriesEnabled(enabled)
-            if (enabled) {
-                // Create "General" category if no categories exist yet
-                val current = categoryRepository.getCategories()
-                    .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList()).value
-                if (current.isEmpty()) {
-                    categoryRepository.upsertCategory(
-                        Category(name = "General", position = 0)
-                    )
-                }
-            }
+            // "General" is a virtual tab in the UI (selectedCategoryId = null = show all),
+            // so we do NOT create a "General" category in the database.
         }
     }
 
