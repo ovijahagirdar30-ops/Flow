@@ -1,13 +1,17 @@
 package com.markel.flowstate.feature.flow.components
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -43,7 +47,19 @@ fun CategoryTabRow(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
         edgePadding = 16.dp,
-        divider = {} // No divider
+        divider = {}, // No divider
+        indicator = {
+            TabRowDefaults.PrimaryIndicator(
+                modifier = Modifier.tabIndicatorOffset(
+                    selectedTabIndex = selectedIndex,
+                    matchContentSize = true
+                ),
+                height = 3.dp,
+                width = Dp.Unspecified,
+                color = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+            )
+        }
     ) {
         tabItems.forEachIndexed { index, (catId, name) ->
             Tab(
