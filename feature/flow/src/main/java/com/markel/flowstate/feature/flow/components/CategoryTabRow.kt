@@ -1,9 +1,11 @@
 package com.markel.flowstate.feature.flow.components
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
@@ -11,8 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.markel.flowstate.feature.tasks.R
 
 /**
  * Primary scrollable tab row for categories
@@ -30,7 +35,7 @@ fun CategoryTabRow(
         buildList {
             // General tab is implicit — represents null categoryId
             // Only add it if there are no categories with the name "General"
-            add(null to "General") // null = General (no category)
+            add(null to null) // null id + null name = General (icon-only tab)
             categories
                 .filter { !it.name.equals("General", ignoreCase = true) }
                 .forEach { cat ->
@@ -46,7 +51,8 @@ fun CategoryTabRow(
         selectedTabIndex = selectedIndex,
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        edgePadding = 16.dp,
+        edgePadding = 8.dp,
+        minTabWidth = 52.dp,
         divider = {}, // No divider
         indicator = {
             TabRowDefaults.PrimaryIndicator(
@@ -65,12 +71,26 @@ fun CategoryTabRow(
             Tab(
                 selected = selectedIndex == index,
                 onClick = { onCategorySelected(catId) },
-                text = {
-                    Text(
-                        text = name,
-                        style = MaterialTheme.typography.titleSmall
-                    )
-                },
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .height(46.dp),
+                icon = if (catId == null) {
+                    {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.home_23px) ,
+                            contentDescription = "index"
+                        )
+                    }
+                }
+                else null,
+                text = if (catId != null) {
+                    {
+                        Text(
+                            text = name!!,
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                    }
+                } else null,
                 selectedContentColor = MaterialTheme.colorScheme.primary,
                 unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
