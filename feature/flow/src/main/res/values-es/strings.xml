@@ -48,4 +48,10 @@
     <string name="permission_body">Para ser notificado en el momento exacto, proporciona los permisos necesarios a FlowState para las alarmas exactas.</string>
     <string name="permission_settings">Ir a ajustes</string>
     <string name="reminder_past_time_error">Selecciona una hora futura</string>
+
+    <!-- Category creation (FlowScreen "+ New category" tab) -->
+    <string name="categories_create">Nueva categoría</string>
+    <string name="categories_trail">+ Nueva categoría</string>
+    <string name="categories_name_label">Nombre de la categoría</string>
+    <string name="categories_name_reserved">"General" es un nombre reservado</string>
 </resources>

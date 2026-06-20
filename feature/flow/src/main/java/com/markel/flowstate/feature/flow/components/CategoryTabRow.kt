@@ -14,22 +14,39 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.markel.flowstate.feature.tasks.R
 
 /**
+ * Sentinel id used for the trailing "+ New category" tab.
+ *
+ * It must never collide with a real [com.markel.flowstate.core.domain.Category.id]
+ * (Room ids start at 1), so [Int.MIN_VALUE] is safe.
+ */
+private const val NEW_CATEGORY_TAB_ID = Int.MIN_VALUE
+
+/**
  * Primary scrollable tab row for categories
  * Tabs change ONLY by click (no swipe) to avoid conflict with swipe-to-delete.
+ *
+ * The row always renders, in this order:
+ *  1. "General" tab (icon-only, null categoryId → shows items without a category)
+ *  2. One tab per user category (text-only)
+ *  3. "+ New category" trailing tab (text-only, opens the creation dialog)
+ *
+ * @param onAddCategoryClick invoked when the trailing "+ New category" tab is pressed.
  */
 @Composable
 fun CategoryTabRow(
     categories: List<com.markel.flowstate.core.domain.Category>,
     selectedCategoryId: Int?,
-    onCategorySelected: (Int?) -> Unit
+    onCategorySelected: (Int?) -> Unit,
+    onAddCategoryClick: () -> Unit
 ) {
-    // Build the list of tabs: "General" (null id) + user categories
+    // Build the list of tabs: "General" (null id) + user categories + "New"
     // "General" tab = null categoryId (shows items without a category)
     val tabItems = remember(categories) {
         buildList {
@@ -41,6 +58,8 @@ fun CategoryTabRow(
                 .forEach { cat ->
                     add(cat.id to cat.name)
                 }
+            // Trailing "+ New category" action tab — never selectable
+            add(NEW_CATEGORY_TAB_ID to null)
         }
     }
 
@@ -55,38 +74,59 @@ fun CategoryTabRow(
         minTabWidth = 52.dp,
         divider = {}, // No divider
         indicator = {
-            TabRowDefaults.PrimaryIndicator(
-                modifier = Modifier.tabIndicatorOffset(
-                    selectedTabIndex = selectedIndex,
-                    matchContentSize = true
-                ),
-                height = 3.dp,
-                width = Dp.Unspecified,
-                color = MaterialTheme.colorScheme.primary,
-                shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
-            )
+            // Only draw the indicator when the selected tab is a real category
+            // (i.e. not the trailing "+ New category" action tab).
+            if (selectedIndex in tabItems.indices && tabItems[selectedIndex].first != NEW_CATEGORY_TAB_ID) {
+                TabRowDefaults.PrimaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(
+                        selectedTabIndex = selectedIndex,
+                        matchContentSize = true
+                    ),
+                    height = 3.dp,
+                    width = Dp.Unspecified,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+                )
+            }
         }
     ) {
         tabItems.forEachIndexed { index, (catId, name) ->
+            val isNewCategoryTab = catId == NEW_CATEGORY_TAB_ID
+
             Tab(
-                selected = selectedIndex == index,
-                onClick = { onCategorySelected(catId) },
-                modifier = Modifier
-                    .wrapContentWidth()
-                    .height(46.dp),
+                selected = !isNewCategoryTab && selectedIndex == index,
+                onClick = {
+                    if (isNewCategoryTab) {
+                        onAddCategoryClick()
+                    } else {
+                        onCategorySelected(catId)
+                    }
+                },
+                modifier = if (catId == null) {
+                    // Icon-only "General" tab: fill the parent's minTabWidth slot so
+                    // the ripple covers the whole tab area.
+                    Modifier.height(46.dp)
+                } else {
+                    Modifier
+                        .wrapContentWidth()
+                        .height(46.dp)
+                },
                 icon = if (catId == null) {
                     {
                         Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.home_23px) ,
+                            imageVector = ImageVector.vectorResource(R.drawable.home_23px),
                             contentDescription = "index"
                         )
                     }
-                }
-                else null,
+                } else null,
                 text = if (catId != null) {
                     {
                         Text(
-                            text = name!!,
+                            text = if (isNewCategoryTab) {
+                                stringResource(R.string.categories_trail)
+                            } else {
+                                name!!
+                            },
                             style = MaterialTheme.typography.titleSmall
                         )
                     }
@@ -97,4 +137,3 @@ fun CategoryTabRow(
         }
     }
 }
-

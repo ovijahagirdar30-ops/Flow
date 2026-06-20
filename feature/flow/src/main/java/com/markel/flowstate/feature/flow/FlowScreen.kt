@@ -19,6 +19,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.designsystem.components.AnimatedUndoFab
 import com.markel.flowstate.feature.flow.components.CategoryTabRow
+import com.markel.flowstate.feature.flow.components.CreateCategoryDialog
 import com.markel.flowstate.feature.flow.components.DynamicHeader
 import com.markel.flowstate.feature.flow.components.ExpandableFabMenu
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
@@ -43,6 +44,7 @@ fun FlowScreen(
     val taskDeleteVersions by flowViewModel.taskDeleteVersions.collectAsStateWithLifecycle()
     var isFabExpanded by remember { mutableStateOf(false) }
     var showCreationSheet by remember { mutableStateOf(false) }
+    var showCreateCategoryDialog by remember { mutableStateOf(false) }
 
     // Only source of truth for the header
     var isHeaderMinimized by rememberSaveable { mutableStateOf(false) }
@@ -67,7 +69,8 @@ fun FlowScreen(
                     CategoryTabRow(
                         categories = categories,
                         selectedCategoryId = selectedCategoryId,
-                        onCategorySelected = { flowViewModel.selectCategory(it) }
+                        onCategorySelected = { flowViewModel.selectCategory(it) },
+                        onAddCategoryClick = { showCreateCategoryDialog = true }
                     )
                 }
 
@@ -139,5 +142,16 @@ fun FlowScreen(
             modifier = Modifier
                 .align(Alignment.BottomStart)
         )
+
+        // ── Create category dialog (opened from the trailing "+ New category" tab) ──
+        if (showCreateCategoryDialog) {
+            CreateCategoryDialog(
+                onDismiss = { showCreateCategoryDialog = false },
+                onConfirm = { name ->
+                    flowViewModel.createCategory(name)
+                    showCreateCategoryDialog = false
+                }
+            )
+        }
     }
 }

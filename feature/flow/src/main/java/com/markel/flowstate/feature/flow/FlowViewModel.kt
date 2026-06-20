@@ -165,6 +165,29 @@ class FlowViewModel @Inject constructor(
 
     // ── Category actions ──────────────────────────────────────────────────────
 
+    /**
+     * Creates a new user category from the FlowScreen "+ New category" tab.
+     *
+     * Mirrors the logic in [com.markel.flowstate.feature.settings.CategoriesViewModel.createCategory]:
+     * the new category is appended after the existing ones (position = max + 1)
+     * and is NOT selected automatically — the user can tap it once it appears.
+     *
+     * "General" is a reserved virtual tab (null id) and is rejected here.
+     */
+    fun createCategory(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank() || trimmed.equals("General", ignoreCase = true)) return
+
+        viewModelScope.launch {
+            val currentList = (_uiState.value as? FlowUiState.Success)?.categories
+                ?: categoryRepository.getCategories().first()
+            val maxPosition = currentList.maxOfOrNull { it.position } ?: -1
+            categoryRepository.upsertCategory(
+                Category(name = trimmed, position = maxPosition + 1)
+            )
+        }
+    }
+
     fun selectCategory(id: Int?) {
         _selectedCategoryId.value = id
     }
