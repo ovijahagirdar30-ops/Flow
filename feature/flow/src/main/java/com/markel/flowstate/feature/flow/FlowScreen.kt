@@ -22,6 +22,7 @@ import com.markel.flowstate.feature.flow.components.CategoryTabRow
 import com.markel.flowstate.feature.flow.components.CreateCategoryDialog
 import com.markel.flowstate.feature.flow.components.DynamicHeader
 import com.markel.flowstate.feature.flow.components.ExpandableFabMenu
+import com.markel.flowstate.feature.flow.components.ReorderCategoriesSheet
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
@@ -45,6 +46,7 @@ fun FlowScreen(
     var isFabExpanded by remember { mutableStateOf(false) }
     var showCreationSheet by remember { mutableStateOf(false) }
     var showCreateCategoryDialog by remember { mutableStateOf(false) }
+    var showReorderCategoriesSheet by remember { mutableStateOf(false) }
 
     // Only source of truth for the header
     var isHeaderMinimized by rememberSaveable { mutableStateOf(false) }
@@ -55,6 +57,9 @@ fun FlowScreen(
     val categoriesEnabled = (flowUiState as? FlowUiState.Success)?.categoriesEnabled == true
     val categories = (flowUiState as? FlowUiState.Success)?.categories ?: emptyList()
     val selectedCategoryId = (flowUiState as? FlowUiState.Success)?.selectedCategoryId
+    val reorderableCategories = remember(categories) {
+        categories.filter { !it.name.equals("General", ignoreCase = true) }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -70,7 +75,8 @@ fun FlowScreen(
                         categories = categories,
                         selectedCategoryId = selectedCategoryId,
                         onCategorySelected = { flowViewModel.selectCategory(it) },
-                        onAddCategoryClick = { showCreateCategoryDialog = true }
+                        onAddCategoryClick = { showCreateCategoryDialog = true },
+                        onCategoryLongPress = { showReorderCategoriesSheet = true }
                     )
                 }
 
@@ -151,6 +157,19 @@ fun FlowScreen(
                     flowViewModel.createCategory(name)
                     showCreateCategoryDialog = false
                 }
+            )
+        }
+
+        // ── Reorder / switch category sheet (opened by long-pressing a tab) ──
+        if (showReorderCategoriesSheet) {
+            ReorderCategoriesSheet(
+                categories = reorderableCategories,
+                onReorder = { flowViewModel.reorderCategories(it) },
+                onCategorySelected = { id ->
+                    flowViewModel.selectCategory(id)
+                    showReorderCategoriesSheet = false
+                },
+                onDismiss = { showReorderCategoriesSheet = false }
             )
         }
     }

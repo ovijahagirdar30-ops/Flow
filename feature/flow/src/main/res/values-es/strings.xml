@@ -54,4 +54,7 @@
     <string name="categories_trail">+ Nueva categoría</string>
     <string name="categories_name_label">Nombre de la categoría</string>
     <string name="categories_name_reserved">"General" es un nombre reservado</string>
+
+    <!-- Reorder categories sheet (long-press a tab) -->
+    <string name="categories_reorder_title">Reordenar categorías</string>
 </resources>

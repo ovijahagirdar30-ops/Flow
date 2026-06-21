@@ -1,21 +1,35 @@
 package com.markel.flowstate.feature.flow.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.markel.flowstate.feature.tasks.R
@@ -37,14 +51,22 @@ private const val NEW_CATEGORY_TAB_ID = Int.MIN_VALUE
  *  2. One tab per user category (text-only)
  *  3. "+ New category" trailing tab (text-only, opens the creation dialog)
  *
+ * Long-pressing any tab (except "+ New") fires [onCategoryLongPress], which the
+ * caller typically uses to open the "Reorder categories" sheet. Long-pressing
+ * "General" (null id) is also reported so the caller can open the same sheet —
+ * the sheet itself only shows reorderable real categories.
+ *
  * @param onAddCategoryClick invoked when the trailing "+ New category" tab is pressed.
+ * @param onCategoryLongPress invoked when any non-"+ New" tab is long-pressed.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CategoryTabRow(
     categories: List<com.markel.flowstate.core.domain.Category>,
     selectedCategoryId: Int?,
     onCategorySelected: (Int?) -> Unit,
-    onAddCategoryClick: () -> Unit
+    onAddCategoryClick: () -> Unit,
+    onCategoryLongPress: () -> Unit
 ) {
     // Build the list of tabs: "General" (null id) + user categories + "New"
     // "General" tab = null categoryId (shows items without a category)
@@ -92,48 +114,66 @@ fun CategoryTabRow(
     ) {
         tabItems.forEachIndexed { index, (catId, name) ->
             val isNewCategoryTab = catId == NEW_CATEGORY_TAB_ID
+            val isSelected = !isNewCategoryTab && selectedIndex == index
 
-            Tab(
-                selected = !isNewCategoryTab && selectedIndex == index,
-                onClick = {
-                    if (isNewCategoryTab) {
-                        onAddCategoryClick()
-                    } else {
-                        onCategorySelected(catId)
-                    }
-                },
-                modifier = if (catId == null) {
-                    // Icon-only "General" tab: fill the parent's minTabWidth slot so
-                    // the ripple covers the whole tab area.
-                    Modifier.height(46.dp)
+            val interactionSource = remember { MutableInteractionSource() }
+            val contentColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
+            val clickAction: (() -> Unit)? = if (isNewCategoryTab) {
+                onAddCategoryClick
+            } else {
+                { onCategorySelected(catId) }
+            }
+
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .then(
+                        if (catId == null) {
+                            // Icon-only "General" tab: fill the parent's minTabWidth
+                            // slot so the ripple covers the whole tab area.
+                            Modifier.height(46.dp)
+                        } else {
+                            Modifier
+                                .wrapContentWidth()
+                                .height(46.dp)
+                        }
+                    )
+                    .combinedClickable(
+                        interactionSource = interactionSource,
+                        indication = ripple(bounded = true),
+                        onClick = { clickAction?.invoke() },
+                        onLongClick = if (!isNewCategoryTab) {
+                            { onCategoryLongPress() }
+                        } else null
+                    )
+                    .padding(horizontal = 16.dp)
+            ) {
+                if (catId == null) {
+                    // Icon-only "General" tab
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.home_23px),
+                        contentDescription = "index",
+                        tint = contentColor
+                    )
                 } else {
-                    Modifier
-                        .wrapContentWidth()
-                        .height(46.dp)
-                },
-                icon = if (catId == null) {
-                    {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.home_23px),
-                            contentDescription = "index"
-                        )
-                    }
-                } else null,
-                text = if (catId != null) {
-                    {
-                        Text(
-                            text = if (isNewCategoryTab) {
-                                stringResource(R.string.categories_trail)
-                            } else {
-                                name!!
-                            },
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                    }
-                } else null,
-                selectedContentColor = MaterialTheme.colorScheme.primary,
-                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                    // Text tab (user category OR "+ New category")
+                    Text(
+                        text = if (isNewCategoryTab) {
+                            stringResource(R.string.categories_trail)
+                        } else {
+                            name!!
+                        },
+                        style = MaterialTheme.typography.titleSmall,
+                        color = contentColor,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }

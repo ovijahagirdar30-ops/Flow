@@ -192,6 +192,23 @@ class FlowViewModel @Inject constructor(
         _selectedCategoryId.value = id
     }
 
+    /**
+     * Persists a new order for the user categories. Mirrors the logic in
+     * settings:
+     * the categories list is taken as the source of truth and each item is
+     * re-positioned by index.
+     *
+     * Called from the FlowScreen "Reorder categories" sheet.
+     */
+    fun reorderCategories(categories: List<Category>) {
+        viewModelScope.launch {
+            val reordered = categories.mapIndexed { index, category ->
+                category.copy(position = index)
+            }
+            categoryRepository.updateCategoriesOrder(reordered)
+        }
+    }
+
     // ── Deferred deletion API ─────────────────────────────────────────────────
 
     /**
