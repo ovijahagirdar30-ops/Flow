@@ -192,20 +192,12 @@ fun CategoryTabRow(
                             color = contentColor,
                             textAlign = TextAlign.Center
                         )
-                        if (pendingCount > 0) {
+                        if (pendingCount > 0 && !isSelected) {
                             Spacer(modifier = Modifier.size(6.dp))
                             PendingCountBadge(
                                 count = pendingCount,
-                                containerColor = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceVariant
-                                },
-                                contentColor = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
