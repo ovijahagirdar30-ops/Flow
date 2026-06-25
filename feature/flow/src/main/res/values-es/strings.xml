@@ -57,4 +57,8 @@
 
     <!-- Reorder categories sheet (long-press a tab) -->
     <string name="categories_reorder_title">Reordenar categorías</string>
+
+    <!-- Selector de categoría (editor de tarea/idea/lista) -->
+    <string name="category_general">General</string>
+    <string name="category_selector_title">Mover a categoría</string>
 </resources>
