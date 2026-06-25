@@ -148,13 +148,21 @@ class FlowViewModel @Inject constructor(
                 // When categories are enabled but no category is selected, select null (= General/unassigned)
                 val effectiveSelectedId = if (categoriesEnabled) selectedCategoryId else null
 
+                // Per-category pending task counts for the tab badges.
+                val pendingTaskCounts = coreData.tasks
+                    .asSequence()
+                    .filter { !it.isDone && it.id !in pendingIds && it.categoryId != null }
+                    .groupingBy { it.categoryId!! }
+                    .eachCount()
+
                 FlowUiState.Success(
                     tasks = filteredTasks,
                     ideas = filteredIdeas,
                     checkLists = filteredLists,
                     categories = coreData.categories,
                     selectedCategoryId = effectiveSelectedId,
-                    categoriesEnabled = categoriesEnabled
+                    categoriesEnabled = categoriesEnabled,
+                    pendingTaskCounts = pendingTaskCounts
                 )
             }.collect { state ->
                 _uiState.value = state

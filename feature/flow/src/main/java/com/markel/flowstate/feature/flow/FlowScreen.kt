@@ -57,6 +57,7 @@ fun FlowScreen(
     val categoriesEnabled = (flowUiState as? FlowUiState.Success)?.categoriesEnabled == true
     val categories = (flowUiState as? FlowUiState.Success)?.categories ?: emptyList()
     val selectedCategoryId = (flowUiState as? FlowUiState.Success)?.selectedCategoryId
+    val pendingTaskCounts = (flowUiState as? FlowUiState.Success)?.pendingTaskCounts ?: emptyMap()
     val reorderableCategories = remember(categories) {
         categories.filter { !it.name.equals("General", ignoreCase = true) }
     }
@@ -76,7 +77,8 @@ fun FlowScreen(
                         selectedCategoryId = selectedCategoryId,
                         onCategorySelected = { flowViewModel.selectCategory(it) },
                         onAddCategoryClick = { showCreateCategoryDialog = true },
-                        onCategoryLongPress = { showReorderCategoriesSheet = true }
+                        onCategoryLongPress = { showReorderCategoriesSheet = true },
+                        pendingTaskCounts = pendingTaskCounts
                     )
                 }
 

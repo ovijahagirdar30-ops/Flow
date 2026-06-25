@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +59,14 @@ private const val NEW_CATEGORY_TAB_ID = Int.MIN_VALUE
  * "General" (null id) is also reported so the caller can open the same sheet —
  * the sheet itself only shows reorderable real categories.
  *
+ * Each user-category tab also renders a small badge with the number of pending
+ * (not-done) tasks in that category, taken from [pendingTaskCounts]. The
+ * "General" tab and the "+ New category" tab never show a badge — General by
+ * design, "+ New" because it is an action, not a category.
+ *
+ * @param pendingTaskCounts map of categoryId → pending task count. Entries with
+ *   a count of 0 (or missing keys) render no badge.
+ *
  * @param onAddCategoryClick invoked when the trailing "+ New category" tab is pressed.
  * @param onCategoryLongPress invoked when any non-"+ New" tab is long-pressed.
  */
@@ -66,7 +77,8 @@ fun CategoryTabRow(
     selectedCategoryId: Int?,
     onCategorySelected: (Int?) -> Unit,
     onAddCategoryClick: () -> Unit,
-    onCategoryLongPress: () -> Unit
+    onCategoryLongPress: () -> Unit,
+    pendingTaskCounts: Map<Int, Int> = emptyMap()
 ) {
     // Build the list of tabs: "General" (null id) + user categories + "New"
     // "General" tab = null categoryId (shows items without a category)
@@ -154,7 +166,7 @@ fun CategoryTabRow(
                     .padding(horizontal = 16.dp)
             ) {
                 if (catId == null) {
-                    // Icon-only "General" tab
+                    // Icon-only "General" tab — no badge by design.
                     Icon(
                         imageVector = ImageVector.vectorResource(R.drawable.home_23px),
                         contentDescription = "index",
@@ -162,18 +174,73 @@ fun CategoryTabRow(
                     )
                 } else {
                     // Text tab (user category OR "+ New category")
-                    Text(
-                        text = if (isNewCategoryTab) {
-                            stringResource(R.string.categories_trail)
-                        } else {
-                            name!!
-                        },
-                        style = MaterialTheme.typography.titleSmall,
-                        color = contentColor,
-                        textAlign = TextAlign.Center
-                    )
+                    val tabLabel = if (isNewCategoryTab) {
+                        stringResource(R.string.categories_trail)
+                    } else {
+                        name!!
+                    }
+                    val pendingCount = if (!isNewCategoryTab) {
+                        pendingTaskCounts[catId] ?: 0
+                    } else 0
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = tabLabel,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = contentColor,
+                            textAlign = TextAlign.Center
+                        )
+                        if (pendingCount > 0) {
+                            Spacer(modifier = Modifier.size(6.dp))
+                            PendingCountBadge(
+                                count = pendingCount,
+                                containerColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                },
+                                contentColor = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+/**
+ * Small pill-shaped badge that shows a pending-task count next to a category
+ * tab label. Styled after Google Tasks: subtle background, monospace-ish
+ * number, no border.
+ *
+ * Rendered only when [count] > 0 — callers are responsible for that check
+ * (avoids composing an empty box).
+ */
+@Composable
+private fun PendingCountBadge(
+    count: Int,
+    containerColor: Color,
+    contentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .background(color = containerColor, shape = CircleShape)
+            .padding(horizontal = 6.dp, vertical = 1.dp)
+    ) {
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = contentColor
+        )
+    }
+}
+
