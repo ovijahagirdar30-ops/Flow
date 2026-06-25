@@ -1,8 +1,11 @@
 package com.markel.flowstate.feature.flow.ideas
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
@@ -12,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,6 +31,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -45,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.designsystem.ui.IdeaSharedKeys
 import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
+import com.markel.flowstate.feature.flow.components.CategorySelectorSheet
 import com.markel.flowstate.feature.flow.components.ColorPicker
 import com.markel.flowstate.feature.flow.components.resolveIdeaColor
 import com.markel.flowstate.feature.tasks.R
@@ -73,6 +79,9 @@ fun IdeaEditorScreen(
     }
 
     val editorState by viewModel.editor.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val categoriesEnabled by viewModel.categoriesEnabled.collectAsStateWithLifecycle()
+    var showCategorySelector by remember { mutableStateOf(false) }
 
     // We initialize the editor's state depending on whether we are creating or editing
     LaunchedEffect(ideaId) {
@@ -147,6 +156,38 @@ fun IdeaEditorScreen(
                 .imePadding()
                 .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
+            // ── Category selector (only when categories are enabled) ──────────────
+            if (categoriesEnabled) {
+                val generalName = stringResource(R.string.category_general)
+                val currentCategoryName = if (editorState.categoryId == null) {
+                    generalName
+                } else {
+                    categories.firstOrNull { it.id == editorState.categoryId }?.name ?: generalName
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { showCategorySelector = true }
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = currentCategoryName,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.arrow_drop_down_24px),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
             BasicTextField(
                 value = editorState.title,
                 onValueChange = { viewModel.updateTitle(it) },
@@ -235,5 +276,17 @@ fun IdeaEditorScreen(
                 )
             }
         }
+    }
+
+    // ── Category selector bottom sheet ───────────────────────────────────────
+    if (showCategorySelector) {
+        CategorySelectorSheet(
+            categories = categories,
+            selectedCategoryId = editorState.categoryId,
+            onCategorySelected = { viewModel.updateCategory(it) },
+            onDismiss = { showCategorySelector = false },
+            containerColor = cardColor,
+            contentColor = onCardColor
+        )
     }
 }

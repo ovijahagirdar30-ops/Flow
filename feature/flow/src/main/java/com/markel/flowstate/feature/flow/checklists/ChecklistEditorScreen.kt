@@ -40,6 +40,7 @@ import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
 import com.markel.flowstate.feature.flow.checklists.components.CheckListItemRow
 import com.markel.flowstate.feature.flow.checklists.components.GhostItemRow
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
+import com.markel.flowstate.feature.flow.components.CategorySelectorSheet
 import com.markel.flowstate.feature.flow.components.ColorPicker
 import com.markel.flowstate.feature.flow.components.resolveIdeaColor
 import com.markel.flowstate.feature.tasks.R
@@ -66,6 +67,9 @@ fun CheckListEditorScreen(
     }
 
     val editorState by viewModel.editor.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val categoriesEnabled by viewModel.categoriesEnabled.collectAsStateWithLifecycle()
+    var showCategorySelector by remember { mutableStateOf(false) }
 
     LaunchedEffect(checkListId) {
         if (checkListId == null) viewModel.openNew(categoryId)
@@ -160,6 +164,37 @@ fun CheckListEditorScreen(
         ) {
             // Title field
             item(key = "title") {
+                // ── Category selector (only when categories are enabled) ──────────────
+                if (categoriesEnabled) {
+                    val generalName = stringResource(R.string.category_general)
+                    val currentCategoryName = if (editorState.categoryId == null) {
+                        generalName
+                    } else {
+                        categories.firstOrNull { it.id == editorState.categoryId }?.name ?: generalName
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { showCategorySelector = true }
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = currentCategoryName,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.size(4.dp))
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.arrow_drop_down_24px),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
                 BasicTextField(
                     value = editorState.title,
                     onValueChange = { viewModel.updateTitle(it) },
@@ -320,5 +355,17 @@ fun CheckListEditorScreen(
                 )
             }
         }
+    }
+
+    // ── Category selector bottom sheet ───────────────────────────────────────
+    if (showCategorySelector) {
+        CategorySelectorSheet(
+            categories = categories,
+            selectedCategoryId = editorState.categoryId,
+            onCategorySelected = { viewModel.updateCategory(it) },
+            onDismiss = { showCategorySelector = false },
+            containerColor = cardColor,
+            contentColor = onCardColor
+        )
     }
 }

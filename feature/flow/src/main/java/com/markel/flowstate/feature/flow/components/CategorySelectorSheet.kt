@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -24,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -43,12 +45,27 @@ import com.markel.flowstate.feature.tasks.R
  * right. Tapping any row fires [onCategorySelected] with the chosen id (which
  * may be `null` for General) and dismisses the sheet.
  *
+ * Color handling:
+ *  - [containerColor] is the sheet background. Defaults to `surfaceContainerLow`,
+ *    which matches the task editor (whose surface IS the surface color).
+ *  - [contentColor] is used for the title, the row labels and the check icon.
+ *    Defaults to `onSurface`.
+ *  - Ideas and checklists can have a custom card color; in that case the caller
+ *    passes `cardColor` and `onCardColor` so the sheet visually belongs to the
+ *    same surface as the editor. When the card has no custom color, `cardColor`
+ *    resolves to `surface` and `onCardColor` to `onSurface`, so the sheet ends
+ *    up looking identical to the default — no special-casing needed.
+ *
  * @param categories        user categories (raw list from the VM; "General"
  *                          entries are filtered out internally).
  * @param selectedCategoryId id of the currently-selected category, or `null`
  *                          for General.
  * @param onCategorySelected invoked with the new category id (null = General).
  * @param onDismiss         invoked when the sheet is dismissed by the user.
+ * @param containerColor    background color of the sheet.
+ * @param contentColor      text/icon color used inside the sheet. The title and
+ *                          unselected rows use a slightly faded version of it;
+ *                          the selected row + check use it at full strength.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +73,9 @@ fun CategorySelectorSheet(
     categories: List<Category>,
     selectedCategoryId: Int?,
     onCategorySelected: (Int?) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLow,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -69,7 +88,7 @@ fun CategorySelectorSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = containerColor,
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -96,7 +115,8 @@ fun CategorySelectorSheet(
                         onClick = {
                             onCategorySelected(null)
                             onDismiss()
-                        }
+                        },
+                        contentColor = contentColor
                     )
                 }
 
@@ -108,7 +128,8 @@ fun CategorySelectorSheet(
                         onClick = {
                             onCategorySelected(category.id)
                             onDismiss()
-                        }
+                        },
+                        contentColor = contentColor
                     )
                 }
             }
@@ -116,11 +137,13 @@ fun CategorySelectorSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun CategorySelectorRow(
     label: String,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    contentColor: Color
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -135,12 +158,8 @@ private fun CategorySelectorRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (isSelected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
+            style = if (isSelected) MaterialTheme.typography.bodyLargeEmphasized else MaterialTheme.typography.bodyLarge,
+            color = if (isSelected) contentColor else contentColor.copy(alpha = 0.7f),
             modifier = Modifier.weight(1f)
         )
 
@@ -153,7 +172,7 @@ private fun CategorySelectorRow(
                 Icon(
                     imageVector = ImageVector.vectorResource(R.drawable.check_24px),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = contentColor
                 )
             }
         }
