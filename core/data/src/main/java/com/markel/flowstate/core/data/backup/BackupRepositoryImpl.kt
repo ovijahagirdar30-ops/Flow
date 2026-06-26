@@ -1,10 +1,14 @@
 package com.markel.flowstate.core.data.backup
 
 import com.markel.flowstate.core.data.local.CategoryDao
+import com.markel.flowstate.core.data.local.CategoryEntity
 import com.markel.flowstate.core.data.local.CheckListDao
+import com.markel.flowstate.core.data.local.CheckListEntity
 import com.markel.flowstate.core.data.local.HabitDao
 import com.markel.flowstate.core.data.local.IdeaDao
+import com.markel.flowstate.core.data.local.IdeaEntity
 import com.markel.flowstate.core.data.local.TaskDao
+import com.markel.flowstate.core.data.local.TaskEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -56,12 +60,30 @@ class BackupRepositoryImpl @Inject constructor(
                     return@withContext RestoreResult.Error(RestoreErrorType.SCHEMA_MISMATCH)
                 }
 
-                // Additive restore — upsert everything
-                data.categories.map { it.toEntity() }.forEach { categoryDao.upsertCategory(it) }
-                data.tasks.map { it.toEntity() }.forEach { taskDao.upsertTaskEntity(it) }
+                // ── Category ID remapping ───────────────────────────────────
+                val existingCategories = categoryDao.getAllCategoriesOnce()
+                val existingByName = existingCategories.associateBy { it.name.lowercase() }
+
+                val categoryIdRemap = mutableMapOf<Int?, Int?>()
+                categoryIdRemap[null] = null // General always maps to General
+
+                data.categories.forEach { schema ->
+                    val targetId = existingByName[schema.name.lowercase()]?.id
+                        ?: categoryDao.upsertCategory(
+                            CategoryEntity(id = 0, name = schema.name, position = schema.position)
+                        ).toInt()
+                    categoryIdRemap[schema.id] = targetId
+                }
+
+                // ── Additive restore — upsert everything with remapped category ids ──
+                data.tasks.map { it.toEntity().withRemappedCategory(categoryIdRemap) }
+                    .forEach { taskDao.upsertTaskEntity(it) }
+
                 if (data.subTasks.isNotEmpty()) taskDao.insertSubTasks(data.subTasks.map { it.toEntity() })
-                data.ideas.map { it.toEntity() }.forEach { ideaDao.upsertIdea(it) }
-                data.checkLists.map { it.toEntity() }.forEach { checkListDao.upsertListEntity(it) }
+                data.ideas.map { it.toEntity().withRemappedCategory(categoryIdRemap) }
+                    .forEach { ideaDao.upsertIdea(it) }
+                data.checkLists.map { it.toEntity().withRemappedCategory(categoryIdRemap) }
+                    .forEach { checkListDao.upsertListEntity(it) }
                 if (data.checkListItems.isNotEmpty()) checkListDao.insertListItems(data.checkListItems.map { it.toEntity() })
                 data.habits.map { it.toEntity() }.forEach { habitDao.insertHabit(it) }
                 data.habitEntries.map { it.toEntity() }.forEach { habitDao.insertEntry(it) }
@@ -75,3 +97,18 @@ class BackupRepositoryImpl @Inject constructor(
             }
         }
 }
+
+// ── Remap helpers ──────────────────────────────────────────────────────
+
+/**
+ * Rewrites the [categoryId] of a [TaskEntity] using [remap]. If the original
+ * `categoryId` is not in the map (e.g. the category was deleted), the result
+ * has `categoryId = null` (General).
+ */
+private fun TaskEntity.withRemappedCategory(remap: Map<Int?, Int?>): TaskEntity = copy(categoryId = remap[categoryId])
+
+/** Same as above for [IdeaEntity]. */
+private fun IdeaEntity.withRemappedCategory(remap: Map<Int?, Int?>): IdeaEntity = copy(categoryId = remap[categoryId])
+
+/** Same as above for [CheckListEntity]. */
+private fun CheckListEntity.withRemappedCategory(remap: Map<Int?, Int?>): CheckListEntity = copy(categoryId = remap[categoryId])

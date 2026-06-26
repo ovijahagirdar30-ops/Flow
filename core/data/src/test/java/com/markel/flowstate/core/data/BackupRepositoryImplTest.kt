@@ -4,6 +4,8 @@ import com.markel.flowstate.core.data.backup.BackupRepositoryImpl
 import com.markel.flowstate.core.data.backup.FlowStateExport
 import com.markel.flowstate.core.data.backup.RestoreErrorType
 import com.markel.flowstate.core.data.backup.RestoreResult
+import com.markel.flowstate.core.data.local.CategoryDao
+import com.markel.flowstate.core.data.local.CategoryEntity
 import com.markel.flowstate.core.data.local.CheckListDao
 import com.markel.flowstate.core.data.local.CheckListEntity
 import com.markel.flowstate.core.data.local.CheckListItemEntity
@@ -38,12 +40,13 @@ class BackupRepositoryImplTest {
     private val ideaDao: IdeaDao = mockk(relaxed = true)
     private val checkListDao: CheckListDao = mockk(relaxed = true)
     private val habitDao: HabitDao = mockk(relaxed = true)
+    private val categoryDao: CategoryDao = mockk(relaxed = true)
 
     private lateinit var repository: BackupRepositoryImpl
 
     @Before
     fun setUp() {
-        repository = BackupRepositoryImpl(taskDao, ideaDao, checkListDao, habitDao)
+        repository = BackupRepositoryImpl(taskDao, ideaDao, checkListDao, habitDao, categoryDao)
     }
 
     // ── Test data ──────────────────────────────────────────────────────
@@ -88,6 +91,10 @@ class BackupRepositoryImplTest {
         habitId = 2, epochDay = 19700L, value = 3.5f
     )
 
+    private val sampleCategory = CategoryEntity(
+        id = 1, name = "Work", position = 0
+    )
+
     /** Stubs all DAO one-shot queries with sample data. */
     private fun stubDaoQueries() {
         coEvery { taskDao.getAllTasksOnce() } returns listOf(
@@ -102,6 +109,10 @@ class BackupRepositoryImplTest {
         )
         coEvery { habitDao.getAllEntriesOnce() } returns listOf(sampleHabitEntry)
         coEvery { habitDao.getAllNumericEntriesOnce() } returns listOf(sampleNumericEntry)
+        coEvery { categoryDao.getAllCategoriesOnce() } returns listOf(sampleCategory)
+        // When restoring, the remap logic asks the DAO to insert new categories.
+        // Return a deterministic id so tests can assert against it.
+        coEvery { categoryDao.upsertCategory(any()) } returns 100L
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -139,6 +150,7 @@ class BackupRepositoryImplTest {
         assertTrue("Export should contain habits", parsed.habits.isNotEmpty())
         assertTrue("Export should contain habit entries", parsed.habitEntries.isNotEmpty())
         assertTrue("Export should contain numeric entries", parsed.habitNumericEntries.isNotEmpty())
+        assertTrue("Export should contain categories", parsed.categories.isNotEmpty())
     }
 
     @Test
@@ -192,6 +204,7 @@ class BackupRepositoryImplTest {
         coEvery { habitDao.getAllHabitsOnce() } returns emptyList()
         coEvery { habitDao.getAllEntriesOnce() } returns emptyList()
         coEvery { habitDao.getAllNumericEntriesOnce() } returns emptyList()
+        coEvery { categoryDao.getAllCategoriesOnce() } returns emptyList()
 
         val json = repository.exportToJson()
         val parsed = Json { ignoreUnknownKeys = true }.decodeFromString<FlowStateExport>(json)
@@ -205,6 +218,7 @@ class BackupRepositoryImplTest {
         assertTrue(parsed.habits.isEmpty())
         assertTrue(parsed.habitEntries.isEmpty())
         assertTrue(parsed.habitNumericEntries.isEmpty())
+        assertTrue(parsed.categories.isEmpty())
     }
 
     @Test
@@ -219,6 +233,7 @@ class BackupRepositoryImplTest {
         coVerify(exactly = 1) { habitDao.getAllHabitsOnce() }
         coVerify(exactly = 1) { habitDao.getAllEntriesOnce() }
         coVerify(exactly = 1) { habitDao.getAllNumericEntriesOnce() }
+        coVerify(exactly = 1) { categoryDao.getAllCategoriesOnce() }
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -250,6 +265,10 @@ class BackupRepositoryImplTest {
         coVerify { habitDao.insertHabit(any()) }
         coVerify { habitDao.insertEntry(any()) }
         coVerify { habitDao.upsertNumericEntry(any()) }
+        // "Work" already exists in the stubbed DAO, so the remap reuses its id
+        // and never calls upsertCategory. See the remap tests for the "new
+        // category" path that does invoke upsertCategory.
+        coVerify(exactly = 0) { categoryDao.upsertCategory(any()) }
     }
 
     @Test
@@ -323,6 +342,7 @@ class BackupRepositoryImplTest {
         coVerify(exactly = 0) { ideaDao.upsertIdea(any()) }
         coVerify(exactly = 0) { checkListDao.upsertListEntity(any()) }
         coVerify(exactly = 0) { habitDao.insertHabit(any()) }
+        coVerify(exactly = 0) { categoryDao.upsertCategory(any()) }
     }
 
     @Test
@@ -545,6 +565,206 @@ class BackupRepositoryImplTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    //  CATEGORY REMAP TESTS (cross-device restore safety)
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Test
+    fun restoreFromJson_withOldBackupMissingCategoriesField_stillSucceeds() = runTest {
+        // Simulates a backup produced by a pre-v18 app version: the JSON has
+        // no "categories" array and no "categoryId" on tasks/ideas/checklists.
+        // The lenient parser + default values must fill the gaps so the restore
+        // completes without errors. Items end up in General (null category).
+        val oldBackupJson = """
+        {
+            "schemaVersion": ${FlowStateExport.CURRENT_SCHEMA_VERSION - 1},
+            "exportTimestamp": 1700000000000,
+            "tasks": [
+                {
+                    "id": 1, "title": "Old task", "description": "",
+                    "isDone": false, "position": 0, "priority": 0,
+                    "dueDate": null, "completedAt": null, "reminderTime": null
+                }
+            ],
+            "subTasks": [],
+            "ideas": [],
+            "checkLists": [],
+            "checkListItems": [],
+            "habits": [],
+            "habitEntries": [],
+            "habitNumericEntries": []
+        }
+        """.trimIndent()
+
+        val result = repository.restoreFromJson(oldBackupJson)
+
+        assertTrue(
+            "Old backup without categories must restore successfully",
+            result is RestoreResult.Success
+        )
+        coVerify(exactly = 0) { categoryDao.upsertCategory(any()) }
+        coVerify(exactly = 1) { taskDao.upsertTaskEntity(match { it.categoryId == null }) }
+    }
+
+    @Test
+    fun restoreFromJson_remapsCategoryByIdWhenNameMatchesExisting() = runTest {
+        // The destination DB already has a "Work" category with id = 5.
+        // The backup has a "Work" category with id = 1. The restore must NOT
+        // insert a duplicate; it must reuse id = 5 so tasks filed under
+        // "Work" in the backup end up under the existing "Work" category.
+        coEvery { categoryDao.getAllCategoriesOnce() } returns listOf(
+            CategoryEntity(id = 5, name = "Work", position = 0)
+        )
+        coEvery { taskDao.getAllTasksOnce() } returns emptyList()
+        coEvery { ideaDao.getAllIdeasOnce() } returns emptyList()
+        coEvery { checkListDao.getAllListsOnce() } returns emptyList()
+        coEvery { habitDao.getAllHabitsOnce() } returns emptyList()
+        coEvery { habitDao.getAllEntriesOnce() } returns emptyList()
+        coEvery { habitDao.getAllNumericEntriesOnce() } returns emptyList()
+
+        val json = buildJsonWithCategoryAndTask(
+            categoryId = 1,
+            categoryName = "Work",
+            taskTitle = "Restore me"
+        )
+
+        repository.restoreFromJson(json)
+
+        // No new category should be inserted — "Work" already exists
+        coVerify(exactly = 0) { categoryDao.upsertCategory(any()) }
+        // The task must be restored with the REMAPPED categoryId (5, not 1)
+        coVerify(exactly = 1) {
+            taskDao.upsertTaskEntity(match { it.title == "Restore me" && it.categoryId == 5 })
+        }
+    }
+
+    @Test
+    fun restoreFromJson_insertsNewCategoryWhenNameDoesNotMatch() = runTest {
+        // Destination DB has no categories at all. The backup has "Work" with
+        // id = 1. The restore must insert "Work" as a new row (autoGenerate)
+        // and the task must end up with the newly-assigned id (stubbed to 100L).
+        coEvery { categoryDao.getAllCategoriesOnce() } returns emptyList()
+        coEvery { taskDao.getAllTasksOnce() } returns emptyList()
+        coEvery { ideaDao.getAllIdeasOnce() } returns emptyList()
+        coEvery { checkListDao.getAllListsOnce() } returns emptyList()
+        coEvery { habitDao.getAllHabitsOnce() } returns emptyList()
+        coEvery { habitDao.getAllEntriesOnce() } returns emptyList()
+        coEvery { habitDao.getAllNumericEntriesOnce() } returns emptyList()
+        coEvery { categoryDao.upsertCategory(any()) } returns 100L
+
+        val json = buildJsonWithCategoryAndTask(
+            categoryId = 1,
+            categoryName = "Work",
+            taskTitle = "Restore me"
+        )
+
+        repository.restoreFromJson(json)
+
+        // New category inserted with id = 0 (autoGenerate), not the backup id
+        coVerify(exactly = 1) {
+            categoryDao.upsertCategory(match { it.id == 0 && it.name == "Work" })
+        }
+        // Task remapped to the freshly-assigned id (100), not the backup id (1)
+        coVerify(exactly = 1) {
+            taskDao.upsertTaskEntity(match { it.categoryId == 100 })
+        }
+    }
+
+    @Test
+    fun restoreFromJson_remapsIdeaAndChecklistCategoryIds() = runTest {
+        // The remap must also apply to ideas and checklists, not just tasks.
+        coEvery { categoryDao.getAllCategoriesOnce() } returns listOf(
+            CategoryEntity(id = 7, name = "Personal", position = 0)
+        )
+        coEvery { taskDao.getAllTasksOnce() } returns emptyList()
+        coEvery { ideaDao.getAllIdeasOnce() } returns emptyList()
+        coEvery { checkListDao.getAllListsOnce() } returns emptyList()
+        coEvery { habitDao.getAllHabitsOnce() } returns emptyList()
+        coEvery { habitDao.getAllEntriesOnce() } returns emptyList()
+        coEvery { habitDao.getAllNumericEntriesOnce() } returns emptyList()
+
+        val export = FlowStateExport(
+            schemaVersion = FlowStateExport.CURRENT_SCHEMA_VERSION,
+            exportTimestamp = 0,
+            tasks = emptyList(),
+            subTasks = emptyList(),
+            ideas = listOf(
+                com.markel.flowstate.core.data.backup.IdeaSchema(
+                    id = 1, title = "Idea", content = "",
+                    createdAt = 0L, color = 0L, position = 0, categoryId = 99
+                )
+            ),
+            checkLists = listOf(
+                com.markel.flowstate.core.data.backup.CheckListSchema(
+                    id = 1, title = "List", color = 0L, position = 0, categoryId = 99
+                )
+            ),
+            checkListItems = emptyList(),
+            habits = emptyList(),
+            habitEntries = emptyList(),
+            habitNumericEntries = emptyList(),
+            categories = listOf(
+                com.markel.flowstate.core.data.backup.CategorySchema(
+                    id = 99, name = "Personal", position = 0
+                )
+            )
+        )
+        val json = Json.encodeToString(FlowStateExport.serializer(), export)
+
+        repository.restoreFromJson(json)
+
+        // The backup id 99 must be remapped to the existing id 7
+        coVerify(exactly = 1) { ideaDao.upsertIdea(match { it.categoryId == 7 }) }
+        coVerify(exactly = 1) { checkListDao.upsertListEntity(match { it.categoryId == 7 }) }
+    }
+
+    @Test
+    fun restoreFromJson_orphanCategoryId_fallsBackToGeneral() = runTest {
+        // Edge case: the backup references a categoryId that is NOT in the
+        // categories array (e.g. the category was deleted between export and
+        // restore). The remap has no entry for it, so the task must end up
+        // in General (categoryId = null) rather than pointing to a non-existent row.
+        coEvery { categoryDao.getAllCategoriesOnce() } returns emptyList()
+        coEvery { taskDao.getAllTasksOnce() } returns emptyList()
+        coEvery { ideaDao.getAllIdeasOnce() } returns emptyList()
+        coEvery { checkListDao.getAllListsOnce() } returns emptyList()
+        coEvery { habitDao.getAllHabitsOnce() } returns emptyList()
+        coEvery { habitDao.getAllEntriesOnce() } returns emptyList()
+        coEvery { habitDao.getAllNumericEntriesOnce() } returns emptyList()
+
+        val export = FlowStateExport(
+            schemaVersion = FlowStateExport.CURRENT_SCHEMA_VERSION,
+            exportTimestamp = 0,
+            tasks = listOf(
+                com.markel.flowstate.core.data.backup.TaskSchema(
+                    id = 1, title = "Orphan", description = "",
+                    isDone = false, position = 0, priority = 0,
+                    dueDate = null, completedAt = null, reminderTime = null,
+                    categoryId = 999 // NOT present in the categories array
+                )
+            ),
+            subTasks = emptyList(),
+            ideas = emptyList(),
+            checkLists = emptyList(),
+            checkListItems = emptyList(),
+            habits = emptyList(),
+            habitEntries = emptyList(),
+            habitNumericEntries = emptyList(),
+            categories = emptyList()
+        )
+        val json = Json.encodeToString(FlowStateExport.serializer(), export)
+
+        val result = repository.restoreFromJson(json)
+
+        assertTrue(result is RestoreResult.Success)
+        // No category insert attempted (empty list)
+        coVerify(exactly = 0) { categoryDao.upsertCategory(any()) }
+        // Task restored with categoryId = null (General), NOT 999
+        coVerify(exactly = 1) {
+            taskDao.upsertTaskEntity(match { it.title == "Orphan" && it.categoryId == null })
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     //  HELPERS
     // ═══════════════════════════════════════════════════════════════════
 
@@ -567,4 +787,43 @@ class BackupRepositoryImplTest {
         )
         return Json.encodeToString(FlowStateExport.serializer(), export)
     }
+
+
+    /**
+     * Builds a JSON backup containing one category and one task that points to
+     * that category. Used by the remap tests to verify how the restore maps the
+     * backup category id onto the destination DB.
+     */
+    private fun buildJsonWithCategoryAndTask(
+        categoryId: Int,
+        categoryName: String,
+        taskTitle: String
+    ): String {
+        val export = FlowStateExport(
+            schemaVersion = FlowStateExport.CURRENT_SCHEMA_VERSION,
+            exportTimestamp = 0,
+            tasks = listOf(
+                com.markel.flowstate.core.data.backup.TaskSchema(
+                    id = 1, title = taskTitle, description = "",
+                    isDone = false, position = 0, priority = 0,
+                    dueDate = null, completedAt = null, reminderTime = null,
+                    categoryId = categoryId
+                )
+            ),
+            subTasks = emptyList(),
+            ideas = emptyList(),
+            checkLists = emptyList(),
+            checkListItems = emptyList(),
+            habits = emptyList(),
+            habitEntries = emptyList(),
+            habitNumericEntries = emptyList(),
+            categories = listOf(
+                com.markel.flowstate.core.data.backup.CategorySchema(
+                    id = categoryId, name = categoryName, position = 0
+                )
+            )
+        )
+        return Json.encodeToString(FlowStateExport.serializer(), export)
+    }
+
 }
