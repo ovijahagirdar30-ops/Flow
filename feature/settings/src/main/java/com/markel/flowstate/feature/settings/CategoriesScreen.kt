@@ -244,24 +244,35 @@ fun CategoriesScreen(
                     }
                 }
 
+                item(key = "add_category_spacer") {
+                    Spacer(modifier = Modifier.padding(top = 16.dp))
+                }
+
                 item(key = "add_category") {
                     ListItem(
                         headlineContent = {
-                            Text(
-                                text = stringResource(R.string.categories_add),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(DesignR.drawable.add_24px),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Spacer(modifier = Modifier.padding(horizontal = 4.dp))
+                                Text(
+                                    text = stringResource(R.string.categories_add),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         },
-                        leadingContent = {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(DesignR.drawable.add_24px),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
+                        leadingContent = null,
+                        trailingContent = null,
                         colors = ListItemDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
