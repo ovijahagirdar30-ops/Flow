@@ -1,6 +1,8 @@
 package com.markel.flowstate.feature.flow.checklists
 
 import app.cash.turbine.test
+import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.domain.CategoryRepository
 import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.CheckListItem
 import com.markel.flowstate.core.domain.CheckListRepository
@@ -23,6 +25,8 @@ class ChecklistViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository: CheckListRepository = mockk(relaxed = true)
+    private val categoryRepository: CategoryRepository = mockk(relaxed = true)
+    private val userPreferencesRepository: UserPreferencesRepository = mockk(relaxed = true)
     private lateinit var viewModel: CheckListViewModel
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -41,7 +45,7 @@ class ChecklistViewModelTest {
     @Test
     fun openNew_resetsEditorState() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN
         viewModel.openNew()
@@ -64,7 +68,7 @@ class ChecklistViewModelTest {
         val items = listOf(item("a", "Buy milk"), item("b", "Buy eggs", isDone = true))
         val list = checklist(id = 5, title = "Groceries", items = items)
         coEvery { repository.getLists() } returns flowOf(listOf(list))
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN
         viewModel.loadForEditing(5)
@@ -82,7 +86,7 @@ class ChecklistViewModelTest {
     fun loadForEditing_whenChecklistDoesNotExist_keepsEmptyState() = runTest {
         // GIVEN
         coEvery { repository.getLists() } returns flowOf(emptyList())
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN
         viewModel.loadForEditing(99)
@@ -100,7 +104,7 @@ class ChecklistViewModelTest {
     @Test
     fun updateTitle_updatesStateCorrectly() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN
         viewModel.updateTitle("Shopping")
@@ -114,7 +118,7 @@ class ChecklistViewModelTest {
     @Test
     fun updateColor_updatesStateCorrectly() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN
         viewModel.updateColor(0xFF123456L)
@@ -130,7 +134,7 @@ class ChecklistViewModelTest {
     @Test
     fun addItem_addsEmptyItemToList_andReturnsItsId() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN
         val returnedId = viewModel.addItem()
@@ -148,7 +152,7 @@ class ChecklistViewModelTest {
     @Test
     fun addItem_multipleItems_positionsAreSequential() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN
         viewModel.addItem()
@@ -170,7 +174,7 @@ class ChecklistViewModelTest {
     @Test
     fun updateItemText_updatesCorrectItem() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         val id = viewModel.addItem()
 
         // WHEN
@@ -186,7 +190,7 @@ class ChecklistViewModelTest {
     @Test
     fun updateItemText_doesNotAffectOtherItems() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         val id1 = viewModel.addItem()
         val id2 = viewModel.addItem()
 
@@ -206,7 +210,7 @@ class ChecklistViewModelTest {
     @Test
     fun toggleItem_marksItemAsDone() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         val id = viewModel.addItem()
 
         // WHEN
@@ -221,7 +225,7 @@ class ChecklistViewModelTest {
     @Test
     fun toggleItem_togglesBackToUndone() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         val id = viewModel.addItem()
         viewModel.toggleItem(id) // first toggle → done
 
@@ -239,7 +243,7 @@ class ChecklistViewModelTest {
     @Test
     fun removeItem_removesCorrectItem() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         val id1 = viewModel.addItem()
         val id2 = viewModel.addItem()
 
@@ -259,7 +263,7 @@ class ChecklistViewModelTest {
     @Test
     fun reorderPendingItems_movesItemCorrectly() = runTest {
         // GIVEN — three pending items in order A, B, C
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         val idA = viewModel.addItem(); viewModel.updateItemText(idA, "A")
         val idB = viewModel.addItem(); viewModel.updateItemText(idB, "B")
         val idC = viewModel.addItem(); viewModel.updateItemText(idC, "C")
@@ -279,7 +283,7 @@ class ChecklistViewModelTest {
     @Test
     fun reorderPendingItems_doesNotAffectCompletedItems() = runTest {
         // GIVEN — two pending items and one completed
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         val idA = viewModel.addItem(); viewModel.updateItemText(idA, "A")
         val idB = viewModel.addItem(); viewModel.updateItemText(idB, "B")
         val idDone = viewModel.addItem(); viewModel.updateItemText(idDone, "Done"); viewModel.toggleItem(idDone)
@@ -299,7 +303,7 @@ class ChecklistViewModelTest {
     @Test
     fun reorderPendingItems_updatesPositionsSequentially() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         val id1 = viewModel.addItem()
         val id2 = viewModel.addItem()
         val id3 = viewModel.addItem()
@@ -319,7 +323,7 @@ class ChecklistViewModelTest {
     @Test
     fun closeAndSave_withNewChecklist_callsRepositoryUpsert() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.updateTitle("Groceries")
         val id = viewModel.addItem(); viewModel.updateItemText(id, "Milk")
 
@@ -337,7 +341,7 @@ class ChecklistViewModelTest {
     @Test
     fun closeAndSave_withEmptyTitleAndNoItems_doesNotCallRepository() = runTest {
         // GIVEN — blank editor, nothing to save
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN
         viewModel.closeAndSave()
@@ -349,7 +353,7 @@ class ChecklistViewModelTest {
     @Test
     fun closeAndSave_filtersOutBlankItems_beforePersisting() = runTest {
         // GIVEN — one real item and one blank (ghost) item
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.updateTitle("List")
         val idReal = viewModel.addItem(); viewModel.updateItemText(idReal, "Real item")
         viewModel.addItem() // blank item — should be discarded
@@ -370,7 +374,7 @@ class ChecklistViewModelTest {
         // GIVEN — editor loaded with an existing checklist
         val original = checklist(id = 7, title = "Old Title")
         coEvery { repository.getLists() } returns flowOf(listOf(original))
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.loadForEditing(7)
         viewModel.updateTitle("New Title")
 
@@ -388,7 +392,7 @@ class ChecklistViewModelTest {
     @Test
     fun closeAndSave_resetsEditorStateAfterSave() = runTest {
         // GIVEN
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.updateTitle("Temp")
 
         // WHEN
@@ -410,7 +414,7 @@ class ChecklistViewModelTest {
         // GIVEN
         val list = checklist(id = 3, title = "To delete")
         coEvery { repository.getLists() } returns flowOf(listOf(list))
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN
         viewModel.deleteCheckList(3)
@@ -423,7 +427,7 @@ class ChecklistViewModelTest {
     fun deleteCheckList_whenNotFound_doesNotCallRepository() = runTest {
         // GIVEN
         coEvery { repository.getLists() } returns flowOf(emptyList())
-        viewModel = CheckListViewModel(repository)
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN
         viewModel.deleteCheckList(99)
