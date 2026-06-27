@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.markel.flowstate.core.designsystem.components.ExpressiveIconButton
 import com.markel.flowstate.core.designsystem.ui.IdeaSharedKeys
 import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
@@ -88,7 +90,7 @@ fun IdeaEditorScreen(
         if (ideaId == null) viewModel.openNew(categoryId)
         else viewModel.loadIdeaForEditing(ideaId)
     }
-    
+
     val resolvedColor = editorState.color.resolveIdeaColor()
     val cardColor = if (resolvedColor == COLOR_TRANSPARENT)
         MaterialTheme.colorScheme.surface
@@ -104,7 +106,7 @@ fun IdeaEditorScreen(
         modifier = Modifier
             .then(
                 if (ideaId != null) Modifier.sharedDetailBounds(IdeaSharedKeys.container(ideaId))
-                        else Modifier
+                else Modifier
             ),
         contentWindowInsets = WindowInsets(0.dp),
         containerColor = cardColor,
@@ -125,24 +127,25 @@ fun IdeaEditorScreen(
                 },
                 title = {},
                 actions = {
-                    IconButton(onClick = { showColorSheet = true }) {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
-                            contentDescription = "Change background color",
-                            tint = onCardColor.copy(alpha = 0.8f)
-                        )
-                    }
+                    ExpressiveIconButton(
+                        onClick = { showColorSheet = true },
+                        imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
+                        contentDescription = "Change background color",
+                        containerColor = cardColor,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
                     if (ideaId != null) {
-                        IconButton(onClick = {
-                            viewModel.deleteIdea(ideaId)
-                            onBack()
-                        }) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
-                                contentDescription = "Delete idea",
-                                tint = onCardColor.copy(alpha = 0.8f)
-                            )
-                        }
+                        ExpressiveIconButton(
+                            onClick = {
+                                viewModel.deleteIdea(ideaId)
+                                onBack()
+                            },
+                            imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
+                            contentDescription = "Delete idea",
+                            containerColor = cardColor
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
                     }
                 }
             )
@@ -186,13 +189,15 @@ fun IdeaEditorScreen(
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
+                Spacer(modifier = Modifier.size(6.dp))
             }
+            else Spacer(modifier = Modifier.size(6.dp))
 
             BasicTextField(
                 value = editorState.title,
                 onValueChange = { viewModel.updateTitle(it) },
                 textStyle = TextStyle(
-                    fontSize = 22.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = onCardColor
                 ),
@@ -205,7 +210,7 @@ fun IdeaEditorScreen(
                         if (editorState.title.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.title),
-                                fontSize = 22.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = onCardColor.copy(alpha = 0.4f)
                             )

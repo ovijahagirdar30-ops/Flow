@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.markel.flowstate.core.designsystem.components.ExpressiveIconButton
 import com.markel.flowstate.core.designsystem.ui.CheckListSharedKeys
 import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
 import com.markel.flowstate.feature.flow.checklists.components.CheckListItemRow
@@ -131,24 +132,25 @@ fun CheckListEditorScreen(
                 },
                 title = {},
                 actions = {
-                    IconButton(onClick = { showColorSheet = true }) {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
-                            contentDescription = "Change background color",
-                            tint = onCardColor.copy(alpha = 0.8f)
-                        )
-                    }
+                    ExpressiveIconButton(
+                        onClick = { showColorSheet = true },
+                        imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
+                        contentDescription = "Change background color",
+                        containerColor = cardColor,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
                     if (checkListId != null) {
-                        IconButton(onClick = {
+                        ExpressiveIconButton(
+                            onClick = {
                             viewModel.deleteCheckList(checkListId)
                             onBack()
-                        }) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
-                                contentDescription = "Delete checklist",
-                                tint = onCardColor.copy(alpha = 0.8f)
-                            )
-                        }
+                            },
+                            imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
+                            contentDescription = "Delete checklist",
+                            containerColor = cardColor,
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
                     }
                 }
             )
@@ -194,12 +196,14 @@ fun CheckListEditorScreen(
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
+                    Spacer(modifier = Modifier.size(6.dp))
                 }
+                else Spacer(modifier = Modifier.size(6.dp))
                 BasicTextField(
                     value = editorState.title,
                     onValueChange = { viewModel.updateTitle(it) },
                     textStyle = TextStyle(
-                        fontSize = 22.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = onCardColor
                     ),
@@ -212,7 +216,7 @@ fun CheckListEditorScreen(
                             if (editorState.title.isEmpty()) {
                                 Text(
                                     text = stringResource(R.string.title),
-                                    fontSize = 22.sp,
+                                    fontSize = 24.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = onCardColor.copy(alpha = 0.4f)
                                 )
