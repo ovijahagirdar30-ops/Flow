@@ -1,11 +1,14 @@
 package com.markel.flowstate.core.designsystem.components
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -15,6 +18,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -22,6 +27,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 /**
  * Returns a color that is perceptually lighter than [this] by blending it toward
@@ -89,33 +95,43 @@ fun ExpressiveIconButton(
     cornerRadius: Dp = 16.dp,
     tint: Color = MaterialTheme.colorScheme.onSurface,
     lightenFraction: Float = 0.12f,
-    pressedScale: Float = 0.92f,
+    pressedScale: Float = 0.88f,
     interactionSource: MutableInteractionSource? = null,
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
-    val pressed by source.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) pressedScale else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "expressive_press_scale"
-    )
+    val scale = remember { Animatable(1f) }
+    val scope = rememberCoroutineScope()
 
-    IconButton(
-        onClick = onClick,
-        interactionSource = source,
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = modifier
             .size(size)
             .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
+                scaleX = scale.value
+                scaleY = scale.value
             }
             .background(
                 color = containerColor.lighten(lightenFraction),
                 shape = RoundedCornerShape(cornerRadius)
             )
+            .clickable(
+                interactionSource = source,
+                indication = null,
+                onClick = {
+                    scope.launch {
+                        scale.snapTo(pressedScale)
+                        scale.animateTo(
+                            targetValue = 1f,
+                            animationSpec = spring(
+                                dampingRatio = 0.20f,
+                                stiffness = 200f
+                            )
+                        )
+                    }
+                    onClick()
+                }
+            )
+
     ) {
         Icon(
             imageVector = imageVector,
