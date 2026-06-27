@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -57,6 +58,7 @@ fun SettingsScreen(
         modifier = Modifier.Companion
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             LargeFlexibleTopAppBar(
                 scrollBehavior = scrollBehavior,
@@ -80,7 +82,7 @@ fun SettingsScreen(
                 start = 12.dp,
                 end = 12.dp,
                 top = 8.dp,
-                bottom = 60.dp
+                bottom = 30.dp
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
