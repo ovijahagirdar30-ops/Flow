@@ -14,6 +14,6 @@ sealed interface FlowUiState {
         val categories: List<Category> = emptyList(),
         val selectedCategoryId: Int? = null,
         val categoriesEnabled: Boolean = false,
-        val pendingTaskCounts: Map<Int, Int> = emptyMap()
+        val pendingTaskCounts: Map<Int?, Int> = emptyMap()
     ) : FlowUiState
 }

@@ -126,21 +126,21 @@ class FlowViewModel @Inject constructor(
                 val filteredTasks = coreData.tasks
                     .filter { !it.isDone && it.id !in pendingIds }
                     .let { filtered ->
-                        if (categoriesEnabled && selectedCategoryId != null) {
+                        if (categoriesEnabled) {
                             filtered.filter { it.categoryId == selectedCategoryId }
                         } else filtered
                     }
 
                 // Filter ideas by category if enabled
                 val filteredIdeas = coreData.ideas.let { list ->
-                    if (categoriesEnabled && selectedCategoryId != null) {
+                    if (categoriesEnabled) {
                         list.filter { it.categoryId == selectedCategoryId }
                     } else list
                 }
 
                 // Filter checklists by category if enabled
                 val filteredLists = coreData.lists.let { list ->
-                    if (categoriesEnabled && selectedCategoryId != null) {
+                    if (categoriesEnabled) {
                         list.filter { it.categoryId == selectedCategoryId }
                     } else list
                 }
@@ -151,8 +151,8 @@ class FlowViewModel @Inject constructor(
                 // Per-category pending task counts for the tab badges.
                 val pendingTaskCounts = coreData.tasks
                     .asSequence()
-                    .filter { !it.isDone && it.id !in pendingIds && it.categoryId != null }
-                    .groupingBy { it.categoryId!! }
+                    .filter { !it.isDone && it.id !in pendingIds}
+                    .groupingBy { it.categoryId }
                     .eachCount()
 
                 FlowUiState.Success(

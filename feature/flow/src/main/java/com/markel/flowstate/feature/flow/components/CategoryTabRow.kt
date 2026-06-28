@@ -78,7 +78,7 @@ fun CategoryTabRow(
     onCategorySelected: (Int?) -> Unit,
     onAddCategoryClick: () -> Unit,
     onCategoryLongPress: () -> Unit,
-    pendingTaskCounts: Map<Int, Int> = emptyMap()
+    pendingTaskCounts: Map<Int?, Int> = emptyMap()
 ) {
     // Build the list of tabs: "General" (null id) + user categories + "New"
     // "General" tab = null categoryId (shows items without a category)
@@ -144,17 +144,8 @@ fun CategoryTabRow(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .then(
-                        if (catId == null) {
-                            // Icon-only "General" tab: fill the parent's minTabWidth
-                            // slot so the ripple covers the whole tab area.
-                            Modifier.height(46.dp)
-                        } else {
-                            Modifier
-                                .wrapContentWidth()
-                                .height(46.dp)
-                        }
-                    )
+                    .wrapContentWidth()
+                    .height(46.dp)
                     .combinedClickable(
                         interactionSource = interactionSource,
                         indication = ripple(bounded = true),
@@ -165,41 +156,32 @@ fun CategoryTabRow(
                     )
                     .padding(horizontal = 16.dp)
             ) {
-                if (catId == null) {
-                    // Icon-only "General" tab — no badge by design.
-                    Icon(
-                        imageVector = ImageVector.vectorResource(R.drawable.home_23px),
-                        contentDescription = "index",
-                        tint = contentColor
-                    )
-                } else {
-                    // Text tab (user category OR "+ New category")
-                    val tabLabel = if (isNewCategoryTab) {
-                        stringResource(R.string.categories_trail)
-                    } else {
-                        name!!
-                    }
-                    val pendingCount = if (!isNewCategoryTab) {
-                        pendingTaskCounts[catId] ?: 0
-                    } else 0
+                // Text tab: "General" (null id) OR user category OR "+ New category"
+                val tabLabel = when {
+                    isNewCategoryTab -> stringResource(R.string.categories_trail)
+                    catId == null -> stringResource(R.string.category_general)
+                    else -> name!!
+                }
+                val pendingCount = if (!isNewCategoryTab) {
+                    pendingTaskCounts[catId] ?: 0
+                } else 0
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = tabLabel,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = contentColor,
-                            textAlign = TextAlign.Center
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = tabLabel,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = contentColor,
+                        textAlign = TextAlign.Center
+                    )
+                    if (pendingCount > 0 && !isSelected) {
+                        Spacer(modifier = Modifier.size(6.dp))
+                        PendingCountBadge(
+                            count = pendingCount,
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (pendingCount > 0 && !isSelected) {
-                            Spacer(modifier = Modifier.size(6.dp))
-                            PendingCountBadge(
-                                count = pendingCount,
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                 }
             }

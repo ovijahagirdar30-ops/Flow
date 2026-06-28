@@ -66,7 +66,8 @@ class TaskViewModel @Inject constructor(
         if (title.isBlank()) return
         viewModelScope.launch {
             val currentTasks = (uiState.value as? TasksUiState.Success)?.tasks ?: emptyList()
-            val minPosition = currentTasks.minOfOrNull { it.position } ?: 0
+            val sameCategoryTasks = currentTasks.filter { it.categoryId == categoryId }
+            val minPosition = sameCategoryTasks.minOfOrNull { it.position } ?: 0
             val effectiveReminderTime = if (reminderTime != null && reminderTime > System.currentTimeMillis()) reminderTime else null
 
             val newTask = Task(
