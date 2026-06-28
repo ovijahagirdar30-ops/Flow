@@ -134,7 +134,7 @@ fun IdeaEditorScreen(
                         containerColor = cardColor,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     if (ideaId != null) {
                         ExpressiveIconButton(
                             onClick = {
@@ -145,7 +145,7 @@ fun IdeaEditorScreen(
                             contentDescription = "Delete idea",
                             containerColor = cardColor
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                     }
                 }
             )

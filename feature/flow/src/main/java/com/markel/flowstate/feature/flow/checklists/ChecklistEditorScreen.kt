@@ -139,7 +139,7 @@ fun CheckListEditorScreen(
                         containerColor = cardColor,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     if (checkListId != null) {
                         ExpressiveIconButton(
                             onClick = {
@@ -150,7 +150,7 @@ fun CheckListEditorScreen(
                             contentDescription = "Delete checklist",
                             containerColor = cardColor,
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                     }
                 }
             )
