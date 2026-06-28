@@ -627,18 +627,18 @@ class FlowViewModelTest {
     }
 
     @Test
-    fun selectCategory_null_showsAllItems() = runTest {
-        // GIVEN — categories enabled, one item in a category and one without.
+    fun selectCategory_null_showsOnlyUncategorizedTasks() = runTest {
+        // GIVEN — categories enabled, tasks in a category AND without a category.
         //
-        // The "General" tab (selectedCategoryId == null) is a pass-through:
-        // when no specific category is selected, the combine block does NOT
-        // filter by categoryId, so ALL pending items are shown regardless of
-        // which category they belong to. This mirrors Google Tasks, where the
-        // default list aggregates items from every list.
+        // The "General" tab (selectedCategoryId == null) shows ONLY tasks whose
+        // categoryId is null — i.e. items without a category. It is NOT a
+        // "see everything" view anymore (that was the old model).
         val cat1 = 10
         val tasks = listOf(
-            Task(id = 1, title = "Categorized", isDone = false, categoryId = cat1),
-            Task(id = 2, title = "Uncategorized", isDone = false, categoryId = null)
+            Task(id = 1, title = "Categorized A", isDone = false, categoryId = cat1),
+            Task(id = 2, title = "Categorized B", isDone = false, categoryId = cat1),
+            Task(id = 3, title = "Uncategorized A", isDone = false, categoryId = null),
+            Task(id = 4, title = "Uncategorized B", isDone = false, categoryId = null)
         )
         val categories = listOf(Category(id = cat1, name = "Work", position = 0))
         viewModel = createViewModel(
@@ -653,7 +653,7 @@ class FlowViewModelTest {
         // WHEN — select General (null)
         viewModel.selectCategory(null)
 
-        // THEN — all pending tasks are shown (no category filter applied)
+        // THEN — only the uncategorized tasks are shown
         viewModel.uiState.test {
             var state: FlowUiState.Success? = null
             do {
@@ -662,6 +662,7 @@ class FlowViewModelTest {
             } while (state == null || state.selectedCategoryId != null)
 
             assertEquals(2, state.tasks.size)
+            assertTrue(state.tasks.all { it.categoryId == null })
             assertNull(state.selectedCategoryId)
         }
     }
@@ -690,13 +691,13 @@ class FlowViewModelTest {
             categoriesEnabled = true
         )
 
-        // THEN — counts only include pending tasks with a real categoryId
+        // THEN — counts include pending tasks per category AND General (null)
         viewModel.uiState.test {
             val state = (awaitItem() as? FlowUiState.Success) ?: awaitItem() as FlowUiState.Success
             assertEquals(2, state.pendingTaskCounts[cat1]) // T1 + T2 (T4 is done)
             assertEquals(1, state.pendingTaskCounts[cat2]) // T3
-            // General (null) is intentionally NOT in the map
-            assertFalse(state.pendingTaskCounts.containsKey(null as Int?))
+            // General (null) counts tasks without a category — T5 here.
+            assertEquals(1, state.pendingTaskCounts[null])
         }
     }
 
@@ -733,7 +734,7 @@ class FlowViewModelTest {
     @Test
     fun pendingTaskCounts_isComputedEvenWhenCategoriesAreDisabled() = runTest {
         // The pendingTaskCounts map is always computed by the combine block
-        // (it only filters by isDone / pendingUndo / categoryId != null), so
+        // (it only filters by isDone / pendingUndo), so
         // it is populated even when categories are disabled. The UI layer is
         // responsible for ignoring the counts when categoriesEnabled == false
         // (no tabs → no badges to render).
