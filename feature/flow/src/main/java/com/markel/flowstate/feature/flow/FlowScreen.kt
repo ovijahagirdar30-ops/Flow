@@ -57,10 +57,9 @@ fun FlowScreen(
     val categoriesEnabled = (flowUiState as? FlowUiState.Success)?.categoriesEnabled == true
     val categories = (flowUiState as? FlowUiState.Success)?.categories ?: emptyList()
     val selectedCategoryId = (flowUiState as? FlowUiState.Success)?.selectedCategoryId
+    val generalCategoryName by flowViewModel.generalCategoryName.collectAsStateWithLifecycle()
     val pendingTaskCounts = (flowUiState as? FlowUiState.Success)?.pendingTaskCounts ?: emptyMap()
-    val reorderableCategories = remember(categories) {
-        categories.filter { !it.name.equals("General", ignoreCase = true) }
-    }
+    val reorderableCategories = remember(categories) { categories }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -78,7 +77,8 @@ fun FlowScreen(
                         onCategorySelected = { flowViewModel.selectCategory(it) },
                         onAddCategoryClick = { showCreateCategoryDialog = true },
                         onCategoryLongPress = { showReorderCategoriesSheet = true },
-                        pendingTaskCounts = pendingTaskCounts
+                        pendingTaskCounts = pendingTaskCounts,
+                        generalTabName = generalCategoryName
                     )
                 }
 

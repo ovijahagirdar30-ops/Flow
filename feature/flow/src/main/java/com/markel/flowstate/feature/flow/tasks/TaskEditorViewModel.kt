@@ -63,6 +63,9 @@ class TaskEditorViewModel @Inject constructor(
     val categoriesEnabled: StateFlow<Boolean> = userPreferencesRepository.categoriesEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    val generalCategoryName: StateFlow<String?> = userPreferencesRepository.generalCategoryName
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     /**
      * Loads the task from the repository by ID.
      * Uses .first() to get the current Flow value without staying subscribed.

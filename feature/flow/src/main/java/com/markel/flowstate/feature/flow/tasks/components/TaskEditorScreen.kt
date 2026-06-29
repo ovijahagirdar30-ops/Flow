@@ -42,6 +42,7 @@ fun TaskEditorScreen(
     val editor by viewModel.editor.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val categoriesEnabled by viewModel.categoriesEnabled.collectAsStateWithLifecycle()
+    val generalCategoryName by viewModel.generalCategoryName.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = Modifier.sharedDetailBounds(
@@ -87,7 +88,8 @@ fun TaskEditorScreen(
                     categories = categories,
                     categoriesEnabled = categoriesEnabled,
                     categoryId = editor.categoryId,
-                    onCategoryChange = { viewModel.updateCategory(it) }
+                    onCategoryChange = { viewModel.updateCategory(it) },
+                    generalCategoryName = generalCategoryName
                 )
             }
         }

@@ -52,7 +52,8 @@ fun TaskEditorSheetContent(
     categories: List<Category> = emptyList(),
     categoriesEnabled: Boolean = false,
     categoryId: Int? = null,
-    onCategoryChange: (Int?) -> Unit = {}
+    onCategoryChange: (Int?) -> Unit = {},
+    generalCategoryName: String? = null
 ) {
     val isNewTask = remember { task == null }
     var title by remember { mutableStateOf(task?.title ?: "") }
@@ -74,6 +75,8 @@ fun TaskEditorSheetContent(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     // State to show the category selector sheet
     var showCategorySelector by remember { mutableStateOf(false) }
+    val defaultGeneralName = stringResource(R.string.category_general)
+    val generalName = generalCategoryName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
     // Draft states for the new subtask
     var draftSubTitle by rememberSaveable { mutableStateOf("") }
     var draftSubDescription by rememberSaveable { mutableStateOf("") }
@@ -161,7 +164,8 @@ fun TaskEditorSheetContent(
     ) {
         // ── Category selector (only when categories are enabled) ──────────────
         if (categoriesEnabled) {
-            val generalName = stringResource(R.string.category_general)
+            val defaultGeneralName = stringResource(R.string.category_general)
+            val generalName = generalCategoryName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
             val currentCategoryName = if (categoryId == null) {
                 generalName
             } else {
@@ -492,7 +496,8 @@ fun TaskEditorSheetContent(
             categories = categories,
             selectedCategoryId = categoryId,
             onCategorySelected = onCategoryChange,
-            onDismiss = { showCategorySelector = false }
+            onDismiss = { showCategorySelector = false },
+            generalTabName = generalName
         )
     }
 }

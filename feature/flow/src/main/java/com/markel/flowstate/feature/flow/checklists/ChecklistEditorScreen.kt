@@ -70,6 +70,7 @@ fun CheckListEditorScreen(
     val editorState by viewModel.editor.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val categoriesEnabled by viewModel.categoriesEnabled.collectAsStateWithLifecycle()
+    val generalCategoryName by viewModel.generalCategoryName.collectAsStateWithLifecycle()
     var showCategorySelector by remember { mutableStateOf(false) }
 
     LaunchedEffect(checkListId) {
@@ -168,11 +169,12 @@ fun CheckListEditorScreen(
             item(key = "title") {
                 // ── Category selector (only when categories are enabled) ──────────────
                 if (categoriesEnabled) {
-                    val generalName = stringResource(R.string.category_general)
-                    val currentCategoryName = if (editorState.categoryId == null) {
+                    val defaultGeneralName = stringResource(R.string.category_general)
+                    val generalName = generalCategoryName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
+                    val currentCategoryName = if (categoryId == null) {
                         generalName
                     } else {
-                        categories.firstOrNull { it.id == editorState.categoryId }?.name ?: generalName
+                        categories.firstOrNull { it.id == categoryId }?.name ?: generalName
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -369,7 +371,8 @@ fun CheckListEditorScreen(
             onCategorySelected = { viewModel.updateCategory(it) },
             onDismiss = { showCategorySelector = false },
             containerColor = cardColor,
-            contentColor = onCardColor
+            contentColor = onCardColor,
+            generalTabName = generalCategoryName
         )
     }
 }

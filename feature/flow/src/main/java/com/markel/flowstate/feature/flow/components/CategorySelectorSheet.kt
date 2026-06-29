@@ -75,14 +75,13 @@ fun CategorySelectorSheet(
     onCategorySelected: (Int?) -> Unit,
     onDismiss: () -> Unit,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLow,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    generalTabName: String?
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Filter out any legacy "General" category rows — General is represented
-    // by the null-id row at the top, never by a real DB entry.
     val userCategories = remember(categories) {
-        categories.filter { !it.name.equals("General", ignoreCase = true) }
+        categories
     }
 
     ModalBottomSheet(
@@ -110,7 +109,7 @@ fun CategorySelectorSheet(
                 // General (null id) — always first
                 item(key = "general") {
                     CategorySelectorRow(
-                        label = stringResource(R.string.category_general),
+                        label = generalTabName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.category_general),
                         isSelected = selectedCategoryId == null,
                         onClick = {
                             onCategorySelected(null)

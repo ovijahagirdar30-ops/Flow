@@ -65,22 +65,26 @@ fun CategoriesScreen(
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    // Filter out legacy "General" categories from the list — "General" is now a virtual tab
     val localCategories = remember(categories) {
         mutableStateListOf<Category>().apply {
-            addAll(categories.filter { !it.name.equals("General", ignoreCase = true) })
+            addAll(categories)
         }
     }
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf<Category?>(null) }
     var deleteItemsPermanently by remember { mutableStateOf(false) }
+    // Null = closed. General = rename the virtual General category.
+    // Real(id) = rename the user category with that id.
+    var showRenameDialog by remember { mutableStateOf<RenameTarget?>(null) }
 
-    val generalName = stringResource(R.string.category_general)
+    val customGeneralName by viewModel.generalCategoryName.collectAsStateWithLifecycle()
+    val defaultGeneralName = stringResource(R.string.category_general)
+    val generalName = customGeneralName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
 
     val lazyListState = rememberLazyListState()
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        val catStartOffset = 3 // switch + spacer + header
+        val catStartOffset = 4 // switch + spacer + header
         val catEndExclusive = catStartOffset + localCategories.size
 
         if (from.index in catStartOffset until catEndExclusive &&
@@ -178,6 +182,33 @@ fun CategoriesScreen(
                     )
                 }
 
+                // ── General (virtual) category row — always first, not reorderable ──
+                item(key = "general_category") {
+                    ListItem(
+                        headlineContent = {
+                            Text(
+                                text = generalName,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        },
+                        trailingContent = {
+                            IconButton(onClick = { showRenameDialog = RenameTarget.General }) {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.edit_24px),
+                                    contentDescription = stringResource(R.string.categories_rename),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        colors = ListItemDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(SettingsGroupShapes.leadingItemShape)
+                    )
+                }
+
                 items(
                     items = localCategories,
                     key = { it.id }
@@ -189,8 +220,7 @@ fun CategoriesScreen(
                             label = "cat_drag_scale"
                         )
                         val shape = when {
-                            localCategories.size == 1 -> SettingsGroupShapes.singleItemShape
-                            index == 0 -> SettingsGroupShapes.leadingItemShape
+                            localCategories.size == 1 -> SettingsGroupShapes.endItemShape
                             index == localCategories.lastIndex -> SettingsGroupShapes.endItemShape
                             else -> SettingsGroupShapes.middleItemShape
                         }
@@ -204,17 +234,24 @@ fun CategoriesScreen(
                             },
                             trailingContent = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (category.name != generalName) {
-                                        IconButton(onClick = {
-                                            deleteItemsPermanently = false
-                                            showDeleteDialog = category
-                                        }) {
-                                            Icon(
-                                                imageVector = ImageVector.vectorResource(DesignR.drawable.delete_24px),
-                                                contentDescription = stringResource(R.string.categories_delete),
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
-                                        }
+                                    IconButton(onClick = {
+                                        showRenameDialog = RenameTarget.Real(category.id, category.name)
+                                    }) {
+                                        Icon(
+                                            imageVector = ImageVector.vectorResource(R.drawable.edit_24px),
+                                            contentDescription = stringResource(R.string.categories_rename),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    IconButton(onClick = {
+                                        deleteItemsPermanently = false
+                                        showDeleteDialog = category
+                                    }) {
+                                        Icon(
+                                            imageVector = ImageVector.vectorResource(DesignR.drawable.delete_24px),
+                                            contentDescription = stringResource(R.string.categories_delete),
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
                                     }
                                     Icon(
                                         imageVector = ImageVector.vectorResource(R.drawable.drag_indicator_24px),
@@ -291,7 +328,7 @@ fun CategoriesScreen(
     // ── Create category dialog ──────────────────────────────────
     if (showCreateDialog) {
         var categoryName by remember { mutableStateOf("") }
-        val isGeneralName = categoryName.trim().equals("General", ignoreCase = true)
+        val isValid = categoryName.isNotBlank()
 
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
@@ -302,22 +339,18 @@ fun CategoriesScreen(
                     onValueChange = { categoryName = it },
                     label = { Text(stringResource(R.string.categories_name_label)) },
                     singleLine = true,
-                    isError = isGeneralName,
-                    supportingText = if (isGeneralName) {
-                        { Text(stringResource(R.string.categories_name_reserved)) }
-                    } else null,
                     modifier = Modifier.fillMaxWidth()
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (categoryName.isNotBlank() && !isGeneralName) {
+                        if (isValid) {
                             viewModel.createCategory(categoryName.trim())
                             showCreateDialog = false
                         }
                     },
-                    enabled = categoryName.isNotBlank() && !isGeneralName
+                    enabled = isValid
                 ) {
                     Text(stringResource(R.string.ok))
                 }
@@ -325,6 +358,78 @@ fun CategoriesScreen(
             dismissButton = {
                 TextButton(onClick = { showCreateDialog = false }) {
                     Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // ── Rename category dialog (General OR a real user category) ──
+    showRenameDialog?.let { target ->
+        // Initial value: custom General name (if renaming General) or the
+        // category's current name (if renaming a real one).
+        val initialValue = when (target) {
+            is RenameTarget.General -> customGeneralName ?: ""
+            is RenameTarget.Real -> target.currentName
+        }
+        var newName by remember(target) { mutableStateOf(initialValue) }
+        val isValid = newName.isNotBlank()
+
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = null },
+            title = {
+                Text(
+                    text = when (target) {
+                        is RenameTarget.General -> stringResource(R.string.categories_rename_general_title)
+                        is RenameTarget.Real -> stringResource(R.string.categories_rename_title)
+                    }
+                )
+            },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text(stringResource(R.string.categories_name_label)) },
+                    singleLine = true,
+                    isError = !isValid,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (isValid) {
+                            when (target) {
+                                is RenameTarget.General ->
+                                    viewModel.renameGeneralCategory(newName)
+                                is RenameTarget.Real ->
+                                    viewModel.renameCategory(target.id, newName)
+                            }
+                            showRenameDialog = null
+                        }
+                    },
+                    enabled = isValid
+                ) {
+                    Text(stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // "Reset to default" only makes sense for General (whose
+                    // default is the localized string). Real categories have no
+                    // default name to reset to.
+                    if (target is RenameTarget.General && customGeneralName != null) {
+                        TextButton(
+                            onClick = {
+                                viewModel.renameGeneralCategory(null)
+                                showRenameDialog = null
+                            }
+                        ) {
+                            Text(stringResource(R.string.categories_reset_general))
+                        }
+                    }
+                    TextButton(onClick = { showRenameDialog = null }) {
+                        Text(stringResource(R.string.cancel))
+                    }
                 }
             }
         )
@@ -366,4 +471,15 @@ fun CategoriesScreen(
             }
         )
     }
+}
+
+/**
+ * Identifies which category is being renamed in the rename dialog.
+ * - [General] → the virtual General category (categoryId == null), whose
+ *   custom name lives in DataStore.
+ * - [Real]    → a real user category row, whose name lives in the DB.
+ */
+private sealed interface RenameTarget {
+    data object General : RenameTarget
+    data class Real(val id: Int, val currentName: String) : RenameTarget
 }

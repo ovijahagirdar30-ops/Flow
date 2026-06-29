@@ -24,11 +24,17 @@ class CategoriesViewModel @Inject constructor(
     val categories: StateFlow<List<Category>> = categoryRepository.getCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /**
+     * Custom name for the "General" virtual category, or null to use the
+     * localized default. Bound to a DataStore preference so it survives
+     * across launches.
+     */
+    val generalCategoryName: StateFlow<String?> = userPreferencesRepository.generalCategoryName
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     fun setCategoriesEnabled(enabled: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.saveCategoriesEnabled(enabled)
-            // "General" is a virtual tab in the UI (selectedCategoryId = null = show all),
-            // so we do NOT create a "General" category in the database.
         }
     }
 
@@ -39,6 +45,29 @@ class CategoriesViewModel @Inject constructor(
             categoryRepository.upsertCategory(
                 Category(name = name, position = maxPosition + 1)
             )
+        }
+    }
+
+    /**
+     * Renames the "General" virtual category. Pass null (or a blank string)
+     * to reset back to the localized default.
+     */
+    fun renameGeneralCategory(name: String?) {
+        viewModelScope.launch {
+            userPreferencesRepository.saveGeneralCategoryName(name)
+        }
+    }
+
+    /**
+     * Renames an existing user category. The name is trimmed; blank names
+     * are rejected (no-op).
+     */
+    fun renameCategory(id: Int, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch {
+            val current = categories.value.firstOrNull { it.id == id } ?: return@launch
+            categoryRepository.upsertCategory(current.copy(name = trimmed))
         }
     }
 

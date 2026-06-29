@@ -51,6 +51,9 @@ class CheckListViewModel @Inject constructor(
     val categoriesEnabled: StateFlow<Boolean> = userPreferencesRepository.categoriesEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    val generalCategoryName: StateFlow<String?> = userPreferencesRepository.generalCategoryName
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     init {
         viewModelScope.launch {
             _editor

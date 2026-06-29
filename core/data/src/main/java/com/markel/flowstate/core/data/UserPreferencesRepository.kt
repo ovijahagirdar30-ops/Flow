@@ -134,4 +134,27 @@ class UserPreferencesRepository @Inject constructor(
             preferences[CATEGORIES_ENABLED_KEY] = enabled
         }
     }
+
+    // ── General category name ───────────────────────────────────
+
+    /**
+     * Custom user-facing name for the "General" virtual category (the one
+     * backed by categoryId == null). When null, the UI falls back to the
+     * localized string R.string.category_general.
+     */
+    private val GENERAL_CATEGORY_NAME_KEY = stringPreferencesKey("general_category_name")
+
+    val generalCategoryName: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[GENERAL_CATEGORY_NAME_KEY]?.takeIf { it.isNotBlank() }
+    }
+
+    suspend fun saveGeneralCategoryName(name: String?) {
+        context.dataStore.edit { preferences ->
+            if (name.isNullOrBlank()) {
+                preferences.remove(GENERAL_CATEGORY_NAME_KEY)
+            } else {
+                preferences[GENERAL_CATEGORY_NAME_KEY] = name.trim()
+            }
+        }
+    }
 }

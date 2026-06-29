@@ -81,4 +81,8 @@
     <string name="categories_delete_permanently">Eliminar elementos</string>
     <string name="category_general">General</string>
     <string name="categories_name_reserved">"General" es un nombre reservado</string>
+    <string name="categories_rename">Renombrar</string>
+    <string name="categories_rename_general_title">Renombrar lista General</string>
+    <string name="categories_reset_general">Restablecer</string>
+    <string name="categories_rename_title">Renombrar categoría</string>
 </resources>

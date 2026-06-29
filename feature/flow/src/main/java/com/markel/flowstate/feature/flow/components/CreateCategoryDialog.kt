@@ -16,10 +16,7 @@ import com.markel.flowstate.feature.tasks.R
 
 /**
  * Inline dialog used by the FlowScreen "+ New category" tab.
- *
- * Mirrors the validation rules of the create dialog in
- * CategoriesScreen:
- * blank or "General" names are rejected.
+ * Only rejects blank names.
  */
 @Composable
 fun CreateCategoryDialog(
@@ -27,8 +24,7 @@ fun CreateCategoryDialog(
     onConfirm: (String) -> Unit
 ) {
     var categoryName by remember { mutableStateOf("") }
-    val isGeneralName = categoryName.trim().equals("General", ignoreCase = true)
-    val isValid = categoryName.isNotBlank() && !isGeneralName
+    val isValid = categoryName.isNotBlank()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -39,10 +35,6 @@ fun CreateCategoryDialog(
                 onValueChange = { categoryName = it },
                 label = { Text(stringResource(R.string.categories_name_label)) },
                 singleLine = true,
-                isError = isGeneralName,
-                supportingText = if (isGeneralName) {
-                    { Text(stringResource(R.string.categories_name_reserved)) }
-                } else null,
                 modifier = Modifier.fillMaxWidth()
             )
         },

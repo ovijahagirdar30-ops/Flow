@@ -78,20 +78,19 @@ fun CategoryTabRow(
     onCategorySelected: (Int?) -> Unit,
     onAddCategoryClick: () -> Unit,
     onCategoryLongPress: () -> Unit,
-    pendingTaskCounts: Map<Int?, Int> = emptyMap()
+    pendingTaskCounts: Map<Int?, Int> = emptyMap(),
+    generalTabName: String? = null  // ← nuevo
 ) {
     // Build the list of tabs: "General" (null id) + user categories + "New"
     // "General" tab = null categoryId (shows items without a category)
     val tabItems = remember(categories) {
         buildList {
-            // General tab is implicit — represents null categoryId
-            // Only add it if there are no categories with the name "General"
-            add(null to null) // null id + null name = General (icon-only tab)
-            categories
-                .filter { !it.name.equals("General", ignoreCase = true) }
-                .forEach { cat ->
-                    add(cat.id to cat.name)
-                }
+            // General tab is virtual (null categoryId). Renders with the
+            // localized or user-customized name at render time.
+            add(null to null)
+            categories.forEach { cat ->
+                add(cat.id to cat.name)
+            }
             // Trailing "+ New category" action tab — never selectable
             add(NEW_CATEGORY_TAB_ID to null)
         }
@@ -159,7 +158,7 @@ fun CategoryTabRow(
                 // Text tab: "General" (null id) OR user category OR "+ New category"
                 val tabLabel = when {
                     isNewCategoryTab -> stringResource(R.string.categories_trail)
-                    catId == null -> stringResource(R.string.category_general)
+                    catId == null -> generalTabName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.category_general)
                     else -> name!!
                 }
                 val pendingCount = if (!isNewCategoryTab) {

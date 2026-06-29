@@ -100,6 +100,8 @@ class FlowViewModel @Inject constructor(
     private val deleteJobs = mutableMapOf<Int, Job>()
 
     private val _selectedCategoryId = MutableStateFlow<Int?>(null)
+    val generalCategoryName: StateFlow<String?> = userPreferencesRepository.generalCategoryName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     // ── Init: combine repos + pending-filter ──────────────────────────────────
     init {
         viewModelScope.launch {
@@ -176,15 +178,12 @@ class FlowViewModel @Inject constructor(
     /**
      * Creates a new user category from the FlowScreen "+ New category" tab.
      *
-     * Mirrors the logic in [com.markel.flowstate.feature.settings.CategoriesViewModel.createCategory]:
-     * the new category is appended after the existing ones (position = max + 1)
+     * The new category is appended after the existing ones (position = max + 1)
      * and is NOT selected automatically — the user can tap it once it appears.
-     *
-     * "General" is a reserved virtual tab (null id) and is rejected here.
      */
     fun createCategory(name: String) {
         val trimmed = name.trim()
-        if (trimmed.isBlank() || trimmed.equals("General", ignoreCase = true)) return
+        if (trimmed.isBlank()) return
 
         viewModelScope.launch {
             val currentList = (_uiState.value as? FlowUiState.Success)?.categories

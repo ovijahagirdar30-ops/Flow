@@ -81,4 +81,8 @@
     <string name="categories_delete_permanently">Delete items</string>
     <string name="category_general">General</string>
     <string name="categories_name_reserved">"General" is a reserved name</string>
+    <string name="categories_rename">Rename</string>
+    <string name="categories_rename_general_title">Rename General list</string>
+    <string name="categories_reset_general">Reset</string>
+    <string name="categories_rename_title">Rename category</string>
 </resources>
