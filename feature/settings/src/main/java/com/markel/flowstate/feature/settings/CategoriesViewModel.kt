@@ -72,6 +72,7 @@ class CategoriesViewModel @Inject constructor(
     }
 
     fun deleteCategory(id: Int, deleteItems: Boolean) {
+        if (id == Category.GENERAL_ID) return // General can never be deleted
         viewModelScope.launch {
             if (deleteItems) {
                 categoryRepository.deleteItemsInCategory(id)

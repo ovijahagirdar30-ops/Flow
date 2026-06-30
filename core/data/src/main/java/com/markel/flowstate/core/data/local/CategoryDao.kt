@@ -5,6 +5,7 @@ import androidx.room.Query
 import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
+import com.markel.flowstate.core.domain.Category
 
 @Dao
 interface CategoryDao {
@@ -31,13 +32,13 @@ interface CategoryDao {
 
     // ── Bulk operations for category deletion ────────────────────────
 
-    @Query("UPDATE tasks SET categoryId = NULL WHERE categoryId = :categoryId")
+    @Query("UPDATE tasks SET categoryId = ${Category.GENERAL_ID} WHERE categoryId = :categoryId")
     suspend fun moveTasksToGeneral(categoryId: Int)
 
-    @Query("UPDATE ideas SET categoryId = NULL WHERE categoryId = :categoryId")
+    @Query("UPDATE ideas SET categoryId = ${Category.GENERAL_ID} WHERE categoryId = :categoryId")
     suspend fun moveIdeasToGeneral(categoryId: Int)
 
-    @Query("UPDATE checklists SET categoryId = NULL WHERE categoryId = :categoryId")
+    @Query("UPDATE checklists SET categoryId = ${Category.GENERAL_ID} WHERE categoryId = :categoryId")
     suspend fun moveCheckListsToGeneral(categoryId: Int)
 
     @Query("DELETE FROM tasks WHERE categoryId = :categoryId")

@@ -21,6 +21,7 @@ import com.markel.flowstate.core.data.local.SubTaskEntity
 import com.markel.flowstate.core.data.local.TaskDao
 import com.markel.flowstate.core.data.local.TaskEntity
 import com.markel.flowstate.core.data.local.TaskWithSubTasks
+import com.markel.flowstate.core.domain.Category
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -573,7 +574,7 @@ class BackupRepositoryImplTest {
         // Simulates a backup produced by a pre-v18 app version: the JSON has
         // no "categories" array and no "categoryId" on tasks/ideas/checklists.
         // The lenient parser + default values must fill the gaps so the restore
-        // completes without errors. Items end up in General (null category).
+        // completes without errors. Items end up in General (Category.GENERAL_ID).
         val oldBackupJson = """
         {
             "schemaVersion": ${FlowStateExport.CURRENT_SCHEMA_VERSION - 1},
@@ -602,7 +603,7 @@ class BackupRepositoryImplTest {
             result is RestoreResult.Success
         )
         coVerify(exactly = 0) { categoryDao.upsertCategory(any()) }
-        coVerify(exactly = 1) { taskDao.upsertTaskEntity(match { it.categoryId == null }) }
+        coVerify(exactly = 1) { taskDao.upsertTaskEntity(match { it.categoryId == Category.GENERAL_ID }) }
     }
 
     @Test
@@ -722,7 +723,7 @@ class BackupRepositoryImplTest {
         // Edge case: the backup references a categoryId that is NOT in the
         // categories array (e.g. the category was deleted between export and
         // restore). The remap has no entry for it, so the task must end up
-        // in General (categoryId = null) rather than pointing to a non-existent row.
+        // in General (categoryId = Category.GENERAL_ID) rather than pointing to a non-existent row.
         coEvery { categoryDao.getAllCategoriesOnce() } returns emptyList()
         coEvery { taskDao.getAllTasksOnce() } returns emptyList()
         coEvery { ideaDao.getAllIdeasOnce() } returns emptyList()
@@ -758,9 +759,9 @@ class BackupRepositoryImplTest {
         assertTrue(result is RestoreResult.Success)
         // No category insert attempted (empty list)
         coVerify(exactly = 0) { categoryDao.upsertCategory(any()) }
-        // Task restored with categoryId = null (General), NOT 999
+        // Task restored with categoryId = Category.GENERAL_ID (General), NOT 999
         coVerify(exactly = 1) {
-            taskDao.upsertTaskEntity(match { it.title == "Orphan" && it.categoryId == null })
+            taskDao.upsertTaskEntity(match { it.title == "Orphan" && it.categoryId == Category.GENERAL_ID })
         }
     }
 

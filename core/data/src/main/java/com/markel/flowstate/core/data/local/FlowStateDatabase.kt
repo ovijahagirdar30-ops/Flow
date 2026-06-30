@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class], // List of all tables
-    version = 18,
+    version = 19,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -206,6 +206,51 @@ abstract class FlowStateDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE tasks ADD COLUMN categoryId INTEGER DEFAULT NULL")
                 db.execSQL("ALTER TABLE ideas ADD COLUMN categoryId INTEGER DEFAULT NULL")
                 db.execSQL("ALTER TABLE checklists ADD COLUMN categoryId INTEGER DEFAULT NULL")
+            }
+        }
+
+        /**
+         * v18 → v19: Promotes the "General" category from a runtime convention
+         * (categoryId == NULL) to a real row in the `categories` table with a
+         * fixed id of [com.markel.flowstate.core.domain.Category.GENERAL_ID] (1).
+         *
+         * Steps:
+         *  1. Shift any existing category ids up by 1 to free id=1 for General.
+         *     This only affects dev testers on v18 who already created
+         *     categories (their ids started at 1). Published users arrive at
+         *     v19 from v17, where the `categories` table is still empty, so
+         *     the shift is a no-op.
+         *  2. Insert the General row at id=1, position=0.
+         *  3. Convert every NULL categoryId on tasks/ideas/checklists to 1,
+         *     so all previously-uncategorized items land in General.
+         *  4. Reset the autoincrement sequence so the next user-created
+         *     category gets max(id)+1.
+         */
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // ── 1. Shift existing category ids up by 1 ──
+                // Use negative offset to avoid transient PK collisions.
+                db.execSQL("UPDATE categories SET id = -id")
+                db.execSQL("UPDATE categories SET id = -id + 1")
+
+                // Shift references on tasks / ideas / checklists
+                db.execSQL("UPDATE tasks SET categoryId = categoryId + 1 WHERE categoryId IS NOT NULL")
+                db.execSQL("UPDATE ideas SET categoryId = categoryId + 1 WHERE categoryId IS NOT NULL")
+                db.execSQL("UPDATE checklists SET categoryId = categoryId + 1 WHERE categoryId IS NOT NULL")
+
+                // ── 2. Insert General at id=1 ──
+                db.execSQL("INSERT INTO categories (id, name, position) VALUES (1, 'General', 0)")
+
+                // ── 3. Convert NULL → 1 (General) ──
+                db.execSQL("UPDATE tasks SET categoryId = 1 WHERE categoryId IS NULL")
+                db.execSQL("UPDATE ideas SET categoryId = 1 WHERE categoryId IS NULL")
+                db.execSQL("UPDATE checklists SET categoryId = 1 WHERE categoryId IS NULL")
+
+                // ── 4. Reset autoincrement sequence ──
+                db.execSQL(
+                    "INSERT OR REPLACE INTO sqlite_sequence (name, seq) " +
+                            "VALUES ('categories', (SELECT MAX(id) FROM categories))"
+                )
             }
         }
     }

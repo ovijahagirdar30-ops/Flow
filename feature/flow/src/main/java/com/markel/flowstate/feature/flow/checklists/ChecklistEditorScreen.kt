@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.designsystem.components.ExpressiveIconButton
 import com.markel.flowstate.core.designsystem.ui.CheckListSharedKeys
 import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.feature.flow.checklists.components.CheckListItemRow
 import com.markel.flowstate.feature.flow.checklists.components.GhostItemRow
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
@@ -171,7 +172,7 @@ fun CheckListEditorScreen(
                 if (categoriesEnabled) {
                     val defaultGeneralName = stringResource(R.string.category_general)
                     val generalName = generalCategoryName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
-                    val currentCategoryName = if (categoryId == null) {
+                    val currentCategoryName = if (categoryId == null || categoryId == Category.GENERAL_ID) {
                         generalName
                     } else {
                         categories.firstOrNull { it.id == categoryId }?.name ?: generalName

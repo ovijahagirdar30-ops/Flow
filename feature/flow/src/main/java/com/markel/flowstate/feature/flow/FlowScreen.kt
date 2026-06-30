@@ -18,6 +18,7 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.designsystem.components.AnimatedUndoFab
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.feature.flow.components.CategoryTabRow
 import com.markel.flowstate.feature.flow.components.CreateCategoryDialog
 import com.markel.flowstate.feature.flow.components.DynamicHeader
@@ -59,7 +60,7 @@ fun FlowScreen(
     val selectedCategoryId = (flowUiState as? FlowUiState.Success)?.selectedCategoryId
     val generalCategoryName by flowViewModel.generalCategoryName.collectAsStateWithLifecycle()
     val pendingTaskCounts = (flowUiState as? FlowUiState.Success)?.pendingTaskCounts ?: emptyMap()
-    val reorderableCategories = remember(categories) { categories }
+    val reorderableCategories = remember(categories) { categories.filter { it.id != Category.GENERAL_ID } }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -123,7 +124,7 @@ fun FlowScreen(
                     reminderTime = draft.reminderTime,
                     onReminderTimeChange = { taskViewModel.updateDraftReminderTime(it) },
                     onSave = { _, _, _, _, _ ->
-                        taskViewModel.submitDraft(categoryId = if (categoriesEnabled) selectedCategoryId else null)
+                        taskViewModel.submitDraft(categoryId = if (categoriesEnabled) (selectedCategoryId ?: Category.GENERAL_ID) else Category.GENERAL_ID)
                         showCreationSheet = false
                     }
                 )
@@ -140,8 +141,8 @@ fun FlowScreen(
                 expanded = isFabExpanded,
                 onToggle = { isFabExpanded = !isFabExpanded },
                 onTaskClick = { isFabExpanded = false; showCreationSheet = true },
-                onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea(selectedCategoryId) },
-                onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null, selectedCategoryId) }
+                onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea(selectedCategoryId ?: Category.GENERAL_ID) },
+                onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null, selectedCategoryId ?: Category.GENERAL_ID) }
             )
         }
         AnimatedUndoFab(

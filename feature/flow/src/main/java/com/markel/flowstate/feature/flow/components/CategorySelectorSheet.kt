@@ -37,13 +37,14 @@ import com.markel.flowstate.feature.tasks.R
  * A dismissable bottom sheet that lets the user pick a category for an item
  * being edited (task, idea, checklist…).
  *
- * The sheet always offers, in this order:
- *  1. "General" (null id) — items without a category.
- *  2. One row per user category (filtered, no legacy "General" entries).
+ * The sheet renders one row per category, sorted by position. The first row
+ * is always "General" (id = [Category.GENERAL_ID]) — items in the default
+ * category. Its display name can be overridden by the user via [generalTabName];
+ * if that is null/blank, the localized default [R.string.category_general] is used.
  *
  * The currently-selected category is highlighted with a check icon on the
- * right. Tapping any row fires [onCategorySelected] with the chosen id (which
- * may be `null` for General) and dismisses the sheet.
+ * right. Tapping any row fires [onCategorySelected] with the chosen id and
+ * dismisses the sheet.
  *
  * Color handling:
  *  - [containerColor] is the sheet background. Defaults to `surfaceContainerLow`,
@@ -56,16 +57,13 @@ import com.markel.flowstate.feature.tasks.R
  *    resolves to `surface` and `onCardColor` to `onSurface`, so the sheet ends
  *    up looking identical to the default — no special-casing needed.
  *
- * @param categories        user categories (raw list from the VM; "General"
- *                          entries are filtered out internally).
- * @param selectedCategoryId id of the currently-selected category, or `null`
- *                          for General.
- * @param onCategorySelected invoked with the new category id (null = General).
+ * @param categories        all categories (including General, which is the first).
+ * @param selectedCategoryId id of the currently-selected category.
+ * @param onCategorySelected invoked with the new category id.
  * @param onDismiss         invoked when the sheet is dismissed by the user.
  * @param containerColor    background color of the sheet.
- * @param contentColor      text/icon color used inside the sheet. The title and
- *                          unselected rows use a slightly faded version of it;
- *                          the selected row + check use it at full strength.
+ * @param contentColor      text/icon color used inside the sheet.
+ * @param generalTabName    user-customized name for the General category, or null.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,10 +77,6 @@ fun CategorySelectorSheet(
     generalTabName: String?
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-    val userCategories = remember(categories) {
-        categories
-    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -106,23 +100,16 @@ fun CategorySelectorSheet(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                // General (null id) — always first
-                item(key = "general") {
-                    CategorySelectorRow(
-                        label = generalTabName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.category_general),
-                        isSelected = selectedCategoryId == null,
-                        onClick = {
-                            onCategorySelected(null)
-                            onDismiss()
-                        },
-                        contentColor = contentColor
-                    )
-                }
 
-                // User categories
-                items(items = userCategories, key = { it.id }) { category ->
+                // All categories (General is first, id = GENERAL_ID)
+                items(items = categories, key = { it.id }) { category ->
+                    val label = if (category.id == Category.GENERAL_ID) {
+                        generalTabName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.category_general)
+                    } else {
+                        category.name
+                    }
                     CategorySelectorRow(
-                        label = category.name,
+                        label = label,
                         isSelected = selectedCategoryId == category.id,
                         onClick = {
                             onCategorySelected(category.id)

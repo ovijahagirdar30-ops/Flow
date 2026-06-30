@@ -40,7 +40,7 @@ data class TaskEditorState(
     val dueDate: Long? = null,
     val reminderTime: Long? = null,
     val isDone: Boolean = false,
-    val categoryId: Int? = null
+    val categoryId: Int? = Category.GENERAL_ID
 )
 @HiltViewModel
 class TaskEditorViewModel @Inject constructor(
@@ -119,14 +119,15 @@ class TaskEditorViewModel @Inject constructor(
     /**
      * Moves the task being edited to a different category.
      *
-     * `null` means General (no category). The change is persisted immediately
-     * and the editor state is updated so the selector reflects the new value.
+     * Pass [Category.GENERAL_ID] to move the task to the default (General)
+     * category. The change is persisted immediately and the editor state is
+     * updated so the selector reflects the new value.
      */
     fun updateCategory(categoryId: Int?) {
         val task = _editor.value.task ?: return
         _editor.update { it.copy(categoryId = categoryId) }
         viewModelScope.launch {
-            repository.upsertTask(task.copy(categoryId = categoryId))
+            repository.upsertTask(task.copy(categoryId = categoryId ?: Category.GENERAL_ID))
         }
     }
 

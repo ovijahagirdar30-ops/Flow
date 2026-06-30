@@ -9,6 +9,7 @@ import com.markel.flowstate.core.data.local.IdeaDao
 import com.markel.flowstate.core.data.local.IdeaEntity
 import com.markel.flowstate.core.data.local.TaskDao
 import com.markel.flowstate.core.data.local.TaskEntity
+import com.markel.flowstate.core.domain.Category
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -65,7 +66,7 @@ class BackupRepositoryImpl @Inject constructor(
                 val existingByName = existingCategories.associateBy { it.name.lowercase() }
 
                 val categoryIdRemap = mutableMapOf<Int?, Int?>()
-                categoryIdRemap[null] = null // General always maps to General
+                categoryIdRemap[null] = Category.GENERAL_ID // Old backups with null categoryId → General (id=1)
 
                 data.categories.forEach { schema ->
                     val targetId = existingByName[schema.name.lowercase()]?.id
@@ -103,12 +104,11 @@ class BackupRepositoryImpl @Inject constructor(
 /**
  * Rewrites the [categoryId] of a [TaskEntity] using [remap]. If the original
  * `categoryId` is not in the map (e.g. the category was deleted), the result
- * has `categoryId = null` (General).
+ * falls back to [Category.GENERAL_ID] (General).
  */
-private fun TaskEntity.withRemappedCategory(remap: Map<Int?, Int?>): TaskEntity = copy(categoryId = remap[categoryId])
-
+private fun TaskEntity.withRemappedCategory(remap: Map<Int?, Int?>): TaskEntity = copy(categoryId = remap[categoryId] ?: Category.GENERAL_ID)
 /** Same as above for [IdeaEntity]. */
-private fun IdeaEntity.withRemappedCategory(remap: Map<Int?, Int?>): IdeaEntity = copy(categoryId = remap[categoryId])
+private fun IdeaEntity.withRemappedCategory(remap: Map<Int?, Int?>): IdeaEntity = copy(categoryId = remap[categoryId] ?: Category.GENERAL_ID)
 
 /** Same as above for [CheckListEntity]. */
-private fun CheckListEntity.withRemappedCategory(remap: Map<Int?, Int?>): CheckListEntity = copy(categoryId = remap[categoryId])
+private fun CheckListEntity.withRemappedCategory(remap: Map<Int?, Int?>): CheckListEntity = copy(categoryId = remap[categoryId] ?: Category.GENERAL_ID)

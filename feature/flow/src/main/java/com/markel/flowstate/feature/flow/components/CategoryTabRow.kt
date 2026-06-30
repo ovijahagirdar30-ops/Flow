@@ -35,6 +35,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.feature.tasks.R
 
 /**
@@ -50,19 +51,20 @@ private const val NEW_CATEGORY_TAB_ID = Int.MIN_VALUE
  * Tabs change ONLY by click (no swipe) to avoid conflict with swipe-to-delete.
  *
  * The row always renders, in this order:
- *  1. "General" tab (icon-only, null categoryId → shows items without a category)
- *  2. One tab per user category (text-only)
- *  3. "+ New category" trailing tab (text-only, opens the creation dialog)
+ *  1. One tab per category (the first is always "General" — id = [Category.GENERAL_ID] —
+ *     which shows items in the default category)
+ *  2. "+ New category" trailing tab (text-only, opens the creation dialog)
  *
+ * General is a real row in the `categories` table (id=1, position=0), so it
+ * appears naturally as the first element of the list — no manual prepending.
+ * Its display name can be overridden by the user via [generalTabName]; if that
+ * is null/blank, the localized default [R.string.category_general] is used.
  * Long-pressing any tab (except "+ New") fires [onCategoryLongPress], which the
- * caller typically uses to open the "Reorder categories" sheet. Long-pressing
- * "General" (null id) is also reported so the caller can open the same sheet —
- * the sheet itself only shows reorderable real categories.
+ * caller typically uses to open the "Reorder categories" sheet.
  *
  * Each user-category tab also renders a small badge with the number of pending
  * (not-done) tasks in that category, taken from [pendingTaskCounts]. The
- * "General" tab and the "+ New category" tab never show a badge — General by
- * design, "+ New" because it is an action, not a category.
+ * "+ New category" tab never shows a badge — it is an action, not a category.
  *
  * @param pendingTaskCounts map of categoryId → pending task count. Entries with
  *   a count of 0 (or missing keys) render no badge.
@@ -81,13 +83,9 @@ fun CategoryTabRow(
     pendingTaskCounts: Map<Int?, Int> = emptyMap(),
     generalTabName: String? = null  // ← nuevo
 ) {
-    // Build the list of tabs: "General" (null id) + user categories + "New"
-    // "General" tab = null categoryId (shows items without a category)
+    // Build the list of tabs: user categories (General is first, id=GENERAL_ID) + "New"
     val tabItems = remember(categories) {
         buildList {
-            // General tab is virtual (null categoryId). Renders with the
-            // localized or user-customized name at render time.
-            add(null to null)
             categories.forEach { cat ->
                 add(cat.id to cat.name)
             }
@@ -155,10 +153,10 @@ fun CategoryTabRow(
                     )
                     .padding(horizontal = 16.dp)
             ) {
-                // Text tab: "General" (null id) OR user category OR "+ New category"
+                // Text tab: General (uses DataStore-overridable name) OR user category OR "+ New category"
                 val tabLabel = when {
                     isNewCategoryTab -> stringResource(R.string.categories_trail)
-                    catId == null -> generalTabName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.category_general)
+                    catId == Category.GENERAL_ID -> generalTabName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.category_general)
                     else -> name!!
                 }
                 val pendingCount = if (!isNewCategoryTab) {

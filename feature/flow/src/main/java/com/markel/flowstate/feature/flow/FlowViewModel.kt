@@ -99,7 +99,7 @@ class FlowViewModel @Inject constructor(
      */
     private val deleteJobs = mutableMapOf<Int, Job>()
 
-    private val _selectedCategoryId = MutableStateFlow<Int?>(null)
+    private val _selectedCategoryId = MutableStateFlow<Int?>(Category.GENERAL_ID)
     val generalCategoryName: StateFlow<String?> = userPreferencesRepository.generalCategoryName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     // ── Init: combine repos + pending-filter ──────────────────────────────────
@@ -147,8 +147,10 @@ class FlowViewModel @Inject constructor(
                     } else list
                 }
 
-                // When categories are enabled but no category is selected, select null (= General/unassigned)
-                val effectiveSelectedId = if (categoriesEnabled) selectedCategoryId else null
+                // When categories are enabled but no category is selected, default to General (GENERAL_ID).
+                // When categories are disabled, the selectedCategoryId is irrelevant (no tab row is shown),
+                // but we still report GENERAL_ID so any consumer that reads it gets a valid id.
+                val effectiveSelectedId = if (categoriesEnabled) selectedCategoryId else Category.GENERAL_ID
 
                 // Per-category pending task counts for the tab badges.
                 val pendingTaskCounts = coreData.tasks
@@ -184,6 +186,9 @@ class FlowViewModel @Inject constructor(
     fun createCategory(name: String) {
         val trimmed = name.trim()
         if (trimmed.isBlank()) return
+        // "General" is a reserved name — it would be confusing to have a user
+        // category with the same display name as the built-in General tab.
+        if (trimmed.equals("General", ignoreCase = true)) return
 
         viewModelScope.launch {
             val currentList = (_uiState.value as? FlowUiState.Success)?.categories

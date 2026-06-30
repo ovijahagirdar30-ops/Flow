@@ -583,7 +583,7 @@ class FlowViewModelTest {
         val tasks = listOf(
             Task(id = 1, title = "T1", isDone = false, categoryId = cat1),
             Task(id = 2, title = "T2", isDone = false, categoryId = cat2),
-            Task(id = 3, title = "T3", isDone = false, categoryId = null) // General
+            Task(id = 3, title = "T3", isDone = false, categoryId = Category.GENERAL_ID) // General
         )
         val ideas = listOf(
             Idea(id = 1, title = "I1", content = "", color = 0L, categoryId = cat1),
@@ -627,18 +627,18 @@ class FlowViewModelTest {
     }
 
     @Test
-    fun selectCategory_null_showsOnlyUncategorizedTasks() = runTest {
-        // GIVEN — categories enabled, tasks in a category AND without a category.
+    fun selectCategory_general_showsOnlyGeneralTasks() = runTest {
+        // GIVEN — categories enabled, tasks in a category AND in General.
         //
-        // The "General" tab (selectedCategoryId == null) shows ONLY tasks whose
-        // categoryId is null — i.e. items without a category. It is NOT a
-        // "see everything" view anymore (that was the old model).
+        // The "General" tab (selectedCategoryId == Category.GENERAL_ID) shows ONLY
+        // tasks whose categoryId == Category.GENERAL_ID. It is NOT a "see everything"
+        // view anymore (that was the old model).
         val cat1 = 10
         val tasks = listOf(
             Task(id = 1, title = "Categorized A", isDone = false, categoryId = cat1),
             Task(id = 2, title = "Categorized B", isDone = false, categoryId = cat1),
-            Task(id = 3, title = "Uncategorized A", isDone = false, categoryId = null),
-            Task(id = 4, title = "Uncategorized B", isDone = false, categoryId = null)
+            Task(id = 3, title = "General A", isDone = false, categoryId = Category.GENERAL_ID),
+            Task(id = 4, title = "General B", isDone = false, categoryId = Category.GENERAL_ID)
         )
         val categories = listOf(Category(id = cat1, name = "Work", position = 0))
         viewModel = createViewModel(
@@ -647,23 +647,23 @@ class FlowViewModelTest {
             categoriesEnabled = true
         )
 
-        // First select cat1 so the next selection (null) actually changes state
+        // First select cat1 so the next selection (General) actually changes state
         viewModel.selectCategory(cat1)
 
-        // WHEN — select General (null)
-        viewModel.selectCategory(null)
+        // WHEN — select General
+        viewModel.selectCategory(Category.GENERAL_ID)
 
-        // THEN — only the uncategorized tasks are shown
+        // THEN — only the General tasks are shown
         viewModel.uiState.test {
             var state: FlowUiState.Success? = null
             do {
                 val item = awaitItem()
                 if (item is FlowUiState.Success) state = item
-            } while (state == null || state.selectedCategoryId != null)
+            } while (state == null || state.selectedCategoryId != Category.GENERAL_ID)
 
             assertEquals(2, state.tasks.size)
-            assertTrue(state.tasks.all { it.categoryId == null })
-            assertNull(state.selectedCategoryId)
+            assertTrue(state.tasks.all { it.categoryId == Category.GENERAL_ID })
+            assertEquals(Category.GENERAL_ID, state.selectedCategoryId)
         }
     }
 
@@ -679,7 +679,7 @@ class FlowViewModelTest {
             Task(id = 2, title = "T2", isDone = false, categoryId = cat1),
             Task(id = 3, title = "T3", isDone = false, categoryId = cat2),
             Task(id = 4, title = "T4", isDone = true,  categoryId = cat1), // done → excluded
-            Task(id = 5, title = "T5", isDone = false, categoryId = null)  // General → excluded
+            Task(id = 5, title = "T5", isDone = false, categoryId = Category.GENERAL_ID)  // General
         )
         val categories = listOf(
             Category(id = cat1, name = "Work", position = 0),
@@ -691,13 +691,13 @@ class FlowViewModelTest {
             categoriesEnabled = true
         )
 
-        // THEN — counts include pending tasks per category AND General (null)
+        // THEN — counts include pending tasks per category AND General (GENERAL_ID)
         viewModel.uiState.test {
             val state = (awaitItem() as? FlowUiState.Success) ?: awaitItem() as FlowUiState.Success
             assertEquals(2, state.pendingTaskCounts[cat1]) // T1 + T2 (T4 is done)
             assertEquals(1, state.pendingTaskCounts[cat2]) // T3
-            // General (null) counts tasks without a category — T5 here.
-            assertEquals(1, state.pendingTaskCounts[null])
+            // General (GENERAL_ID) counts tasks in the General category — T5 here.
+            assertEquals(1, state.pendingTaskCounts[Category.GENERAL_ID])
         }
     }
 

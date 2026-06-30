@@ -166,7 +166,7 @@ fun TaskEditorSheetContent(
         if (categoriesEnabled) {
             val defaultGeneralName = stringResource(R.string.category_general)
             val generalName = generalCategoryName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
-            val currentCategoryName = if (categoryId == null) {
+            val currentCategoryName = if (categoryId == null || categoryId == Category.GENERAL_ID) {
                 generalName
             } else {
                 categories.firstOrNull { it.id == categoryId }?.name ?: generalName

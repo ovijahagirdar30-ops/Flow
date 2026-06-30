@@ -52,8 +52,9 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
  *    category: fires [onCategorySelected] with the category id. The caller
  *    is responsible for both updating the selected category AND dismissing
  *    the sheet.
- *  - The "General" virtual tab (null id) is NOT shown here — only real user
- *    categories can be reordered.
+ *  - The "General" category (id = [Category.GENERAL_ID]) is NOT shown here —
+ *    only real user categories can be reordered. The caller is responsible
+ *    for filtering General out of the [categories] list before passing it.
  *  - The sheet is fully dismissable: drag-down, scrim tap, or back gesture.
  *
  * The local list is the source of truth while the sheet is open: we
@@ -62,7 +63,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
  * re-sync from [categories] whenever the caller's list changes (e.g. when a
  * category is deleted from the settings screen).
  *
- * @param categories current user categories (already filtered, no "General").
+ * @param categories current user categories (already filtered, General excluded).
  * @param onReorder  invoked with the new full ordered list after every drop.
  * @param onCategorySelected invoked when the user taps a row / arrow.
  * @param onDismiss  invoked when the sheet is dismissed by the user.

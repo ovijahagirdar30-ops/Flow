@@ -12,7 +12,7 @@ sealed interface FlowUiState {
         val ideas: List<Idea>,
         val checkLists: List<CheckList>,
         val categories: List<Category> = emptyList(),
-        val selectedCategoryId: Int? = null,
+        val selectedCategoryId: Int? = Category.GENERAL_ID,
         val categoriesEnabled: Boolean = false,
         val pendingTaskCounts: Map<Int?, Int> = emptyMap()
     ) : FlowUiState

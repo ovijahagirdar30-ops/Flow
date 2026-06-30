@@ -26,7 +26,7 @@ data class IdeaEditorState(
     val title: String = "",
     val content: String = "",
     val color: Long = COLOR_TRANSPARENT, // default: no background color
-    val categoryId: Int? = null
+    val categoryId: Int? = Category.GENERAL_ID
 )
 
 @OptIn(FlowPreview::class)
@@ -64,7 +64,7 @@ class IdeaEditorViewModel @Inject constructor(
     // ── Open / Close ──────────────────────────────────────────────────────────
 
     /** Opens the overlay to CREATE a new blank idea. */
-    fun openNew(categoryId: Int? = null) {
+    fun openNew(categoryId: Int? = Category.GENERAL_ID) {
         _editor.value = IdeaEditorState(categoryId = categoryId)
     }
 
@@ -113,11 +113,11 @@ class IdeaEditorViewModel @Inject constructor(
     /**
      * Moves the idea being edited to a different category.
      *
-     * `null` means General (no category). The change is reflected in the
-     * editor state immediately and persisted through the existing autosave
-     * flow (debounced [persistIfNeeded]).
+     * Pass [Category.GENERAL_ID] to move the idea to the default (General)
+     * category. The change is reflected in the editor state immediately and
+     * persisted through the existing autosave flow (debounced [persistIfNeeded]).
      */
-    fun updateCategory(categoryId: Int?) = _editor.update { it.copy(categoryId = categoryId) }
+    fun updateCategory(categoryId: Int?) = _editor.update { it.copy(categoryId = categoryId ?: Category.GENERAL_ID) }
 
     fun deleteIdea(ideaId: Int) {
         viewModelScope.launch {

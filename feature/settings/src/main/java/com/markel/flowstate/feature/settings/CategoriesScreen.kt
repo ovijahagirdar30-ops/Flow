@@ -67,7 +67,7 @@ fun CategoriesScreen(
 
     val localCategories = remember(categories) {
         mutableStateListOf<Category>().apply {
-            addAll(categories)
+            addAll(categories.filter { it.id != Category.GENERAL_ID })
         }
     }
 
@@ -475,8 +475,8 @@ fun CategoriesScreen(
 
 /**
  * Identifies which category is being renamed in the rename dialog.
- * - [General] → the virtual General category (categoryId == null), whose
- *   custom name lives in DataStore.
+ * - [General] → the General category (id = [Category.GENERAL_ID]), whose
+ *   custom display name lives in DataStore (the DB row's name is always "General").
  * - [Real]    → a real user category row, whose name lives in the DB.
  */
 private sealed interface RenameTarget {

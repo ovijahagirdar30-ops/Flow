@@ -2,6 +2,7 @@ package com.markel.flowstate.feature.flow.tasks
 
 import app.cash.turbine.test
 import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.core.domain.CategoryRepository
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
@@ -415,9 +416,9 @@ class TaskEditorViewModelTest {
     }
 
     @Test
-    fun loadTask_withUncategorizedTask_populatesNullCategoryId() = runTest {
-        // GIVEN — a task with no category (General)
-        val task = Task(id = 1, title = "Buy milk", isDone = false, categoryId = null)
+    fun loadTask_withGeneralTask_populatesGeneralCategoryId() = runTest {
+        // GIVEN — a task in the General category
+        val task = Task(id = 1, title = "Buy milk", isDone = false, categoryId = Category.GENERAL_ID)
         every { repository.getTasks() } returns flowOf(listOf(task))
         viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler, categoryRepository, userPreferencesRepository)
 
@@ -425,7 +426,7 @@ class TaskEditorViewModelTest {
 
         viewModel.editor.test {
             val state = awaitItem()
-            assertNull(state.categoryId)
+            assertEquals(Category.GENERAL_ID, state.categoryId)
         }
     }
 
@@ -475,13 +476,13 @@ class TaskEditorViewModelTest {
         viewModel = TaskEditorViewModel(repository, toggleTaskUseCase, deleteTaskUseCase, reminderScheduler, categoryRepository, userPreferencesRepository)
         viewModel.loadTask(10)
 
-        // WHEN — move to General (null)
+        // WHEN — move to General (null is mapped to GENERAL_ID by the ViewModel)
         viewModel.updateCategory(null)
 
-        // THEN
+        // THEN — repository receives the task with categoryId = Category.GENERAL_ID
         coVerify {
             repository.upsertTask(match { t ->
-                t.id == 10 && t.categoryId == null
+                t.id == 10 && t.categoryId == Category.GENERAL_ID
             })
         }
     }

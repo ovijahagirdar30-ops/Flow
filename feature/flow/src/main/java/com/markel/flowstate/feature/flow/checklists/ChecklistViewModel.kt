@@ -29,7 +29,7 @@ data class CheckListEditorState(
     val title: String = "",
     val color: Long = COLOR_TRANSPARENT,
     val items: List<CheckListItem> = emptyList(),
-    val categoryId: Int? = null
+    val categoryId: Int? = Category.GENERAL_ID
 )
 
 @OptIn(FlowPreview::class)
@@ -66,7 +66,7 @@ class CheckListViewModel @Inject constructor(
 
     // ── Open / Close ──────────────────────────────────────────────────────────
 
-    fun openNew(categoryId: Int? = null) {
+    fun openNew(categoryId: Int? = Category.GENERAL_ID) {
         _editor.value = CheckListEditorState(categoryId = categoryId)
     }
 
@@ -109,11 +109,11 @@ class CheckListViewModel @Inject constructor(
     /**
      * Moves the checklist being edited to a different category.
      *
-     * `null` means General (no category). The change is reflected in the
-     * editor state immediately and persisted through the existing autosave
-     * flow (debounced [persistIfNeeded]).
+     * Pass [Category.GENERAL_ID] to move the checklist to the default (General)
+     * category. The change is reflected in the editor state immediately and
+     * persisted through the existing autosave flow (debounced [persistIfNeeded]).
      */
-    fun updateCategory(categoryId: Int?) = _editor.update { it.copy(categoryId = categoryId) }
+    fun updateCategory(categoryId: Int?) = _editor.update { it.copy(categoryId = categoryId ?: Category.GENERAL_ID) }
 
     fun addItem(): String {
         val newItem = CheckListItem(
