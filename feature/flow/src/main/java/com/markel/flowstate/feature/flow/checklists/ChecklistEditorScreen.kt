@@ -172,10 +172,11 @@ fun CheckListEditorScreen(
                 if (categoriesEnabled) {
                     val defaultGeneralName = stringResource(R.string.category_general)
                     val generalName = generalCategoryName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
-                    val currentCategoryName = if (categoryId == null || categoryId == Category.GENERAL_ID) {
+                    val currentCategoryId = editorState.categoryId  // Use editorState.categoryId (the live state) so the chip updates
+                    val currentCategoryName = if (currentCategoryId == null || currentCategoryId == Category.GENERAL_ID) {
                         generalName
                     } else {
-                        categories.firstOrNull { it.id == categoryId }?.name ?: generalName
+                        categories.firstOrNull { it.id == currentCategoryId }?.name ?: generalName
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
