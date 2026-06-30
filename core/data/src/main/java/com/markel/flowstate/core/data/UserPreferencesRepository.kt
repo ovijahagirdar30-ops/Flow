@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -155,6 +156,22 @@ class UserPreferencesRepository @Inject constructor(
             } else {
                 preferences[GENERAL_CATEGORY_NAME_KEY] = name.trim()
             }
+        }
+    }
+
+    // ── Remember last visited category ───────────────────────────────────
+
+    private val LAST_CATEGORY_ID_KEY = intPreferencesKey("last_category_id")
+
+    /** Emits the id of the last visited category tab, or null if never set. */
+    val lastCategoryId: Flow<Int?> = context.dataStore.data.map { preferences ->
+        preferences[LAST_CATEGORY_ID_KEY]
+    }
+
+    /** Persists the last visited category id. */
+    suspend fun saveLastCategoryId(id: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[LAST_CATEGORY_ID_KEY] = id
         }
     }
 }

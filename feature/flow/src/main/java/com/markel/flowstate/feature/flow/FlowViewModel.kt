@@ -102,8 +102,26 @@ class FlowViewModel @Inject constructor(
     private val _selectedCategoryId = MutableStateFlow<Int?>(Category.GENERAL_ID)
     val generalCategoryName: StateFlow<String?> = userPreferencesRepository.generalCategoryName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    /**
+     * Tracks whether we have already applied the persisted "last visited
+     * category" from DataStore. We only want to apply it ONCE at startup —
+     * after that, the user's in-session selections take over, and we just
+     * persist them as they happen.
+     */
+    private var lastCategoryRestored = false
+
     // ── Init: combine repos + pending-filter ──────────────────────────────────
     init {
+        // Restore the last visited categoom DataStory frre once at startup.
+        viewModelScope.launch {
+            userPreferencesRepository.lastCategoryId.collect { saved ->
+                if (!lastCategoryRestored && saved != null) {
+                    _selectedCategoryId.value = saved
+                    lastCategoryRestored = true
+                }
+            }
+        }
+
         viewModelScope.launch {
             val coreDataFlow = combine(
                 taskRepository.getTasks(),
@@ -124,19 +142,41 @@ class FlowViewModel @Inject constructor(
 
                 val pendingIds = pendingMap.keys
 
+                // If the persisted/selected category no longer exists, fall back to General
+                // and persist the correction so we don't keep pointing at a phantom id.
+                val validSelectedId = if (categoriesEnabled && selectedCategoryId != null) {
+                    val exists = coreData.categories.any { it.id == selectedCategoryId }
+                    if (!exists) {
+                        Category.GENERAL_ID.also {
+                            viewModelScope.launch {
+                                userPreferencesRepository.saveLastCategoryId(it)
+                            }
+                        }
+                    } else {
+                        selectedCategoryId
+                    }
+                } else {
+                    selectedCategoryId
+                }
+                // Keep the local StateFlow in sync with the correction so the
+                // tab row indicator lands on General too.
+                if (validSelectedId != selectedCategoryId) {
+                    _selectedCategoryId.value = validSelectedId
+                }
+
                 // Filter tasks: exclude done + pending deletions, then filter by category if enabled
                 val filteredTasks = coreData.tasks
                     .filter { !it.isDone && it.id !in pendingIds }
                     .let { filtered ->
                         if (categoriesEnabled) {
-                            filtered.filter { it.categoryId == selectedCategoryId }
+                            filtered.filter { it.categoryId == validSelectedId }
                         } else filtered
                     }
 
                 // Filter ideas by category if enabled
                 val filteredIdeas = coreData.ideas.let { list ->
                     if (categoriesEnabled) {
-                        list.filter { it.categoryId == selectedCategoryId }
+                        list.filter { it.categoryId == validSelectedId }
                     } else list
                 }
 
@@ -150,7 +190,7 @@ class FlowViewModel @Inject constructor(
                 // When categories are enabled but no category is selected, default to General (GENERAL_ID).
                 // When categories are disabled, the selectedCategoryId is irrelevant (no tab row is shown),
                 // but we still report GENERAL_ID so any consumer that reads it gets a valid id.
-                val effectiveSelectedId = if (categoriesEnabled) selectedCategoryId else Category.GENERAL_ID
+                val effectiveSelectedId = if (categoriesEnabled) validSelectedId else Category.GENERAL_ID
 
                 // Per-category pending task counts for the tab badges.
                 val pendingTaskCounts = coreData.tasks
@@ -190,7 +230,12 @@ class FlowViewModel @Inject constructor(
     }
 
     fun selectCategory(id: Int?) {
-        _selectedCategoryId.value = id
+        // null is treated as General — normalize so we never persist null.
+        val effective = id ?: Category.GENERAL_ID
+        _selectedCategoryId.value = effective
+        viewModelScope.launch {
+            userPreferencesRepository.saveLastCategoryId(effective)
+        }
     }
 
     /**

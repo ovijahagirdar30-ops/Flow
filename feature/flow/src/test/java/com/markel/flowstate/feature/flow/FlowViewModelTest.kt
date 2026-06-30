@@ -68,6 +68,7 @@ class FlowViewModelTest {
         coEvery { checkListRepository.getLists() } returns flowOf(checkLists)
         coEvery { categoryRepository.getCategories() } returns flowOf(categories)
         coEvery { userPreferencesRepository.categoriesEnabled } returns flowOf(categoriesEnabled)
+        coEvery { userPreferencesRepository.lastCategoryId } returns flowOf(null)
         return FlowViewModel(
             taskRepository, ideaRepository, checkListRepository, categoryRepository,
             userPreferencesRepository, reminderScheduler, deleteTaskUseCase,
@@ -635,6 +636,88 @@ class FlowViewModelTest {
             assertTrue(state.tasks.all { it.categoryId == Category.GENERAL_ID })
             assertEquals(Category.GENERAL_ID, state.selectedCategoryId)
         }
+    }
+
+    // ── Remember last visited category ─────────────────────────────────────────
+
+    @Test
+    fun selectCategory_persistsTheChoiceToDataStore() = runTest {
+        viewModel = createViewModel(categoriesEnabled = true)
+
+        viewModel.selectCategory(42)
+
+        coVerify { userPreferencesRepository.saveLastCategoryId(42) }
+    }
+
+    @Test
+    fun selectCategory_null_normalizesToGeneralBeforePersisting() = runTest {
+        viewModel = createViewModel(categoriesEnabled = true)
+
+        viewModel.selectCategory(null)
+
+        // null → GENERAL_ID before persisting, so we never store null.
+        coVerify { userPreferencesRepository.saveLastCategoryId(Category.GENERAL_ID) }
+    }
+
+    @Test
+    fun init_restoresLastVisitedCategoryFromDataStore() = runTest {
+        val cat1 = 10
+        val categories = listOf(Category(id = cat1, name = "Work", position = 0))
+        coEvery { taskRepository.getTasks() } returns flowOf(emptyList())
+        coEvery { ideaRepository.getIdeas() } returns flowOf(emptyList())
+        coEvery { checkListRepository.getLists() } returns flowOf(emptyList())
+        coEvery { categoryRepository.getCategories() } returns flowOf(categories)
+        coEvery { userPreferencesRepository.categoriesEnabled } returns flowOf(true)
+        // The persisted last visited category is cat1.
+        coEvery { userPreferencesRepository.lastCategoryId } returns flowOf(cat1)
+
+        viewModel = FlowViewModel(
+            taskRepository, ideaRepository, checkListRepository, categoryRepository,
+            userPreferencesRepository, reminderScheduler, deleteTaskUseCase,
+            defaultTestApplicationScope
+        )
+
+        viewModel.uiState.test {
+            var state: FlowUiState.Success? = null
+            do {
+                val item = awaitItem()
+                if (item is FlowUiState.Success) state = item
+            } while (state == null || state.selectedCategoryId != cat1)
+
+            assertEquals(cat1, state.selectedCategoryId)
+        }
+    }
+
+    @Test
+    fun selectedCategory_fallsBackToGeneralWhenItNoLongerExists() = runTest {
+        // GIVEN — the persisted last category (99) does not exist in the DB.
+        // The combine must reset to General and persist the correction.
+        coEvery { taskRepository.getTasks() } returns flowOf(emptyList())
+        coEvery { ideaRepository.getIdeas() } returns flowOf(emptyList())
+        coEvery { checkListRepository.getLists() } returns flowOf(emptyList())
+        coEvery { categoryRepository.getCategories() } returns flowOf(
+            listOf(Category(id = Category.GENERAL_ID, name = "General", position = 0))
+        )
+        coEvery { userPreferencesRepository.categoriesEnabled } returns flowOf(true)
+        coEvery { userPreferencesRepository.lastCategoryId } returns flowOf(99)
+
+        viewModel = FlowViewModel(
+            taskRepository, ideaRepository, checkListRepository, categoryRepository,
+            userPreferencesRepository, reminderScheduler, deleteTaskUseCase,
+            defaultTestApplicationScope
+        )
+
+        viewModel.uiState.test {
+            var state: FlowUiState.Success? = null
+            do {
+                val item = awaitItem()
+                if (item is FlowUiState.Success) state = item
+            } while (state == null || state.selectedCategoryId != Category.GENERAL_ID)
+
+            assertEquals(Category.GENERAL_ID, state.selectedCategoryId)
+        }
+        // The correction is persisted so we don't keep pointing at the phantom id.
+        coVerify { userPreferencesRepository.saveLastCategoryId(Category.GENERAL_ID) }
     }
 
     // ── pendingTaskCounts (badge counts) ───────────────────────────────────────
