@@ -67,7 +67,7 @@ fun CategoriesScreen(
 
     val localCategories = remember(categories) {
         mutableStateListOf<Category>().apply {
-            addAll(categories.filter { it.id != Category.GENERAL_ID })
+            addAll(categories)
         }
     }
 
@@ -84,7 +84,7 @@ fun CategoriesScreen(
 
     val lazyListState = rememberLazyListState()
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-        val catStartOffset = 4 // switch + spacer + header
+        val catStartOffset = 3 // switch + spacer + header
         val catEndExclusive = catStartOffset + localCategories.size
 
         if (from.index in catStartOffset until catEndExclusive &&
@@ -182,60 +182,39 @@ fun CategoriesScreen(
                     )
                 }
 
-                // ── General (virtual) category row — always first, not reorderable ──
-                item(key = "general_category") {
-                    ListItem(
-                        headlineContent = {
-                            Text(
-                                text = generalName,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        },
-                        trailingContent = {
-                            IconButton(onClick = { showRenameDialog = RenameTarget.General }) {
-                                Icon(
-                                    imageVector = ImageVector.vectorResource(R.drawable.edit_24px),
-                                    contentDescription = stringResource(R.string.categories_rename),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        },
-                        colors = ListItemDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(SettingsGroupShapes.leadingItemShape)
-                    )
-                }
-
+                // ── All categories ──
                 items(
                     items = localCategories,
                     key = { it.id }
                 ) { category ->
                     val index = localCategories.indexOf(category)
+                    val isGeneral = category.id == Category.GENERAL_ID
                     ReorderableItem(reorderableState, key = category.id) { isDragging ->
                         val scale by animateFloatAsState(
                             targetValue = if (isDragging) 1.03f else 1f,
                             label = "cat_drag_scale"
                         )
                         val shape = when {
-                            localCategories.size == 1 -> SettingsGroupShapes.endItemShape
-                            index == localCategories.lastIndex -> SettingsGroupShapes.endItemShape
+                            localCategories.size == 1 -> SettingsGroupShapes.singleItemShape
+                            index == 0 -> SettingsGroupShapes.leadingItemShape
                             else -> SettingsGroupShapes.middleItemShape
                         }
 
                         ListItem(
                             headlineContent = {
                                 Text(
-                                    text = category.name,
+                                    text = if (isGeneral) generalName else category.name,
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                             },
                             trailingContent = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     IconButton(onClick = {
-                                        showRenameDialog = RenameTarget.Real(category.id, category.name)
+                                        showRenameDialog = if (isGeneral) {
+                                            RenameTarget.General
+                                        } else {
+                                            RenameTarget.Real(category.id, category.name)
+                                        }
                                     }) {
                                         Icon(
                                             imageVector = ImageVector.vectorResource(R.drawable.edit_24px),
@@ -243,15 +222,18 @@ fun CategoriesScreen(
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
-                                    IconButton(onClick = {
-                                        deleteItemsPermanently = false
-                                        showDeleteDialog = category
-                                    }) {
-                                        Icon(
-                                            imageVector = ImageVector.vectorResource(DesignR.drawable.delete_24px),
-                                            contentDescription = stringResource(R.string.categories_delete),
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
+                                    // General cannot be deleted — it's the fallback category.
+                                    if (!isGeneral) {
+                                        IconButton(onClick = {
+                                            deleteItemsPermanently = false
+                                            showDeleteDialog = category
+                                        }) {
+                                            Icon(
+                                                imageVector = ImageVector.vectorResource(DesignR.drawable.delete_24px),
+                                                contentDescription = stringResource(R.string.categories_delete),
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
                                     }
                                     Icon(
                                         imageVector = ImageVector.vectorResource(R.drawable.drag_indicator_24px),

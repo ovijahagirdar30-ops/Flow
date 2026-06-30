@@ -4,7 +4,7 @@ import com.markel.flowstate.core.data.CheckListRepositoryImpl
 import com.markel.flowstate.core.data.HabitRepositoryImpl
 import com.markel.flowstate.core.data.IdeaRepositoryImpl
 import com.markel.flowstate.core.data.TaskRepositoryImpl
-import com.markel.flowstate.core.data.local.CategoryRepositoryImpl
+import com.markel.flowstate.core.data.CategoryRepositoryImpl
 import com.markel.flowstate.core.domain.CategoryRepository
 import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.core.domain.HabitRepository

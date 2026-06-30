@@ -40,11 +40,7 @@ class CategoriesViewModel @Inject constructor(
 
     fun createCategory(name: String) {
         viewModelScope.launch {
-            val currentList = categories.value
-            val maxPosition = currentList.maxOfOrNull { it.position } ?: -1
-            categoryRepository.upsertCategory(
-                Category(name = name, position = maxPosition + 1)
-            )
+            categoryRepository.createCategory(name)
         }
     }
 
@@ -85,10 +81,7 @@ class CategoriesViewModel @Inject constructor(
 
     fun reorderCategories(categories: List<Category>) {
         viewModelScope.launch {
-            val reordered = categories.mapIndexed { index, category ->
-                category.copy(position = index)
-            }
-            categoryRepository.updateCategoriesOrder(reordered)
+            categoryRepository.reorderCategories(categories)
         }
     }
 }

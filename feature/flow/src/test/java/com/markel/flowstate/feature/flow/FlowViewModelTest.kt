@@ -488,64 +488,46 @@ class FlowViewModelTest {
 
     // ── Category actions: createCategory ──────────────────────────────────────
 
-    @Test
-    fun createCategory_withValidName_appendsAtEndWithMaxPositionPlusOne() = runTest {
-        // GIVEN — two existing categories at positions 0 and 1
-        val existing = listOf(
-            Category(id = 1, name = "Work", position = 0),
-            Category(id = 2, name = "Personal", position = 1)
-        )
-        viewModel = createViewModel(categories = existing)
+    //
+    // Note: createCategory now delegates to CategoryRepository.createCategory,
+    // which is the single source of truth for the "max position + 1" logic
+    // and the blank/reserved-name validation. These tests verify the VM
+    // delegation; the validation logic itself is tested at the repository
+    // level (see CategoryRepositoryImplTest).
 
-        // WHEN
+    @Test
+    fun createCategory_withValidName_delegatesToRepository() = runTest {
+        viewModel = createViewModel()
+
         viewModel.createCategory("New list")
 
-        // THEN — upserted with position = max(existing) + 1 = 2
-        coVerify {
-            categoryRepository.upsertCategory(match { cat ->
-                cat.name == "New list" && cat.position == 2
-            })
-        }
+        coVerify { categoryRepository.createCategory("New list") }
     }
 
     @Test
-    fun createCategory_withNoExistingCategories_startsAtPositionZero() = runTest {
-        viewModel = createViewModel(categories = emptyList())
-
-        viewModel.createCategory("First")
-
-        coVerify {
-            categoryRepository.upsertCategory(match { cat ->
-                cat.name == "First" && cat.position == 0
-            })
-        }
-    }
-
-    @Test
-    fun createCategory_withBlankName_doesNotCallRepository() = runTest {
+    fun createCategory_withBlankName_stillDelegatesToRepository() = runTest {
+        // The VM no longer pre-validates; the repository rejects blank names.
         viewModel = createViewModel()
 
         viewModel.createCategory("   ")
 
-        coVerify(exactly = 0) { categoryRepository.upsertCategory(any()) }
+        coVerify { categoryRepository.createCategory("   ") }
     }
-
     @Test
-    fun createCategory_withReservedNameGeneral_doesNotCallRepository() = runTest {
+    fun createCategory_withReservedNameGeneral_stillDelegatesToRepository() = runTest {
+        // The VM no longer pre-validates; the repository rejects "General".
         viewModel = createViewModel()
-
-        // "General" is a reserved virtual tab and must never be persisted as a real category
         viewModel.createCategory("General")
         viewModel.createCategory("GENERAL")
         viewModel.createCategory("general")
 
-        coVerify(exactly = 0) { categoryRepository.upsertCategory(any()) }
+        coVerify(exactly = 3) { categoryRepository.createCategory(any()) }
     }
 
     // ── Category actions: reorderCategories ───────────────────────────────────
 
     @Test
-    fun reorderCategories_persistsNewPositionsIndexedFromZero() = runTest {
+    fun reorderCategories_delegatesToRepositoryWithNewOrder() = runTest {
         // GIVEN — categories already stored in DB with old positions
         val stored = listOf(
             Category(id = 1, name = "A", position = 5),
@@ -554,23 +536,11 @@ class FlowViewModelTest {
         )
         viewModel = createViewModel(categories = stored)
 
-        // WHEN — the user reorders to [B, C, A]
-        val reordered = listOf(
-            stored[1], // B
-            stored[2], // C
-            stored[0]  // A
-        )
+        // The user reorders to [B, C, A]
+        val reordered = listOf(stored[1], stored[2], stored[0])
         viewModel.reorderCategories(reordered)
 
-        // THEN — each category is re-positioned by its index in the new list
-        coVerify {
-            categoryRepository.updateCategoriesOrder(match { list ->
-                list.size == 3 &&
-                        list[0].id == 2 && list[0].position == 0 &&
-                        list[1].id == 3 && list[1].position == 1 &&
-                        list[2].id == 1 && list[2].position == 2
-            })
-        }
+        coVerify { categoryRepository.reorderCategories(reordered) }
     }
 
     // ── Category selection & filtering ─────────────────────────────────────────

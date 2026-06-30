@@ -179,24 +179,13 @@ class FlowViewModel @Inject constructor(
 
     /**
      * Creates a new user category from the FlowScreen "+ New category" tab.
-     *
-     * The new category is appended after the existing ones (position = max + 1)
-     * and is NOT selected automatically — the user can tap it once it appears.
+     * Delegates to [CategoryRepository.createCategory], which is the single
+     * source of truth for the "max position + 1" logic and the reserved-name
+     * guard. The new category is NOT selected automatically.
      */
     fun createCategory(name: String) {
-        val trimmed = name.trim()
-        if (trimmed.isBlank()) return
-        // "General" is a reserved name — it would be confusing to have a user
-        // category with the same display name as the built-in General tab.
-        if (trimmed.equals("General", ignoreCase = true)) return
-
         viewModelScope.launch {
-            val currentList = (_uiState.value as? FlowUiState.Success)?.categories
-                ?: categoryRepository.getCategories().first()
-            val maxPosition = currentList.maxOfOrNull { it.position } ?: -1
-            categoryRepository.upsertCategory(
-                Category(name = trimmed, position = maxPosition + 1)
-            )
+            categoryRepository.createCategory(name)
         }
     }
 
@@ -207,17 +196,16 @@ class FlowViewModel @Inject constructor(
     /**
      * Persists a new order for the user categories. Mirrors the logic in
      * settings:
-     * the categories list is taken as the source of truth and each item is
-     * re-positioned by index.
+     * Persists a new order for the categories.
+     *
+     * Delegates to [CategoryRepository.reorderCategories], which is the single
+     * source of truth for the `mapIndexed` re-positioning logic.
      *
      * Called from the FlowScreen "Reorder categories" sheet.
      */
     fun reorderCategories(categories: List<Category>) {
         viewModelScope.launch {
-            val reordered = categories.mapIndexed { index, category ->
-                category.copy(position = index)
-            }
-            categoryRepository.updateCategoriesOrder(reordered)
+            categoryRepository.reorderCategories(categories)
         }
     }
 
