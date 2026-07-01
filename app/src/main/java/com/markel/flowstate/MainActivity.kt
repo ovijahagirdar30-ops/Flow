@@ -10,6 +10,7 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -111,26 +112,29 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    SharedTransitionLayout {
-                        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
-                            Scaffold(
-                                modifier = Modifier.fillMaxSize(),
-                                bottomBar = {
-                                    if (isBottomBarVisible) {
-                                        FlowBottomBar(
-                                            navController = navController,
-                                            isLandscape = isLandscape,
-                                            items = visibleBottomNavItems
-                                        )
-                                    }
-                                },
-                                contentWindowInsets = WindowInsets(0.dp)
-                            ) { innerPadding ->
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        bottomBar = {
+                            if (isBottomBarVisible) {
+                                FlowBottomBar(
+                                    navController = navController,
+                                    isLandscape = isLandscape,
+                                    items = visibleBottomNavItems
+                                )
+                            }
+                        },
+                        contentWindowInsets = WindowInsets(0.dp)
+                    ) { innerPadding ->
+                        SharedTransitionLayout(
+                            modifier = Modifier
+                                .padding(innerPadding)
+                                .clipToBounds()
+                        ) {
+                            CompositionLocalProvider(LocalSharedTransitionScope provides this) {
                                 // Navigation host: decides which screen to show based on the route
                                 FlowStateNavHost(
                                     navController = navController,
                                     startDestination = startDestination!!,
-                                    modifier = Modifier.padding(innerPadding),
                                     bottomNavOrder = bottomNavOrder,
                                     bottomNavHidden = bottomNavHidden,
                                     onBottomNavConfigChanged = { order, hidden ->
