@@ -197,6 +197,7 @@ fun CategoriesScreen(
                         val shape = when {
                             localCategories.size == 1 -> SettingsGroupShapes.singleItemShape
                             index == 0 -> SettingsGroupShapes.leadingItemShape
+                            index == localCategories.lastIndex -> SettingsGroupShapes.endItemShape
                             else -> SettingsGroupShapes.middleItemShape
                         }
 
