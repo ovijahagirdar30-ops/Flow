@@ -1,10 +1,6 @@
 package com.markel.flowstate.feature.flow
 
-import android.R.attr.data
-import android.content.Intent
 import android.content.res.Configuration
-import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -99,6 +95,17 @@ fun FlowScreen(
                 )
             }
         }
+        // ── FAB ───────────────────────────────────────────────────────
+        ExpandableFabMenu(
+            expanded = isFabExpanded,
+            onToggle = { isFabExpanded = !isFabExpanded },
+            onTaskClick = { isFabExpanded = false; showCreationSheet = true },
+            onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea(selectedCategoryId ?: Category.GENERAL_ID) },
+            onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null, selectedCategoryId ?: Category.GENERAL_ID) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .zIndex(1f)
+        )
         if (showCreationSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showCreationSheet = false },
@@ -128,21 +135,6 @@ fun FlowScreen(
                     }
                 )
             }
-        }
-        AnimatedVisibility(
-            visible = !showCreationSheet,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 2.dp, bottom = 4.dp)
-                .zIndex(1f)
-        ) {
-            ExpandableFabMenu(
-                expanded = isFabExpanded,
-                onToggle = { isFabExpanded = !isFabExpanded },
-                onTaskClick = { isFabExpanded = false; showCreationSheet = true },
-                onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea(selectedCategoryId ?: Category.GENERAL_ID) },
-                onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null, selectedCategoryId ?: Category.GENERAL_ID) }
-            )
         }
         AnimatedUndoFab(
             visible = showUndoButton,
