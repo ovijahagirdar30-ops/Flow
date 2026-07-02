@@ -3,6 +3,7 @@ package com.markel.flowstate.feature.flow.tasks
 import android.Manifest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.Task
@@ -62,11 +63,12 @@ class TaskViewModel @Inject constructor(
     }
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
-    fun addTask(title: String, description: String, priority: Priority, dueDate: Long?, reminderTime: Long?, subTasks: List<SubTask>) {
+    fun addTask(title: String, description: String, priority: Priority, dueDate: Long?, reminderTime: Long?, subTasks: List<SubTask>, categoryId: Int? = Category.GENERAL_ID) {
         if (title.isBlank()) return
         viewModelScope.launch {
             val currentTasks = (uiState.value as? TasksUiState.Success)?.tasks ?: emptyList()
-            val minPosition = currentTasks.minOfOrNull { it.position } ?: 0
+            val sameCategoryTasks = currentTasks.filter { it.categoryId == categoryId }
+            val minPosition = sameCategoryTasks.minOfOrNull { it.position } ?: 0
             val effectiveReminderTime = if (reminderTime != null && reminderTime > System.currentTimeMillis()) reminderTime else null
 
             val newTask = Task(
@@ -77,7 +79,8 @@ class TaskViewModel @Inject constructor(
                 priority = priority,
                 dueDate = dueDate,
                 reminderTime = reminderTime,
-                subTasks = subTasks
+                subTasks = subTasks,
+                categoryId = categoryId
             )
             val generatedId = repository.upsertTask(newTask)
 
@@ -107,9 +110,9 @@ class TaskViewModel @Inject constructor(
     fun updateDraftDueDate(value: Long?) { _draft.update { it.copy(dueDate = value) } }
     fun updateDraftReminderTime(value: Long?) { _draft.update { it.copy(reminderTime = value) } }
 
-    fun submitDraft() {
+    fun submitDraft(categoryId: Int? = Category.GENERAL_ID) {
         val d = _draft.value
-        addTask(d.title, d.description, d.priority, d.dueDate, d.reminderTime, emptyList())
+        addTask(d.title, d.description, d.priority, d.dueDate, d.reminderTime, emptyList(), categoryId)
         _draft.value = TaskDraftState() // reset
     }
 }

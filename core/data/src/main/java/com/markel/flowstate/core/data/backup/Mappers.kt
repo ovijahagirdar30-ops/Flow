@@ -13,7 +13,8 @@ fun TaskEntity.toSchema() = TaskSchema(
     priority = priority,
     dueDate = dueDate,
     completedAt = completedAt,
-    reminderTime = reminderTime
+    reminderTime = reminderTime,
+    categoryId = categoryId
 )
 
 fun TaskSchema.toEntity() = TaskEntity(
@@ -25,7 +26,8 @@ fun TaskSchema.toEntity() = TaskEntity(
     priority = priority,
     dueDate = dueDate,
     completedAt = completedAt,
-    reminderTime = reminderTime
+    reminderTime = reminderTime,
+    categoryId = categoryId
 )
 
 // ── SubTask ───────────────────────────────────────────────────────────
@@ -64,7 +66,8 @@ fun IdeaEntity.toSchema() = IdeaSchema(
     content = content,
     createdAt = createdAt,
     color = color,
-    position = position
+    position = position,
+    categoryId = categoryId
 )
 
 fun IdeaSchema.toEntity() = IdeaEntity(
@@ -73,7 +76,8 @@ fun IdeaSchema.toEntity() = IdeaEntity(
     content = content,
     createdAt = createdAt,
     color = color,
-    position = position
+    position = position,
+    categoryId = categoryId
 )
 
 // ── Checklist ─────────────────────────────────────────────────────────
@@ -82,14 +86,16 @@ fun CheckListEntity.toSchema() = CheckListSchema(
     id = id,
     title = title,
     color = color,
-    position = position
+    position = position,
+    categoryId = categoryId
 )
 
 fun CheckListSchema.toEntity() = CheckListEntity(
     id = id,
     title = title,
     color = color,
-    position = position
+    position = position,
+    categoryId = categoryId
 )
 
 fun CheckListItemEntity.toSchema() = CheckListItemSchema(
@@ -160,4 +166,18 @@ fun HabitNumericEntrySchema.toEntity() = HabitNumericEntryEntity(
     habitId = habitId,
     epochDay = epochDay,
     value = value
+)
+
+// ── Category ───────────────────────────────────────────────────────
+
+fun CategoryEntity.toSchema() = CategorySchema(
+    id = id,
+    name = name,
+    position = position
+)
+
+fun CategorySchema.toEntity() = CategoryEntity(
+    id = id,
+    name = name,
+    position = position
 )

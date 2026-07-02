@@ -2,6 +2,8 @@ package com.markel.flowstate.feature.flow
 
 import app.cash.turbine.test
 import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.domain.Category
+import com.markel.flowstate.core.domain.CategoryRepository
 import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.Task
@@ -24,6 +26,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -36,6 +39,7 @@ class FlowViewModelTest {
     private val taskRepository: TaskRepository = mockk(relaxed = true)
     private val ideaRepository: IdeaRepository = mockk(relaxed = true)
     private val checkListRepository: CheckListRepository = mockk(relaxed = true)
+    private val categoryRepository: CategoryRepository = mockk(relaxed = true)
     private val userPreferencesRepository: UserPreferencesRepository = mockk(relaxed = true)
     private val reminderScheduler: ReminderScheduler = mockk(relaxed = true)
     private val deleteTaskUseCase: DeleteTaskUseCase = mockk(relaxed = true)
@@ -55,13 +59,18 @@ class FlowViewModelTest {
         tasks: List<Task> = emptyList(),
         ideas: List<Idea> = emptyList(),
         checkLists: List<CheckList> = emptyList(),
+        categories: List<Category> = emptyList(),
+        categoriesEnabled: Boolean = false,
         applicationScope: CoroutineScope = defaultTestApplicationScope
     ): FlowViewModel {
         coEvery { taskRepository.getTasks() } returns flowOf(tasks)
         coEvery { ideaRepository.getIdeas() } returns flowOf(ideas)
         coEvery { checkListRepository.getLists() } returns flowOf(checkLists)
+        coEvery { categoryRepository.getCategories() } returns flowOf(categories)
+        coEvery { userPreferencesRepository.categoriesEnabled } returns flowOf(categoriesEnabled)
+        coEvery { userPreferencesRepository.lastCategoryId } returns flowOf(null)
         return FlowViewModel(
-            taskRepository, ideaRepository, checkListRepository,
+            taskRepository, ideaRepository, checkListRepository, categoryRepository,
             userPreferencesRepository, reminderScheduler, deleteTaskUseCase,
             applicationScope
         )
@@ -476,4 +485,320 @@ class FlowViewModelTest {
         // Permission never granted, so no reschedule
         coVerify(exactly = 0) { reminderScheduler.rescheduleAll(any()) }
     }
+
+
+    // ── Category actions: createCategory ──────────────────────────────────────
+
+    //
+    // Note: createCategory now delegates to CategoryRepository.createCategory,
+    // which is the single source of truth for the "max position + 1" logic
+    // and the blank/reserved-name validation. These tests verify the VM
+    // delegation; the validation logic itself is tested at the repository
+    // level (see CategoryRepositoryImplTest).
+
+    @Test
+    fun createCategory_withValidName_delegatesToRepository() = runTest {
+        viewModel = createViewModel()
+
+        viewModel.createCategory("New list")
+
+        coVerify { categoryRepository.createCategory("New list") }
+    }
+
+    @Test
+    fun createCategory_withBlankName_stillDelegatesToRepository() = runTest {
+        // The VM no longer pre-validates; the repository rejects blank names.
+        viewModel = createViewModel()
+
+        viewModel.createCategory("   ")
+
+        coVerify { categoryRepository.createCategory("   ") }
+    }
+    @Test
+    fun createCategory_withReservedNameGeneral_stillDelegatesToRepository() = runTest {
+        // The VM no longer pre-validates; the repository rejects "General".
+        viewModel = createViewModel()
+        viewModel.createCategory("General")
+        viewModel.createCategory("GENERAL")
+        viewModel.createCategory("general")
+
+        coVerify(exactly = 3) { categoryRepository.createCategory(any()) }
+    }
+
+    // ── Category actions: reorderCategories ───────────────────────────────────
+
+    @Test
+    fun reorderCategories_delegatesToRepositoryWithNewOrder() = runTest {
+        // GIVEN — categories already stored in DB with old positions
+        val stored = listOf(
+            Category(id = 1, name = "A", position = 5),
+            Category(id = 2, name = "B", position = 7),
+            Category(id = 3, name = "C", position = 9)
+        )
+        viewModel = createViewModel(categories = stored)
+
+        // The user reorders to [B, C, A]
+        val reordered = listOf(stored[1], stored[2], stored[0])
+        viewModel.reorderCategories(reordered)
+
+        coVerify { categoryRepository.reorderCategories(reordered) }
+    }
+
+    // ── Category selection & filtering ─────────────────────────────────────────
+
+    @Test
+    fun selectCategory_filtersTasksIdeasAndChecklistsByCategoryId() = runTest {
+        // GIVEN — categories enabled, mixed items across two categories
+        val cat1 = 10
+        val cat2 = 20
+        val tasks = listOf(
+            Task(id = 1, title = "T1", isDone = false, categoryId = cat1),
+            Task(id = 2, title = "T2", isDone = false, categoryId = cat2),
+            Task(id = 3, title = "T3", isDone = false, categoryId = Category.GENERAL_ID) // General
+        )
+        val ideas = listOf(
+            Idea(id = 1, title = "I1", content = "", color = 0L, categoryId = cat1),
+            Idea(id = 2, title = "I2", content = "", color = 0L, categoryId = cat2)
+        )
+        val lists = listOf(
+            CheckList(id = 1, title = "C1", color = 0L, categoryId = cat1),
+            CheckList(id = 2, title = "C2", color = 0L, categoryId = cat2)
+        )
+        val categories = listOf(
+            Category(id = cat1, name = "Work", position = 0),
+            Category(id = cat2, name = "Personal", position = 1)
+        )
+        viewModel = createViewModel(
+            tasks = tasks,
+            ideas = ideas,
+            checkLists = lists,
+            categories = categories,
+            categoriesEnabled = true
+        )
+
+        // WHEN — select cat1
+        viewModel.selectCategory(cat1)
+
+        // THEN — only items in cat1 are emitted. We scan emissions until we find
+        // the one reflecting the selection (the combine may emit intermediate
+        // states while the StateFlow flips).
+        viewModel.uiState.test {
+            var state: FlowUiState.Success? = null
+            do {
+                val item = awaitItem()
+                if (item is FlowUiState.Success) state = item
+            } while (state == null || state.selectedCategoryId != cat1)
+
+            assertEquals(1, state.tasks.size)
+            assertEquals("T1", state.tasks[0].title)
+            assertEquals(1, state.ideas.size)
+            assertEquals(1, state.checkLists.size)
+            assertEquals(cat1, state.selectedCategoryId)
+        }
+    }
+
+    @Test
+    fun selectCategory_general_showsOnlyGeneralTasks() = runTest {
+        // GIVEN — categories enabled, tasks in a category AND in General.
+        //
+        // The "General" tab (selectedCategoryId == Category.GENERAL_ID) shows ONLY
+        // tasks whose categoryId == Category.GENERAL_ID. It is NOT a "see everything"
+        // view anymore (that was the old model).
+        val cat1 = 10
+        val tasks = listOf(
+            Task(id = 1, title = "Categorized A", isDone = false, categoryId = cat1),
+            Task(id = 2, title = "Categorized B", isDone = false, categoryId = cat1),
+            Task(id = 3, title = "General A", isDone = false, categoryId = Category.GENERAL_ID),
+            Task(id = 4, title = "General B", isDone = false, categoryId = Category.GENERAL_ID)
+        )
+        val categories = listOf(Category(id = cat1, name = "Work", position = 0))
+        viewModel = createViewModel(
+            tasks = tasks,
+            categories = categories,
+            categoriesEnabled = true
+        )
+
+        // First select cat1 so the next selection (General) actually changes state
+        viewModel.selectCategory(cat1)
+
+        // WHEN — select General
+        viewModel.selectCategory(Category.GENERAL_ID)
+
+        // THEN — only the General tasks are shown
+        viewModel.uiState.test {
+            var state: FlowUiState.Success? = null
+            do {
+                val item = awaitItem()
+                if (item is FlowUiState.Success) state = item
+            } while (state == null || state.selectedCategoryId != Category.GENERAL_ID)
+
+            assertEquals(2, state.tasks.size)
+            assertTrue(state.tasks.all { it.categoryId == Category.GENERAL_ID })
+            assertEquals(Category.GENERAL_ID, state.selectedCategoryId)
+        }
+    }
+
+    // ── Remember last visited category ─────────────────────────────────────────
+
+    @Test
+    fun selectCategory_persistsTheChoiceToDataStore() = runTest {
+        viewModel = createViewModel(categoriesEnabled = true)
+
+        viewModel.selectCategory(42)
+
+        coVerify { userPreferencesRepository.saveLastCategoryId(42) }
+    }
+
+    @Test
+    fun selectCategory_null_normalizesToGeneralBeforePersisting() = runTest {
+        viewModel = createViewModel(categoriesEnabled = true)
+
+        viewModel.selectCategory(null)
+
+        // null → GENERAL_ID before persisting, so we never store null.
+        coVerify { userPreferencesRepository.saveLastCategoryId(Category.GENERAL_ID) }
+    }
+
+    @Test
+    fun init_restoresLastVisitedCategoryFromDataStore() = runTest {
+        val cat1 = 10
+        val categories = listOf(Category(id = cat1, name = "Work", position = 0))
+        coEvery { taskRepository.getTasks() } returns flowOf(emptyList())
+        coEvery { ideaRepository.getIdeas() } returns flowOf(emptyList())
+        coEvery { checkListRepository.getLists() } returns flowOf(emptyList())
+        coEvery { categoryRepository.getCategories() } returns flowOf(categories)
+        coEvery { userPreferencesRepository.categoriesEnabled } returns flowOf(true)
+        // The persisted last visited category is cat1.
+        coEvery { userPreferencesRepository.lastCategoryId } returns flowOf(cat1)
+
+        viewModel = FlowViewModel(
+            taskRepository, ideaRepository, checkListRepository, categoryRepository,
+            userPreferencesRepository, reminderScheduler, deleteTaskUseCase,
+            defaultTestApplicationScope
+        )
+
+        viewModel.uiState.test {
+            var state: FlowUiState.Success? = null
+            do {
+                val item = awaitItem()
+                if (item is FlowUiState.Success) state = item
+            } while (state == null || state.selectedCategoryId != cat1)
+
+            assertEquals(cat1, state.selectedCategoryId)
+        }
+    }
+
+    @Test
+    fun selectedCategory_fallsBackToGeneralWhenItNoLongerExists() = runTest {
+        // GIVEN — the persisted last category (99) does not exist in the DB.
+        // The combine must reset to General and persist the correction.
+        coEvery { taskRepository.getTasks() } returns flowOf(emptyList())
+        coEvery { ideaRepository.getIdeas() } returns flowOf(emptyList())
+        coEvery { checkListRepository.getLists() } returns flowOf(emptyList())
+        coEvery { categoryRepository.getCategories() } returns flowOf(
+            listOf(Category(id = Category.GENERAL_ID, name = "General", position = 0))
+        )
+        coEvery { userPreferencesRepository.categoriesEnabled } returns flowOf(true)
+        coEvery { userPreferencesRepository.lastCategoryId } returns flowOf(99)
+
+        viewModel = FlowViewModel(
+            taskRepository, ideaRepository, checkListRepository, categoryRepository,
+            userPreferencesRepository, reminderScheduler, deleteTaskUseCase,
+            defaultTestApplicationScope
+        )
+
+        viewModel.uiState.test {
+            var state: FlowUiState.Success? = null
+            do {
+                val item = awaitItem()
+                if (item is FlowUiState.Success) state = item
+            } while (state == null || state.selectedCategoryId != Category.GENERAL_ID)
+
+            assertEquals(Category.GENERAL_ID, state.selectedCategoryId)
+        }
+        // The correction is persisted so we don't keep pointing at the phantom id.
+        coVerify { userPreferencesRepository.saveLastCategoryId(Category.GENERAL_ID) }
+    }
+
+    // ── pendingTaskCounts (badge counts) ───────────────────────────────────────
+
+    @Test
+    fun pendingTaskCounts_groupsPendingTasksByCategory() = runTest {
+        // GIVEN — categories enabled, several pending tasks across two categories
+        val cat1 = 10
+        val cat2 = 20
+        val tasks = listOf(
+            Task(id = 1, title = "T1", isDone = false, categoryId = cat1),
+            Task(id = 2, title = "T2", isDone = false, categoryId = cat1),
+            Task(id = 3, title = "T3", isDone = false, categoryId = cat2),
+            Task(id = 4, title = "T4", isDone = true,  categoryId = cat1), // done → excluded
+            Task(id = 5, title = "T5", isDone = false, categoryId = Category.GENERAL_ID)  // General
+        )
+        val categories = listOf(
+            Category(id = cat1, name = "Work", position = 0),
+            Category(id = cat2, name = "Personal", position = 1)
+        )
+        viewModel = createViewModel(
+            tasks = tasks,
+            categories = categories,
+            categoriesEnabled = true
+        )
+
+        // THEN — counts include pending tasks per category AND General (GENERAL_ID)
+        viewModel.uiState.test {
+            val state = (awaitItem() as? FlowUiState.Success) ?: awaitItem() as FlowUiState.Success
+            assertEquals(2, state.pendingTaskCounts[cat1]) // T1 + T2 (T4 is done)
+            assertEquals(1, state.pendingTaskCounts[cat2]) // T3
+            // General (GENERAL_ID) counts tasks in the General category — T5 here.
+            assertEquals(1, state.pendingTaskCounts[Category.GENERAL_ID])
+        }
+    }
+
+    @Test
+    fun pendingTaskCounts_excludesTasksPendingUndoDeletion() = runTest {
+        // GIVEN — a task that has been swiped-to-delete (pending undo) must NOT
+        // be counted in the badge, because it's no longer visible in the list.
+        val cat1 = 10
+        val t1 = Task(id = 1, title = "T1", isDone = false, categoryId = cat1)
+        val t2 = Task(id = 2, title = "T2", isDone = false, categoryId = cat1)
+        val categories = listOf(Category(id = cat1, name = "Work", position = 0))
+        viewModel = createViewModel(
+            tasks = listOf(t1, t2),
+            categories = categories,
+            categoriesEnabled = true
+        )
+
+        // WHEN — swipe t1 to delete
+        viewModel.onTaskSwiped(t1)
+
+        // THEN — only t2 is counted. Scan emissions until we see the count
+        // reflecting the swipe (the combine may emit intermediate states).
+        viewModel.uiState.test {
+            var state: FlowUiState.Success? = null
+            do {
+                val item = awaitItem()
+                if (item is FlowUiState.Success) state = item
+            } while (state == null || state.pendingTaskCounts[cat1] != 1)
+
+            assertEquals(1, state.pendingTaskCounts[cat1])
+        }
+    }
+
+    @Test
+    fun pendingTaskCounts_isComputedEvenWhenCategoriesAreDisabled() = runTest {
+        // The pendingTaskCounts map is always computed by the combine block
+        // (it only filters by isDone / pendingUndo), so
+        // it is populated even when categories are disabled. The UI layer is
+        // responsible for ignoring the counts when categoriesEnabled == false
+        // (no tabs → no badges to render).
+        val cat1 = 10
+        val tasks = listOf(Task(id = 1, title = "T1", isDone = false, categoryId = cat1))
+        viewModel = createViewModel(tasks = tasks, categoriesEnabled = false)
+
+        viewModel.uiState.test {
+            val state = (awaitItem() as? FlowUiState.Success) ?: awaitItem() as FlowUiState.Success
+            assertEquals(1, state.pendingTaskCounts[cat1])
+        }
+    }
+
 }

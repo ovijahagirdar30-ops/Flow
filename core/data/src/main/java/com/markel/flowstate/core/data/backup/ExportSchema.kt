@@ -19,11 +19,12 @@ data class FlowStateExport(
     val checkListItems: List<CheckListItemSchema>,
     val habits: List<HabitSchema>,
     val habitEntries: List<HabitEntrySchema>,
-    val habitNumericEntries: List<HabitNumericEntrySchema>
+    val habitNumericEntries: List<HabitNumericEntrySchema>,
+    val categories: List<CategorySchema> = emptyList()
 ) {
     companion object {
         /** Must match the Room database version so restores stay consistent. */
-        const val CURRENT_SCHEMA_VERSION = 17
+        const val CURRENT_SCHEMA_VERSION = 19
     }
 }
 
@@ -39,7 +40,8 @@ data class TaskSchema(
     val priority: Int,
     val dueDate: Long? = null,
     val completedAt: Long? = null,
-    val reminderTime: Long? = null
+    val reminderTime: Long? = null,
+    val categoryId: Int? = null
 )
 
 @Serializable
@@ -65,7 +67,8 @@ data class IdeaSchema(
     val content: String,
     val createdAt: Long,
     val color: Long,
-    val position: Int
+    val position: Int,
+    val categoryId: Int? = null
 )
 
 // ── Checklist ─────────────────────────────────────────────────────────
@@ -75,7 +78,8 @@ data class CheckListSchema(
     val id: Int,
     val title: String,
     val color: Long,
-    val position: Int
+    val position: Int,
+    val categoryId: Int? = null
 )
 
 @Serializable
@@ -116,4 +120,13 @@ data class HabitNumericEntrySchema(
     val habitId: Int,
     val epochDay: Long,
     val value: Float
+)
+
+// ── Category ───────────────────────────────────────────────────────
+
+@Serializable
+data class CategorySchema(
+    val id: Int,
+    val name: String,
+    val position: Int
 )

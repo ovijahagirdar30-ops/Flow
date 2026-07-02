@@ -1,8 +1,5 @@
 package com.markel.flowstate.feature.flow.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButtonMenu
@@ -13,9 +10,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -23,6 +19,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.markel.flowstate.feature.tasks.R
 
+/**
+ * Expandable FAB menu built on top of the native Material 3 Expressive
+ * [FloatingActionButtonMenu] + [ToggleFloatingActionButton].
+ *
+ * Native behavior:
+ *  - Container morphs squircle -> circle as the toggle is checked.
+ *  - Container color morphs primaryContainer -> primary.
+ *  - The bouncy spring is provided by the M3 Expressive
+ *    MotionScheme, which is only active when the app is wrapped in
+ *    MaterialExpressiveTheme (see Theme.kt).
+ */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ExpandableFabMenu(
@@ -30,69 +37,68 @@ fun ExpandableFabMenu(
     onToggle: () -> Unit,
     onTaskClick: () -> Unit,
     onIdeaClick: () -> Unit,
-    onCheckListClick: () -> Unit
+    onCheckListClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val addIcon = ImageVector.vectorResource(R.drawable.add_24px)
-    val rotation by animateFloatAsState(
-        targetValue = if (expanded) 45f else 0f,
-        label = "fab_icon_rotation"
-    )
+    val closeIcon = ImageVector.vectorResource(R.drawable.close_24px)
 
     FloatingActionButtonMenu(
         expanded = expanded,
+        modifier = modifier,
         button = {
             ToggleFloatingActionButton(
                 checked = expanded,
                 onCheckedChange = { onToggle() },
-                containerSize = { _ -> 54.dp },
-                containerCornerRadius = { _ -> 16.dp },
-                containerColor = ToggleFloatingActionButtonDefaults.containerColor(
-                    initialColor = MaterialTheme.colorScheme.primary,
-                    finalColor = MaterialTheme.colorScheme.primary
-                ),
             ) {
+                val progress = checkedProgress
+
+                val iconTint = lerp(
+                    MaterialTheme.colorScheme.onPrimaryContainer,
+                    MaterialTheme.colorScheme.onPrimary,
+                    progress
+                )
+
                 Icon(
-                    imageVector = addIcon,
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    imageVector = if (progress < 0.5f) addIcon else closeIcon,
                     contentDescription = if (expanded) "Close menu" else "Open menu",
-                    modifier = Modifier.rotate(rotation)
+                    tint = iconTint
                 )
             }
         }
     ) {
         FloatingActionButtonMenuItem(
             onClick = onCheckListClick,
-            icon = { Icon(ImageVector.vectorResource(R.drawable.check_box_24px), modifier = Modifier.size(23.dp), contentDescription = null) },
-            text = { Text(stringResource(R.string.checklist), fontSize = 16.sp) },
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                red = MaterialTheme.colorScheme.primaryContainer.red + 0.1f,
-                green = MaterialTheme.colorScheme.primaryContainer.green + 0.1f,
-                blue = MaterialTheme.colorScheme.primaryContainer.blue + 0.1f
-            ),
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.padding(0.dp)
+            icon = {
+                Icon(
+                    ImageVector.vectorResource(R.drawable.check_box_24px),
+                    modifier = Modifier.size(24.dp),
+                    contentDescription = null
+                )
+            },
+            text = { Text(stringResource(R.string.checklist), fontSize = 16.sp) }
         )
         FloatingActionButtonMenuItem(
             onClick = onIdeaClick,
-            icon = { Icon(ImageVector.vectorResource(R.drawable.lightbulb_24px), modifier = Modifier.size(23.dp), contentDescription = null) },
-            text = { Text(stringResource(R.string.idea), fontSize = 16.sp) },
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                red = MaterialTheme.colorScheme.primaryContainer.red + 0.1f,
-                green = MaterialTheme.colorScheme.primaryContainer.green + 0.1f,
-                blue = MaterialTheme.colorScheme.primaryContainer.blue + 0.1f
-            ),
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            icon = {
+                Icon(
+                    ImageVector.vectorResource(R.drawable.lightbulb_24px),
+                    modifier = Modifier.size(24.dp),
+                    contentDescription = null
+                )
+            },
+            text = { Text(stringResource(R.string.idea), fontSize = 16.sp) }
         )
         FloatingActionButtonMenuItem(
             onClick = onTaskClick,
-            icon = { Icon(ImageVector.vectorResource(R.drawable.check_24px), modifier = Modifier.size(23.dp), contentDescription = null) },
-            text = { Text(stringResource(R.string.task), fontSize = 16.sp) },
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                red = MaterialTheme.colorScheme.primaryContainer.red + 0.1f,
-                green = MaterialTheme.colorScheme.primaryContainer.green + 0.1f,
-                blue = MaterialTheme.colorScheme.primaryContainer.blue + 0.1f
-            ),
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            icon = {
+                Icon(
+                    ImageVector.vectorResource(R.drawable.check_24px),
+                    modifier = Modifier.size(24.dp),
+                    contentDescription = null
+                )
+            },
+            text = { Text(stringResource(R.string.task), fontSize = 16.sp) }
         )
     }
 }

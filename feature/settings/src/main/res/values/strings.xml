@@ -12,6 +12,8 @@
     <string name="settings_info">Info</string>
     <string name="settings_about">About</string>
     <string name="settings_about_description">FlowState v%1$s</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
 
     <!-- Bottom nav config screen -->
     <string name="bottom_nav_config_title">Bottom Navigation</string>
@@ -62,4 +64,25 @@
     <string name="backup_export_description">Save all your data to a JSON file</string>
     <string name="backup_restore">Restore</string>
     <string name="backup_restore_description">Restore data from a backup file</string>
+
+    <!-- Categories -->
+    <string name="categories_title">Categories</string>
+    <string name="categories_settings_description">Organize items with category tabs</string>
+    <string name="categories_enabled">Enable categories</string>
+    <string name="categories_enabled_description">Show category tabs in the Flow screen</string>
+    <string name="categories_list">Categories</string>
+    <string name="categories_add">Add category</string>
+    <string name="categories_create">New category</string>
+    <string name="categories_name_label">Category name</string>
+    <string name="categories_delete">Delete</string>
+    <string name="categories_delete_title">Delete \"%1$s\"?</string>
+    <string name="categories_delete_message">What would you like to do with the items in this category?</string>
+    <string name="categories_move_to_general">Move to General</string>
+    <string name="categories_delete_permanently">Delete items</string>
+    <string name="category_general">General</string>
+    <string name="categories_name_reserved">"General" is a reserved name</string>
+    <string name="categories_rename">Rename</string>
+    <string name="categories_rename_general_title">Rename General list</string>
+    <string name="categories_reset_general">Reset</string>
+    <string name="categories_rename_title">Rename category</string>
 </resources>

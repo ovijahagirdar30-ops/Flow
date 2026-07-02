@@ -1,6 +1,8 @@
 package com.markel.flowstate.feature.flow.ideas
 
 import app.cash.turbine.test
+import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.domain.CategoryRepository
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.IdeaRepository
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
@@ -22,12 +24,14 @@ class IdeaViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository: IdeaRepository = mockk(relaxed = true)
+    private val categoryRepository: CategoryRepository = mockk(relaxed = true)
+    private val userPreferencesRepository: UserPreferencesRepository = mockk(relaxed = true)
     private lateinit var viewModel: IdeaEditorViewModel
 
     @Test
     fun openNew_resetsEditorState() = runTest {
         // GIVEN - A fresh ViewModel instance
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN - Opening the editor for a new idea
         viewModel.openNew()
@@ -44,7 +48,7 @@ class IdeaViewModelTest {
     @Test
     fun openExisting_loadsIdeaData() = runTest {
         // GIVEN - An existing idea and the ViewModel
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
         val idea = Idea(id = 1, title = "Original", content = "Content", color = 0xFF123456L)
 
         // WHEN - Opening the editor with that existing idea
@@ -62,7 +66,7 @@ class IdeaViewModelTest {
     @Test
     fun updateFields_updatesStateCorrectly() = runTest {
         // GIVEN - A ViewModel in its initial state
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
 
         // WHEN - The user types a new title, content and changes the color
         viewModel.updateTitle("New Idea")
@@ -81,7 +85,7 @@ class IdeaViewModelTest {
     @Test
     fun closeAndSave_withNewIdea_callsRepository() = runTest {
         // GIVEN - A new idea being composed in the editor
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.updateTitle("New Title")
         viewModel.updateContent("New Content")
 
@@ -99,7 +103,7 @@ class IdeaViewModelTest {
     @Test
     fun closeAndSave_withExistingIdea_updatesIdea() = runTest {
         // GIVEN - An editor already loaded with an existing idea
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
         val idea = Idea(id = 10, title = "Old Title", content = "Old Content", color = 0L)
         viewModel.openExisting(idea)
 
@@ -125,7 +129,7 @@ class IdeaViewModelTest {
     fun autosave_newIdea_doesNotCreateDuplicates() = runTest {
         // GIVEN - The repository returns ID=42 on the first insertion
         coEvery { repository.upsertIdea(any()) } returns 42L
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.openNew()
 
         // WHEN - The user types in two separate bursts (2 debounce triggers)
@@ -153,7 +157,7 @@ class IdeaViewModelTest {
     fun autosave_newIdea_updatesStateWithInsertedId() = runTest {
         // GIVEN
         coEvery { repository.upsertIdea(any()) } returns 99L
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.openNew()
 
         // WHEN - The debounce triggers
@@ -176,7 +180,7 @@ class IdeaViewModelTest {
     @Test
     fun closeAndSave_beforeDebounce_savesExactlyOnce() = runTest {
         coEvery { repository.upsertIdea(any()) } returns 1L
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.openNew()
 
         // WHEN - User types and closes before 800ms
@@ -198,7 +202,7 @@ class IdeaViewModelTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun autosave_blankIdea_neverCallsRepository() = runTest {
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.openNew()
 
         advanceTimeBy(900)
@@ -215,7 +219,7 @@ class IdeaViewModelTest {
     @Test
     fun autosave_existingIdea_neverCreatesNewIdea() = runTest {
         coEvery { repository.upsertIdea(any()) } returns 5L
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
         val idea = Idea(id = 5, title = "Original", content = "", color = 0L)
         viewModel.openExisting(idea)
 
@@ -241,7 +245,7 @@ class IdeaViewModelTest {
     fun deleteIdea_callsRepositoryAndResetsState() = runTest {
         val idea = Idea(id = 7, title = "To delete", content = "", color = 0L)
         coEvery { repository.getIdeaById(7) } returns idea
-        viewModel = IdeaEditorViewModel(repository)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.openExisting(idea)
 
         viewModel.deleteIdea(7)

@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -118,6 +119,59 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun saveDynamicColor(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[DYNAMIC_COLOR_KEY] = enabled
+        }
+    }
+
+    // ── Categories configuration ───────────────────────────────────
+
+    private val CATEGORIES_ENABLED_KEY = booleanPreferencesKey("categories_enabled")
+
+    val categoriesEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[CATEGORIES_ENABLED_KEY] ?: false
+    }
+
+    suspend fun saveCategoriesEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[CATEGORIES_ENABLED_KEY] = enabled
+        }
+    }
+
+    // ── General category name ───────────────────────────────────
+
+    /**
+     * Custom user-facing name for the "General" virtual category (the one
+     * backed by categoryId == null). When null, the UI falls back to the
+     * localized string R.string.category_general.
+     */
+    private val GENERAL_CATEGORY_NAME_KEY = stringPreferencesKey("general_category_name")
+
+    val generalCategoryName: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[GENERAL_CATEGORY_NAME_KEY]?.takeIf { it.isNotBlank() }
+    }
+
+    suspend fun saveGeneralCategoryName(name: String?) {
+        context.dataStore.edit { preferences ->
+            if (name.isNullOrBlank()) {
+                preferences.remove(GENERAL_CATEGORY_NAME_KEY)
+            } else {
+                preferences[GENERAL_CATEGORY_NAME_KEY] = name.trim()
+            }
+        }
+    }
+
+    // ── Remember last visited category ───────────────────────────────────
+
+    private val LAST_CATEGORY_ID_KEY = intPreferencesKey("last_category_id")
+
+    /** Emits the id of the last visited category tab, or null if never set. */
+    val lastCategoryId: Flow<Int?> = context.dataStore.data.map { preferences ->
+        preferences[LAST_CATEGORY_ID_KEY]
+    }
+
+    /** Persists the last visited category id. */
+    suspend fun saveLastCategoryId(id: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[LAST_CATEGORY_ID_KEY] = id
         }
     }
 }

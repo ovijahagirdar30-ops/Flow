@@ -5,6 +5,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.domain.Category
+import com.markel.flowstate.core.domain.CategoryRepository
 import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.core.domain.Idea
@@ -48,6 +50,7 @@ class FlowViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val ideaRepository: IdeaRepository,
     private val checkListRepository: CheckListRepository,
+    private val categoryRepository: CategoryRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val reminderScheduler: ReminderScheduler,
     private val deleteTaskUseCase: DeleteTaskUseCase,
@@ -96,25 +99,158 @@ class FlowViewModel @Inject constructor(
      */
     private val deleteJobs = mutableMapOf<Int, Job>()
 
+    private val _selectedCategoryId = MutableStateFlow<Int?>(Category.GENERAL_ID)
+    val generalCategoryName: StateFlow<String?> = userPreferencesRepository.generalCategoryName.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /**
+     * Tracks whether we have already applied the persisted "last visited
+     * category" from DataStore. We only want to apply it ONCE at startup —
+     * after that, the user's in-session selections take over, and we just
+     * persist them as they happen.
+     */
+    private var lastCategoryRestored = false
+
     // ── Init: combine repos + pending-filter ──────────────────────────────────
     init {
+        // Restore the last visited categoom DataStory frre once at startup.
         viewModelScope.launch {
-            combine(
+            userPreferencesRepository.lastCategoryId.collect { saved ->
+                if (!lastCategoryRestored && saved != null) {
+                    _selectedCategoryId.value = saved
+                    lastCategoryRestored = true
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            val coreDataFlow = combine(
                 taskRepository.getTasks(),
                 ideaRepository.getIdeas(),
                 checkListRepository.getLists(),
-                _pendingUndoTasks
-            ) { tasks, ideas, lists, pendingMap ->
+                categoryRepository.getCategories()
+            ) { tasks, ideas, lists, categories ->
+                // Combine these into a temporary data class
+                CoreData(tasks, ideas, lists, categories)
+            }
+            // Combine like this to not lose type-safe navigation
+            combine(
+                coreDataFlow,
+                userPreferencesRepository.categoriesEnabled,
+                _pendingUndoTasks,
+                _selectedCategoryId
+            ) { coreData, categoriesEnabled, pendingMap, selectedCategoryId ->
+
                 val pendingIds = pendingMap.keys
+
+                // If the persisted/selected category no longer exists, fall back to General
+                // and persist the correction so we don't keep pointing at a phantom id.
+                val validSelectedId = if (categoriesEnabled && selectedCategoryId != null) {
+                    val exists = coreData.categories.any { it.id == selectedCategoryId }
+                    if (!exists) {
+                        Category.GENERAL_ID.also {
+                            viewModelScope.launch {
+                                userPreferencesRepository.saveLastCategoryId(it)
+                            }
+                        }
+                    } else {
+                        selectedCategoryId
+                    }
+                } else {
+                    selectedCategoryId
+                }
+                // Keep the local StateFlow in sync with the correction so the
+                // tab row indicator lands on General too.
+                if (validSelectedId != selectedCategoryId) {
+                    _selectedCategoryId.value = validSelectedId
+                }
+
+                // Filter tasks: exclude done + pending deletions, then filter by category if enabled
+                val filteredTasks = coreData.tasks
+                    .filter { !it.isDone && it.id !in pendingIds }
+                    .let { filtered ->
+                        if (categoriesEnabled) {
+                            filtered.filter { it.categoryId == validSelectedId }
+                        } else filtered
+                    }
+
+                // Filter ideas by category if enabled
+                val filteredIdeas = coreData.ideas.let { list ->
+                    if (categoriesEnabled) {
+                        list.filter { it.categoryId == validSelectedId }
+                    } else list
+                }
+
+                // Filter checklists by category if enabled
+                val filteredLists = coreData.lists.let { list ->
+                    if (categoriesEnabled) {
+                        list.filter { it.categoryId == selectedCategoryId }
+                    } else list
+                }
+
+                // When categories are enabled but no category is selected, default to General (GENERAL_ID).
+                // When categories are disabled, the selectedCategoryId is irrelevant (no tab row is shown),
+                // but we still report GENERAL_ID so any consumer that reads it gets a valid id.
+                val effectiveSelectedId = if (categoriesEnabled) validSelectedId else Category.GENERAL_ID
+
+                // Per-category pending task counts for the tab badges.
+                val pendingTaskCounts = coreData.tasks
+                    .asSequence()
+                    .filter { !it.isDone && it.id !in pendingIds}
+                    .groupingBy { it.categoryId }
+                    .eachCount()
+
                 FlowUiState.Success(
-                    tasks = tasks.filter { !it.isDone && it.id !in pendingIds },
-                    ideas = ideas,
-                    checkLists = lists
+                    tasks = filteredTasks,
+                    ideas = filteredIdeas,
+                    checkLists = filteredLists,
+                    categories = coreData.categories,
+                    selectedCategoryId = effectiveSelectedId,
+                    categoriesEnabled = categoriesEnabled,
+                    pendingTaskCounts = pendingTaskCounts
                 )
             }.collect { state ->
                 _uiState.value = state
                 refreshBanner()
             }
+        }
+    }
+
+    // ── Category actions ──────────────────────────────────────────────────────
+
+    /**
+     * Creates a new user category from the FlowScreen "+ New category" tab.
+     * Delegates to [CategoryRepository.createCategory], which is the single
+     * source of truth for the "max position + 1" logic and the reserved-name
+     * guard. The new category is NOT selected automatically.
+     */
+    fun createCategory(name: String) {
+        viewModelScope.launch {
+            categoryRepository.createCategory(name)
+        }
+    }
+
+    fun selectCategory(id: Int?) {
+        // null is treated as General — normalize so we never persist null.
+        val effective = id ?: Category.GENERAL_ID
+        _selectedCategoryId.value = effective
+        viewModelScope.launch {
+            userPreferencesRepository.saveLastCategoryId(effective)
+        }
+    }
+
+    /**
+     * Persists a new order for the user categories. Mirrors the logic in
+     * settings:
+     * Persists a new order for the categories.
+     *
+     * Delegates to [CategoryRepository.reorderCategories], which is the single
+     * source of truth for the `mapIndexed` re-positioning logic.
+     *
+     * Called from the FlowScreen "Reorder categories" sheet.
+     */
+    fun reorderCategories(categories: List<Category>) {
+        viewModelScope.launch {
+            categoryRepository.reorderCategories(categories)
         }
     }
 
@@ -253,5 +389,11 @@ class FlowViewModel @Inject constructor(
             _bannerVisible.value = hasAnyFutureReminder && !canSchedule
         }
     }
-
 }
+
+data class CoreData(
+    val tasks: List<Task>,
+    val ideas: List<Idea>,
+    val lists: List<CheckList>,
+    val categories: List<Category>
+)

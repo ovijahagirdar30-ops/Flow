@@ -58,8 +58,7 @@ fun CalendarScreen(
                         taskViewModel.updateDraftDueDate(millis)
                     }
                     showCreationSheet = true
-                },
-                containerColor = MaterialTheme.colorScheme.primary
+                }
             ) {
                 Icon(
                     ImageVector.vectorResource(R.drawable.add_24px),

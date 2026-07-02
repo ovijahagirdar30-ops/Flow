@@ -1,8 +1,11 @@
 package com.markel.flowstate.feature.flow.ideas
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
@@ -12,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,6 +32,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -42,9 +48,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.markel.flowstate.core.designsystem.components.ExpressiveIconButton
 import com.markel.flowstate.core.designsystem.ui.IdeaSharedKeys
 import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
+import com.markel.flowstate.feature.flow.components.CategorySelectorSheet
 import com.markel.flowstate.feature.flow.components.ColorPicker
 import com.markel.flowstate.feature.flow.components.resolveIdeaColor
 import com.markel.flowstate.feature.tasks.R
@@ -63,6 +72,7 @@ import com.markel.flowstate.feature.tasks.R
 @Composable
 fun IdeaEditorScreen(
     ideaId: Int?, // null = new idea
+    categoryId: Int? = null,
     onBack: () -> Unit,
     viewModel: IdeaEditorViewModel = hiltViewModel()
 ) {
@@ -72,13 +82,17 @@ fun IdeaEditorScreen(
     }
 
     val editorState by viewModel.editor.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val categoriesEnabled by viewModel.categoriesEnabled.collectAsStateWithLifecycle()
+    val generalCategoryName by viewModel.generalCategoryName.collectAsStateWithLifecycle()
+    var showCategorySelector by remember { mutableStateOf(false) }
 
     // We initialize the editor's state depending on whether we are creating or editing
     LaunchedEffect(ideaId) {
-        if (ideaId == null) viewModel.openNew()
+        if (ideaId == null) viewModel.openNew(categoryId)
         else viewModel.loadIdeaForEditing(ideaId)
     }
-    
+
     val resolvedColor = editorState.color.resolveIdeaColor()
     val cardColor = if (resolvedColor == COLOR_TRANSPARENT)
         MaterialTheme.colorScheme.surface
@@ -94,7 +108,7 @@ fun IdeaEditorScreen(
         modifier = Modifier
             .then(
                 if (ideaId != null) Modifier.sharedDetailBounds(IdeaSharedKeys.container(ideaId))
-                        else Modifier
+                else Modifier
             ),
         contentWindowInsets = WindowInsets(0.dp),
         containerColor = cardColor,
@@ -115,24 +129,25 @@ fun IdeaEditorScreen(
                 },
                 title = {},
                 actions = {
-                    IconButton(onClick = { showColorSheet = true }) {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
-                            contentDescription = "Change background color",
-                            tint = onCardColor.copy(alpha = 0.8f)
-                        )
-                    }
+                    ExpressiveIconButton(
+                        onClick = { showColorSheet = true },
+                        imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
+                        contentDescription = "Change background color",
+                        containerColor = cardColor,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
                     if (ideaId != null) {
-                        IconButton(onClick = {
-                            viewModel.deleteIdea(ideaId)
-                            onBack()
-                        }) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
-                                contentDescription = "Delete idea",
-                                tint = onCardColor.copy(alpha = 0.8f)
-                            )
-                        }
+                        ExpressiveIconButton(
+                            onClick = {
+                                viewModel.deleteIdea(ideaId)
+                                onBack()
+                            },
+                            imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
+                            contentDescription = "Delete idea",
+                            containerColor = cardColor
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
                     }
                 }
             )
@@ -146,11 +161,47 @@ fun IdeaEditorScreen(
                 .imePadding()
                 .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
+            // ── Category selector (only when categories are enabled) ──────────────
+            if (categoriesEnabled) {
+                val defaultGeneralName = stringResource(R.string.category_general)
+                val generalName = generalCategoryName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
+                val currentCategoryId = editorState.categoryId  // Use editorState.categoryId (the live state) so the chip updates
+                val currentCategoryName = if (currentCategoryId == null || currentCategoryId == Category.GENERAL_ID) {
+                    generalName
+                } else {
+                    categories.firstOrNull { it.id == currentCategoryId }?.name ?: generalName
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { showCategorySelector = true }
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = currentCategoryName,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.arrow_drop_down_24px),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Spacer(modifier = Modifier.size(6.dp))
+            }
+            else Spacer(modifier = Modifier.size(6.dp))
+
             BasicTextField(
                 value = editorState.title,
                 onValueChange = { viewModel.updateTitle(it) },
                 textStyle = TextStyle(
-                    fontSize = 22.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = onCardColor
                 ),
@@ -163,7 +214,7 @@ fun IdeaEditorScreen(
                         if (editorState.title.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.title),
-                                fontSize = 22.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = onCardColor.copy(alpha = 0.4f)
                             )
@@ -234,5 +285,18 @@ fun IdeaEditorScreen(
                 )
             }
         }
+    }
+
+    // ── Category selector bottom sheet ───────────────────────────────────────
+    if (showCategorySelector) {
+        CategorySelectorSheet(
+            categories = categories,
+            selectedCategoryId = editorState.categoryId,
+            onCategorySelected = { viewModel.updateCategory(it) },
+            onDismiss = { showCategorySelector = false },
+            containerColor = cardColor,
+            contentColor = onCardColor,
+            generalTabName = generalCategoryName
+        )
     }
 }

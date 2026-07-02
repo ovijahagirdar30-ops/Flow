@@ -2,6 +2,9 @@ package com.markel.flowstate.feature.flow.checklists
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.domain.Category
+import com.markel.flowstate.core.domain.CategoryRepository
 import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.CheckListItem
 import com.markel.flowstate.core.domain.CheckListRepository
@@ -9,11 +12,13 @@ import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -23,17 +28,31 @@ data class CheckListEditorState(
     val checkList: CheckList? = null,
     val title: String = "",
     val color: Long = COLOR_TRANSPARENT,
-    val items: List<CheckListItem> = emptyList()
+    val items: List<CheckListItem> = emptyList(),
+    val categoryId: Int? = Category.GENERAL_ID
 )
 
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class CheckListViewModel @Inject constructor(
-    private val checkListRepository: CheckListRepository
+    private val checkListRepository: CheckListRepository,
+    private val categoryRepository: CategoryRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _editor = MutableStateFlow(CheckListEditorState())
     val editor: StateFlow<CheckListEditorState> = _editor.asStateFlow()
+
+    /** User categories, exposed so the editor can populate the category selector. */
+    val categories: StateFlow<List<Category>> = categoryRepository.getCategories()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Whether category tabs are enabled — the selector is only shown when true. */
+    val categoriesEnabled: StateFlow<Boolean> = userPreferencesRepository.categoriesEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val generalCategoryName: StateFlow<String?> = userPreferencesRepository.generalCategoryName
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
         viewModelScope.launch {
@@ -47,8 +66,8 @@ class CheckListViewModel @Inject constructor(
 
     // ── Open / Close ──────────────────────────────────────────────────────────
 
-    fun openNew() {
-        _editor.value = CheckListEditorState()
+    fun openNew(categoryId: Int? = Category.GENERAL_ID) {
+        _editor.value = CheckListEditorState(categoryId = categoryId)
     }
 
     fun loadForEditing(checkListId: Int) {
@@ -59,7 +78,8 @@ class CheckListViewModel @Inject constructor(
                 checkList = found,
                 title = found.title,
                 color = found.color,
-                items = found.items
+                items = found.items,
+                categoryId = found.categoryId
             )
         }
     }
@@ -85,6 +105,15 @@ class CheckListViewModel @Inject constructor(
     fun updateTitle(value: String) = _editor.update { it.copy(title = value) }
 
     fun updateColor(color: Long) = _editor.update { it.copy(color = color) }
+
+    /**
+     * Moves the checklist being edited to a different category.
+     *
+     * Pass [Category.GENERAL_ID] to move the checklist to the default (General)
+     * category. The change is reflected in the editor state immediately and
+     * persisted through the existing autosave flow (debounced [persistIfNeeded]).
+     */
+    fun updateCategory(categoryId: Int?) = _editor.update { it.copy(categoryId = categoryId ?: Category.GENERAL_ID) }
 
     fun addItem(): String {
         val newItem = CheckListItem(
@@ -141,7 +170,8 @@ class CheckListViewModel @Inject constructor(
                 existing.copy(
                     title = state.title,
                     color = state.color,
-                    items = itemsToSave
+                    items = itemsToSave,
+                    categoryId = state.categoryId
                 )
             )
         } else if (state.title.isNotBlank() || itemsToSave.isNotEmpty()) {
@@ -149,7 +179,8 @@ class CheckListViewModel @Inject constructor(
             val newList = CheckList(
                 title = state.title,
                 color = state.color,
-                items = itemsToSave
+                items = itemsToSave,
+                categoryId = state.categoryId
             )
             val assignedId = checkListRepository.upsertList(newList)
 
@@ -160,7 +191,8 @@ class CheckListViewModel @Inject constructor(
                         id = assignedId,
                         title = current.title,
                         color = current.color,
-                        items = itemsToSave
+                        items = itemsToSave,
+                        categoryId = state.categoryId
                     )
                 )
             }

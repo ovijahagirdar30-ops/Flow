@@ -207,10 +207,7 @@ fun HabitScreen(
                     onClick = { viewModel.showAddDialog() },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 16.dp, bottom = 16.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                        .padding(end = 16.dp, bottom = 16.dp)
                 ) {
                     Icon(
                         imageVector = ImageVector.vectorResource(DesignR.drawable.add_24px),

@@ -32,9 +32,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.Task
+import com.markel.flowstate.feature.flow.components.CategorySelectorSheet
 import com.markel.flowstate.feature.tasks.R
 import kotlinx.coroutines.delay
 import java.util.UUID
@@ -46,7 +48,12 @@ fun TaskEditorSheetContent(
     priority: Priority, // Get it from the parent
     dueDate: Long?,
     remTime: Long?,
-    onAutoUpdate: (String, String, Priority, Long?, Long?, List<SubTask>) -> Unit
+    onAutoUpdate: (String, String, Priority, Long?, Long?, List<SubTask>) -> Unit,
+    categories: List<Category> = emptyList(),
+    categoriesEnabled: Boolean = false,
+    categoryId: Int? = null,
+    onCategoryChange: (Int?) -> Unit = {},
+    generalCategoryName: String? = null
 ) {
     val isNewTask = remember { task == null }
     var title by remember { mutableStateOf(task?.title ?: "") }
@@ -66,6 +73,10 @@ fun TaskEditorSheetContent(
     // States to show the creation sheet when creating a subtask
     var showCreationSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // State to show the category selector sheet
+    var showCategorySelector by remember { mutableStateOf(false) }
+    val defaultGeneralName = stringResource(R.string.category_general)
+    val generalName = generalCategoryName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
     // Draft states for the new subtask
     var draftSubTitle by rememberSaveable { mutableStateOf("") }
     var draftSubDescription by rememberSaveable { mutableStateOf("") }
@@ -151,6 +162,39 @@ fun TaskEditorSheetContent(
             .padding(horizontal = 24.dp)
             .verticalScroll(rememberScrollState())
     ) {
+        // ── Category selector (only when categories are enabled) ──────────────
+        if (categoriesEnabled) {
+            val defaultGeneralName = stringResource(R.string.category_general)
+            val generalName = generalCategoryName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
+            val currentCategoryName = if (categoryId == null || categoryId == Category.GENERAL_ID) {
+                generalName
+            } else {
+                categories.firstOrNull { it.id == categoryId }?.name ?: generalName
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { showCategorySelector = true }
+                    .padding(vertical = 8.dp)
+            ) {
+                Text(
+                    text = currentCategoryName,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.size(4.dp))
+                Icon(
+                    imageVector = ImageVector.vectorResource(R.drawable.arrow_drop_down_24px),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
 
         // TASK
         TextField(
@@ -444,5 +488,16 @@ fun TaskEditorSheetContent(
     LaunchedEffect(Unit) {
         delay(100)
         if (isNewTask) focusRequester.requestFocus()
+    }
+
+    // ── Category selector bottom sheet ───────────────────────────────────────
+    if (showCategorySelector) {
+        CategorySelectorSheet(
+            categories = categories,
+            selectedCategoryId = categoryId,
+            onCategorySelected = onCategoryChange,
+            onDismiss = { showCategorySelector = false },
+            generalTabName = generalName
+        )
     }
 }

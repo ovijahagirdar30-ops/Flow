@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,6 +37,7 @@ fun SettingsScreen(
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToAppearance: () -> Unit = {},
     onNavigateToBottomNavConfig: () -> Unit = {},
+    onNavigateToCategories: () -> Unit = {},
     onNavigateToIntegrations: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
     notificationsEnabled: Boolean = true,
@@ -46,6 +48,7 @@ fun SettingsScreen(
             SettingsItemData.Notifications -> onNavigateToNotifications()
             SettingsItemData.Appearance -> onNavigateToAppearance()
             SettingsItemData.BottomNavConfig -> onNavigateToBottomNavConfig()
+            SettingsItemData.Categories -> onNavigateToCategories()
             SettingsItemData.Integrations -> onNavigateToIntegrations()
             SettingsItemData.About -> onNavigateToAbout()
         }
@@ -55,6 +58,7 @@ fun SettingsScreen(
         modifier = Modifier.Companion
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             LargeFlexibleTopAppBar(
                 scrollBehavior = scrollBehavior,
@@ -78,7 +82,7 @@ fun SettingsScreen(
                 start = 12.dp,
                 end = 12.dp,
                 top = 8.dp,
-                bottom = 60.dp
+                bottom = 30.dp
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -91,6 +95,7 @@ fun SettingsScreen(
                 val generalItems = listOf(
                     SettingsItemData.Notifications,
                     SettingsItemData.Appearance,
+                    SettingsItemData.Categories,
                     SettingsItemData.BottomNavConfig
                 )
                 SettingsGroup(
@@ -155,6 +160,7 @@ private sealed interface SettingsItemData {
     data object Notifications : SettingsItemData
     data object Appearance : SettingsItemData
     data object BottomNavConfig : SettingsItemData
+    data object Categories : SettingsItemData
     data object Integrations : SettingsItemData
     data object About : SettingsItemData
 }
@@ -214,6 +220,24 @@ private fun SettingsGroup(
                         },
                         headline = stringResource(R.string.settings_appearance),
                         supporting = stringResource(R.string.settings_appearance_description),
+                        shape = shape,
+                        colors = itemColors,
+                        onClick = onClick
+                    )
+                }
+
+                is SettingsItemData.Categories -> {
+                    SettingsNavigationItem(
+                        icon = {
+                            Icon(
+                                imageVector = ImageVector.Companion.vectorResource(
+                                    R.drawable.category_24px
+                                ),
+                                contentDescription = stringResource(R.string.categories_title)
+                            )
+                        },
+                        headline = stringResource(R.string.categories_title),
+                        supporting = stringResource(R.string.categories_settings_description),
                         shape = shape,
                         colors = itemColors,
                         onClick = onClick

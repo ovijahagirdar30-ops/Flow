@@ -33,13 +33,15 @@ object BottomNavConfigRoute
 @Serializable
 object IntegrationsRoute
 @Serializable
+object CategoriesRoute
+@Serializable
 data class TaskEditorRoute(val taskId: Int)
 
 @Serializable
-data class IdeaEditorRoute(val ideaId: Int? = null)
+data class IdeaEditorRoute(val ideaId: Int? = null, val categoryId: Int? = null)
 
 @Serializable
-data class CheckListEditorRoute(val checkListId: Int? = null)
+data class CheckListEditorRoute(val checkListId: Int? = null, val categoryId: Int? = null)
 
 @Serializable
 data class HabitDetailRoute(val habitId: Int)

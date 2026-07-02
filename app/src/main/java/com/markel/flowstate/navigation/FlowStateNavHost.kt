@@ -39,6 +39,7 @@ import com.markel.flowstate.feature.settings.BottomNavConfigScreen
 import com.markel.flowstate.core.notifications.NotificationSettingsIntentProvider
 import com.markel.flowstate.feature.settings.AppearanceScreen
 import com.markel.flowstate.feature.settings.BackupScreen
+import com.markel.flowstate.feature.settings.CategoriesScreen
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -76,11 +77,11 @@ fun FlowStateNavHost(
                     onNavigateToIdeaEditor = { ideaId ->
                         navController.navigate(IdeaEditorRoute(ideaId))
                     },
-                    onNavigateToNewIdea = {
-                        navController.navigate(IdeaEditorRoute(null))
+                    onNavigateToNewIdea = { categoryId ->
+                        navController.navigate(IdeaEditorRoute(null, categoryId))
                     },
-                    onNavigateToCheckListEditor = { checkListId ->
-                        navController.navigate(CheckListEditorRoute(checkListId))
+                    onNavigateToCheckListEditor = { checkListId, categoryId ->
+                        navController.navigate(CheckListEditorRoute(checkListId, categoryId))
                     }
                 )
             }
@@ -132,6 +133,9 @@ fun FlowStateNavHost(
                 onNavigateToBottomNavConfig = {
                     navController.navigate(BottomNavConfigRoute)
                 },
+                onNavigateToCategories = {
+                    navController.navigate(CategoriesRoute)
+                },
                 onNavigateToIntegrations = {
                     navController.navigate(IntegrationsRoute)
                 },
@@ -167,6 +171,11 @@ fun FlowStateNavHost(
                 onBack = { navController.popBackStack() }
             )
         }
+        composable<CategoriesRoute> {
+            CategoriesScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
 
         composable<TaskEditorRoute> { backStackEntry ->
             val args = backStackEntry.toRoute<TaskEditorRoute>()
@@ -182,6 +191,7 @@ fun FlowStateNavHost(
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                 IdeaEditorScreen(
                     ideaId = args.ideaId,
+                    categoryId = args.categoryId,
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -191,6 +201,7 @@ fun FlowStateNavHost(
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                 CheckListEditorScreen(
                     checkListId = args.checkListId,
+                    categoryId = args.categoryId,
                     onBack = { navController.popBackStack() }
                 )
             }

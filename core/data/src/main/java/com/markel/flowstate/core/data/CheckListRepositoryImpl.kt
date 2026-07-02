@@ -4,6 +4,7 @@ import com.markel.flowstate.core.data.local.CheckListDao
 import com.markel.flowstate.core.data.local.CheckListEntity
 import com.markel.flowstate.core.data.local.CheckListItemEntity
 import com.markel.flowstate.core.data.local.CheckListWithItems
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.core.domain.CheckList
 import com.markel.flowstate.core.domain.CheckListItem
 import com.markel.flowstate.core.domain.CheckListRepository
@@ -31,8 +32,9 @@ class CheckListRepositoryImpl @Inject constructor(
         title = list.title,
         color = list.color,
         position = list.position,
-        items = items.map { CheckListItem(it.id, it.text, it.isDone, it.position) }
+        items = items.map { CheckListItem(it.id, it.text, it.isDone, it.position) },
+        categoryId = list.categoryId ?: Category.GENERAL_ID
     )
-    private fun CheckList.toEntity() = CheckListEntity(id, title, color, position)
+    private fun CheckList.toEntity() = CheckListEntity(id, title, color, position, categoryId)
     private fun CheckListItem.toEntity(listId: Int) = CheckListItemEntity(id, listId, text, isDone, position)
 }

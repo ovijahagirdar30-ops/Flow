@@ -4,6 +4,7 @@ import com.markel.flowstate.core.data.local.SubTaskEntity
 import com.markel.flowstate.core.data.local.TaskDao
 import com.markel.flowstate.core.data.local.TaskEntity
 import com.markel.flowstate.core.data.local.TaskWithSubTasks
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.Task
@@ -77,7 +78,8 @@ class TaskRepositoryImpl @Inject constructor(
             dueDate = this.task.dueDate,
             completedAt = this.task.completedAt,
             reminderTime = this.task.reminderTime,
-            subTasks = this.subTasks.map { it.toDomain() }
+            subTasks = this.subTasks.map { it.toDomain() },
+            categoryId = this.task.categoryId ?: Category.GENERAL_ID
         )
     }
 
@@ -105,7 +107,8 @@ class TaskRepositoryImpl @Inject constructor(
             priority = this.priority.ordinal,
             dueDate = this.dueDate,
             completedAt = this.completedAt,
-            reminderTime = this.reminderTime
+            reminderTime = this.reminderTime,
+            categoryId = this.categoryId
         )
     }
 

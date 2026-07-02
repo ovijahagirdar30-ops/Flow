@@ -1,10 +1,6 @@
 package com.markel.flowstate.feature.flow
 
-import android.R.attr.data
-import android.content.Intent
 import android.content.res.Configuration
-import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -18,8 +14,12 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.designsystem.components.AnimatedUndoFab
+import com.markel.flowstate.core.domain.Category
+import com.markel.flowstate.feature.flow.components.CategoryTabRow
+import com.markel.flowstate.feature.flow.components.CreateCategoryDialog
 import com.markel.flowstate.feature.flow.components.DynamicHeader
 import com.markel.flowstate.feature.flow.components.ExpandableFabMenu
+import com.markel.flowstate.feature.flow.components.ReorderCategoriesSheet
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
 import com.markel.flowstate.feature.flow.tasks.components.TaskCreationSheetContent
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
@@ -33,8 +33,8 @@ fun FlowScreen(
     // Nvigation Callbacks to detail screens (edition)
     onNavigateToTaskEditor: (taskId: Int) -> Unit,
     onNavigateToIdeaEditor: (ideaId: Int) -> Unit,
-    onNavigateToNewIdea: () -> Unit,
-    onNavigateToCheckListEditor: (checkListId: Int?) -> Unit
+    onNavigateToNewIdea: (categoryId: Int?) -> Unit,
+    onNavigateToCheckListEditor: (checkListId: Int?, categoryId: Int?) -> Unit
 ) {
     val flowUiState by flowViewModel.uiState.collectAsStateWithLifecycle()
     val showPermissionBanner by flowViewModel.showReminderBanner.collectAsStateWithLifecycle()
@@ -42,11 +42,20 @@ fun FlowScreen(
     val taskDeleteVersions by flowViewModel.taskDeleteVersions.collectAsStateWithLifecycle()
     var isFabExpanded by remember { mutableStateOf(false) }
     var showCreationSheet by remember { mutableStateOf(false) }
+    var showCreateCategoryDialog by remember { mutableStateOf(false) }
+    var showReorderCategoriesSheet by remember { mutableStateOf(false) }
 
     // Only source of truth for the header
     var isHeaderMinimized by rememberSaveable { mutableStateOf(false) }
 
     val draft by taskViewModel.draft.collectAsStateWithLifecycle()  // State with all the info for the new task
+
+    // Extract category info from state
+    val categoriesEnabled = (flowUiState as? FlowUiState.Success)?.categoriesEnabled == true
+    val categories = (flowUiState as? FlowUiState.Success)?.categories ?: emptyList()
+    val selectedCategoryId = (flowUiState as? FlowUiState.Success)?.selectedCategoryId
+    val generalCategoryName by flowViewModel.generalCategoryName.collectAsStateWithLifecycle()
+    val pendingTaskCounts = (flowUiState as? FlowUiState.Success)?.pendingTaskCounts ?: emptyMap()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -56,6 +65,18 @@ fun FlowScreen(
                 DynamicHeader(
                     isMinimized = isHeaderMinimized
                 )
+                // ── Category tabs (only when enabled) ───────────────
+                if (categoriesEnabled && categories.isNotEmpty()) {
+                    CategoryTabRow(
+                        categories = categories,
+                        selectedCategoryId = selectedCategoryId,
+                        onCategorySelected = { flowViewModel.selectCategory(it) },
+                        onAddCategoryClick = { showCreateCategoryDialog = true },
+                        onCategoryLongPress = { showReorderCategoriesSheet = true },
+                        pendingTaskCounts = pendingTaskCounts,
+                        generalTabName = generalCategoryName
+                    )
+                }
 
                 SectionedFlowView(
                     uiState = flowUiState,
@@ -66,13 +87,25 @@ fun FlowScreen(
                     onTaskReorder = { from, to -> flowViewModel.onTaskReorder(from, to) },
                     onIdeaClick = { onNavigateToIdeaEditor(it.id) },
                     onIdeaReorder = { from, to -> flowViewModel.onIdeaReorder(from, to) },
-                    onCheckListClick = { onNavigateToCheckListEditor(it.id) },
+                    onCheckListClick = { onNavigateToCheckListEditor(it.id, it.categoryId) },
                     onCheckListReorder = { from, to -> flowViewModel.onCheckListReorder(from, to) },
                     showPermissionBanner = showPermissionBanner,
-                    taskDeleteVersions = taskDeleteVersions
+                    taskDeleteVersions = taskDeleteVersions,
+                    categoriesEnabled = categoriesEnabled
                 )
             }
         }
+        // ── FAB ───────────────────────────────────────────────────────
+        ExpandableFabMenu(
+            expanded = isFabExpanded,
+            onToggle = { isFabExpanded = !isFabExpanded },
+            onTaskClick = { isFabExpanded = false; showCreationSheet = true },
+            onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea(selectedCategoryId ?: Category.GENERAL_ID) },
+            onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null, selectedCategoryId ?: Category.GENERAL_ID) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .zIndex(1f)
+        )
         if (showCreationSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showCreationSheet = false },
@@ -97,26 +130,11 @@ fun FlowScreen(
                     reminderTime = draft.reminderTime,
                     onReminderTimeChange = { taskViewModel.updateDraftReminderTime(it) },
                     onSave = { _, _, _, _, _ ->
-                        taskViewModel.submitDraft()
+                        taskViewModel.submitDraft(categoryId = if (categoriesEnabled) (selectedCategoryId ?: Category.GENERAL_ID) else Category.GENERAL_ID)
                         showCreationSheet = false
                     }
                 )
             }
-        }
-        AnimatedVisibility(
-            visible = !showCreationSheet,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 2.dp, bottom = 4.dp)
-                .zIndex(1f)
-        ) {
-            ExpandableFabMenu(
-                expanded = isFabExpanded,
-                onToggle = { isFabExpanded = !isFabExpanded },
-                onTaskClick = { isFabExpanded = false; showCreationSheet = true },
-                onIdeaClick = { isFabExpanded = false; onNavigateToNewIdea() },
-                onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null) }
-            )
         }
         AnimatedUndoFab(
             visible = showUndoButton,
@@ -124,5 +142,30 @@ fun FlowScreen(
             modifier = Modifier
                 .align(Alignment.BottomStart)
         )
+
+        // ── Create category dialog (opened from the trailing "+ New category" tab) ──
+        if (showCreateCategoryDialog) {
+            CreateCategoryDialog(
+                onDismiss = { showCreateCategoryDialog = false },
+                onConfirm = { name ->
+                    flowViewModel.createCategory(name)
+                    showCreateCategoryDialog = false
+                }
+            )
+        }
+
+        // ── Reorder / switch category sheet (opened by long-pressing a tab) ──
+        if (showReorderCategoriesSheet) {
+            ReorderCategoriesSheet(
+                categories = categories,
+                onReorder = { flowViewModel.reorderCategories(it) },
+                onCategorySelected = { id ->
+                    flowViewModel.selectCategory(id)
+                    showReorderCategoriesSheet = false
+                },
+                onDismiss = { showReorderCategoriesSheet = false },
+                generalTabName = generalCategoryName
+            )
+        }
     }
 }

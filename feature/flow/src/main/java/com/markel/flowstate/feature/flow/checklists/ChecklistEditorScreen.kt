@@ -35,11 +35,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.markel.flowstate.core.designsystem.components.ExpressiveIconButton
 import com.markel.flowstate.core.designsystem.ui.CheckListSharedKeys
 import com.markel.flowstate.core.designsystem.ui.sharedDetailBounds
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.feature.flow.checklists.components.CheckListItemRow
 import com.markel.flowstate.feature.flow.checklists.components.GhostItemRow
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
+import com.markel.flowstate.feature.flow.components.CategorySelectorSheet
 import com.markel.flowstate.feature.flow.components.ColorPicker
 import com.markel.flowstate.feature.flow.components.resolveIdeaColor
 import com.markel.flowstate.feature.tasks.R
@@ -56,6 +59,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun CheckListEditorScreen(
     checkListId: Int?,
+    categoryId: Int? = null,
     onBack: () -> Unit,
     viewModel: CheckListViewModel = hiltViewModel()
 ) {
@@ -65,9 +69,13 @@ fun CheckListEditorScreen(
     }
 
     val editorState by viewModel.editor.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val categoriesEnabled by viewModel.categoriesEnabled.collectAsStateWithLifecycle()
+    val generalCategoryName by viewModel.generalCategoryName.collectAsStateWithLifecycle()
+    var showCategorySelector by remember { mutableStateOf(false) }
 
     LaunchedEffect(checkListId) {
-        if (checkListId == null) viewModel.openNew()
+        if (checkListId == null) viewModel.openNew(categoryId)
         else viewModel.loadForEditing(checkListId)
     }
 
@@ -126,24 +134,25 @@ fun CheckListEditorScreen(
                 },
                 title = {},
                 actions = {
-                    IconButton(onClick = { showColorSheet = true }) {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
-                            contentDescription = "Change background color",
-                            tint = onCardColor.copy(alpha = 0.8f)
-                        )
-                    }
+                    ExpressiveIconButton(
+                        onClick = { showColorSheet = true },
+                        imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
+                        contentDescription = "Change background color",
+                        containerColor = cardColor,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
                     if (checkListId != null) {
-                        IconButton(onClick = {
+                        ExpressiveIconButton(
+                            onClick = {
                             viewModel.deleteCheckList(checkListId)
                             onBack()
-                        }) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
-                                contentDescription = "Delete checklist",
-                                tint = onCardColor.copy(alpha = 0.8f)
-                            )
-                        }
+                            },
+                            imageVector = ImageVector.vectorResource(R.drawable.delete_24px),
+                            contentDescription = "Delete checklist",
+                            containerColor = cardColor,
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
                     }
                 }
             )
@@ -159,11 +168,46 @@ fun CheckListEditorScreen(
         ) {
             // Title field
             item(key = "title") {
+                // ── Category selector (only when categories are enabled) ──────────────
+                if (categoriesEnabled) {
+                    val defaultGeneralName = stringResource(R.string.category_general)
+                    val generalName = generalCategoryName?.takeIf { it.isNotBlank() } ?: defaultGeneralName
+                    val currentCategoryId = editorState.categoryId  // Use editorState.categoryId (the live state) so the chip updates
+                    val currentCategoryName = if (currentCategoryId == null || currentCategoryId == Category.GENERAL_ID) {
+                        generalName
+                    } else {
+                        categories.firstOrNull { it.id == currentCategoryId }?.name ?: generalName
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { showCategorySelector = true }
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = currentCategoryName,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.size(4.dp))
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.arrow_drop_down_24px),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Spacer(modifier = Modifier.size(6.dp))
+                }
+                else Spacer(modifier = Modifier.size(6.dp))
                 BasicTextField(
                     value = editorState.title,
                     onValueChange = { viewModel.updateTitle(it) },
                     textStyle = TextStyle(
-                        fontSize = 22.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = onCardColor
                     ),
@@ -176,7 +220,7 @@ fun CheckListEditorScreen(
                             if (editorState.title.isEmpty()) {
                                 Text(
                                     text = stringResource(R.string.title),
-                                    fontSize = 22.sp,
+                                    fontSize = 24.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = onCardColor.copy(alpha = 0.4f)
                                 )
@@ -319,5 +363,18 @@ fun CheckListEditorScreen(
                 )
             }
         }
+    }
+
+    // ── Category selector bottom sheet ───────────────────────────────────────
+    if (showCategorySelector) {
+        CategorySelectorSheet(
+            categories = categories,
+            selectedCategoryId = editorState.categoryId,
+            onCategorySelected = { viewModel.updateCategory(it) },
+            onDismiss = { showCategorySelector = false },
+            containerColor = cardColor,
+            contentColor = onCardColor,
+            generalTabName = generalCategoryName
+        )
     }
 }

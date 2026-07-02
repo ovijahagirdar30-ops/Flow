@@ -2,6 +2,9 @@ package com.markel.flowstate.feature.flow.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.domain.Category
+import com.markel.flowstate.core.domain.CategoryRepository
 import com.markel.flowstate.core.domain.Priority
 import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.Task
@@ -11,9 +14,11 @@ import com.markel.flowstate.core.domain.usecase.tasks.ToggleTaskUseCase
 import com.markel.flowstate.core.notifications.ReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,18 +39,32 @@ data class TaskEditorState(
     val priority: Priority = Priority.NOTHING,
     val dueDate: Long? = null,
     val reminderTime: Long? = null,
-    val isDone: Boolean = false
+    val isDone: Boolean = false,
+    val categoryId: Int? = Category.GENERAL_ID
 )
 @HiltViewModel
 class TaskEditorViewModel @Inject constructor(
     private val repository: TaskRepository,
     private val toggleTaskUseCase: ToggleTaskUseCase,
     private val deleteTaskUseCase: DeleteTaskUseCase,
-    private val reminderScheduler: ReminderScheduler
+    private val reminderScheduler: ReminderScheduler,
+    private val categoryRepository: CategoryRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _editor = MutableStateFlow(TaskEditorState())
     val editor: StateFlow<TaskEditorState> = _editor.asStateFlow()
+
+    /** User categories, exposed so the editor can populate the category selector. */
+    val categories: StateFlow<List<Category>> = categoryRepository.getCategories()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Whether category tabs are enabled — the selector is only shown when true. */
+    val categoriesEnabled: StateFlow<Boolean> = userPreferencesRepository.categoriesEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val generalCategoryName: StateFlow<String?> = userPreferencesRepository.generalCategoryName
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /**
      * Loads the task from the repository by ID.
@@ -63,7 +82,8 @@ class TaskEditorViewModel @Inject constructor(
                     priority = task.priority,
                     dueDate = task.dueDate,
                     reminderTime = task.reminderTime,
-                    isDone = task.isDone
+                    isDone = task.isDone,
+                    categoryId = task.categoryId
                 )
             }
         }
@@ -95,6 +115,21 @@ class TaskEditorViewModel @Inject constructor(
 
     fun updatePriority(value: Priority) = _editor.update { it.copy(priority = value) }
     fun updateDueDate(value: Long?) = _editor.update { it.copy(dueDate = value) }
+
+    /**
+     * Moves the task being edited to a different category.
+     *
+     * Pass [Category.GENERAL_ID] to move the task to the default (General)
+     * category. The change is persisted immediately and the editor state is
+     * updated so the selector reflects the new value.
+     */
+    fun updateCategory(categoryId: Int?) {
+        val task = _editor.value.task ?: return
+        _editor.update { it.copy(categoryId = categoryId) }
+        viewModelScope.launch {
+            repository.upsertTask(task.copy(categoryId = categoryId ?: Category.GENERAL_ID))
+        }
+    }
 
     fun updateReminderTime(value: Long?) {
         val task = _editor.value.task ?: return

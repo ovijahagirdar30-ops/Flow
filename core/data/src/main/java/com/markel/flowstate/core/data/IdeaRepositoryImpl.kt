@@ -2,6 +2,7 @@ package com.markel.flowstate.core.data
 
 import com.markel.flowstate.core.data.local.IdeaDao
 import com.markel.flowstate.core.data.local.IdeaEntity
+import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.core.domain.Idea
 import com.markel.flowstate.core.domain.IdeaRepository
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,6 @@ class IdeaRepositoryImpl @Inject constructor(
     }
 
     // Mappers
-    private fun IdeaEntity.toDomain() = Idea(id, title, content, createdAt, color, position)
-    private fun Idea.toEntity() = IdeaEntity(id, title, content, createdAt, color, position)
+    private fun IdeaEntity.toDomain() = Idea(id, title, content, createdAt, color, position, categoryId ?: Category.GENERAL_ID)
+    private fun Idea.toEntity() = IdeaEntity(id, title, content, createdAt, color, position, categoryId)
 }
