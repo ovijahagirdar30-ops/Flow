@@ -2,6 +2,7 @@ package com.markel.flowstate.feature.flow
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.designsystem.components.AnimatedUndoFab
+import com.markel.flowstate.core.designsystem.ui.rememberFabVisibilityState
 import com.markel.flowstate.core.domain.Category
 import com.markel.flowstate.feature.flow.components.CategoryTabRow
 import com.markel.flowstate.feature.flow.components.CreateCategoryDialog
@@ -47,6 +49,22 @@ fun FlowScreen(
 
     // Only source of truth for the header
     var isHeaderMinimized by rememberSaveable { mutableStateOf(false) }
+
+    // ── Scroll-aware FAB visibility ────────────────────────
+    val flowListState = rememberLazyListState()
+    val allEmpty = (flowUiState as? FlowUiState.Success)?.let {
+        it.tasks.isEmpty() && it.checkLists.isEmpty() && it.ideas.isEmpty()
+    } ?: true
+
+    val fabVisible by rememberFabVisibilityState(
+        lazyListState = flowListState,
+        forceVisible = allEmpty
+    )
+
+    // Close the menu if the FAB is hidden
+    LaunchedEffect(fabVisible) {
+        if (!fabVisible && isFabExpanded) isFabExpanded = false
+    }
 
     val draft by taskViewModel.draft.collectAsStateWithLifecycle()  // State with all the info for the new task
 
@@ -91,7 +109,8 @@ fun FlowScreen(
                     onCheckListReorder = { from, to -> flowViewModel.onCheckListReorder(from, to) },
                     showPermissionBanner = showPermissionBanner,
                     taskDeleteVersions = taskDeleteVersions,
-                    categoriesEnabled = categoriesEnabled
+                    categoriesEnabled = categoriesEnabled,
+                    outerListState = flowListState,
                 )
             }
         }
@@ -104,7 +123,8 @@ fun FlowScreen(
             onCheckListClick = { isFabExpanded = false; onNavigateToCheckListEditor(null, selectedCategoryId ?: Category.GENERAL_ID) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .zIndex(1f)
+                .zIndex(1f),
+            visible = fabVisible,
         )
         if (showCreationSheet) {
             ModalBottomSheet(

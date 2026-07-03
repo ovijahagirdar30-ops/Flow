@@ -23,7 +23,7 @@ import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import kotlinx.coroutines.delay
 import java.time.ZoneId
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel,
@@ -50,7 +50,7 @@ fun CalendarScreen(
             .fillMaxSize()
             .statusBarsPadding(),
         floatingActionButton = {
-            FloatingActionButton(
+            MediumFloatingActionButton(
                 onClick = {
                     // Use the selected date in the calendar by default when creating a task
                     (uiState as? CalendarUiState.Success)?.selectedDate?.let { date ->
@@ -62,7 +62,8 @@ fun CalendarScreen(
             ) {
                 Icon(
                     ImageVector.vectorResource(R.drawable.add_24px),
-                    contentDescription = "Add task"
+                    contentDescription = "Add task",
+                    modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize),
                 )
             }
         },

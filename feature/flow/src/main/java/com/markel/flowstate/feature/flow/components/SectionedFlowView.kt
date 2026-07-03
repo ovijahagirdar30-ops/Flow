@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -64,6 +65,10 @@ fun SectionedFlowView(
     // SwipeToDismissBoxState instead of the stale EndToStart saved state.
     taskDeleteVersions: Map<Int, Int> = emptyMap(),
     categoriesEnabled: Boolean = false,
+    // Hoisted from the caller (FlowScreen) so that the screen can derive
+    // FAB visibility from the same LazyListState that drives this list.
+    // See FlowScreen.kt → derivedStateOf { firstVisibleItemIndex == 0 && ... }
+    outerListState: LazyListState = rememberLazyListState(),
 ) {
     if (uiState !is FlowUiState.Success) return
 
@@ -76,8 +81,6 @@ fun SectionedFlowView(
         EmptyStateView(modifier = modifier.fillMaxSize())
         return
     }
-
-    val outerListState = rememberLazyListState()
 
     val reorderableState = rememberReorderableLazyListState(outerListState) { from, to ->
         val headerOffset = 2

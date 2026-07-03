@@ -31,7 +31,7 @@ import com.markel.flowstate.core.designsystem.R as DesignR
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HabitScreen(
     viewModel: HabitViewModel = hiltViewModel(),
@@ -203,7 +203,7 @@ fun HabitScreen(
                     )
                 }
 
-                FloatingActionButton(
+                MediumFloatingActionButton(
                     onClick = { viewModel.showAddDialog() },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -211,7 +211,8 @@ fun HabitScreen(
                 ) {
                     Icon(
                         imageVector = ImageVector.vectorResource(DesignR.drawable.add_24px),
-                        contentDescription = "Add habit"
+                        contentDescription = "Add habit",
+                        modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize),
                     )
                 }
             }
