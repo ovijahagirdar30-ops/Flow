@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.animateFloatingActionButton
+import com.markel.flowstate.core.designsystem.ui.rememberFabVisibilityState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +57,15 @@ fun HabitScreen(
                     rest = rests[state.motivationalMessageIndex]
                 )
 
+                // ── Scroll-aware FAB visibility ────────────────────────
+                // When there are no habits, there is no list to
+                // scroll, so we force the FAB to stay visible.
+                val listState = rememberLazyListState()
+                val fabVisible by rememberFabVisibilityState(
+                    lazyListState = listState,
+                    forceVisible = state.habits.isEmpty()
+                )
+
                 Column(modifier = Modifier.fillMaxSize()) {
                     HabitHeader(
                         completedToday = state.completedToday,
@@ -66,7 +77,6 @@ fun HabitScreen(
                             HabitEmptyState()
                         }
                     } else {
-                        val listState = rememberLazyListState()
                         val reorderableState = rememberReorderableLazyListState(listState) { from, to ->
                             viewModel.onReorder(from.index, to.index)
                         }
@@ -208,6 +218,10 @@ fun HabitScreen(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 16.dp)
+                        .animateFloatingActionButton(
+                            visible = fabVisible,
+                            alignment = Alignment.BottomEnd,
+                        )
                 ) {
                     Icon(
                         imageVector = ImageVector.vectorResource(DesignR.drawable.add_24px),

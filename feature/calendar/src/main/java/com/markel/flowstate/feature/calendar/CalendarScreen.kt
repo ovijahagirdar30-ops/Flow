@@ -2,6 +2,7 @@ package com.markel.flowstate.feature.calendar
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,6 +16,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.designsystem.R
 import com.markel.flowstate.core.designsystem.components.AnimatedUndoFab
+import com.markel.flowstate.core.designsystem.ui.rememberFabVisibilityState
 import com.markel.flowstate.core.domain.Task
 import com.markel.flowstate.feature.calendar.components.CalendarContent
 import com.markel.flowstate.feature.flow.tasks.TaskViewModel
@@ -35,6 +37,13 @@ fun CalendarScreen(
     var showUndoButton by remember { mutableStateOf(false) }
     var pendingUndoTask by remember { mutableStateOf<Task?>(null) }
     var showCreationSheet by remember { mutableStateOf(false) }
+
+    // ── Scroll-aware FAB visibility ────────────────────────
+    // The Calendar list has no empty case.
+    val calendarListState = rememberLazyListState()
+    val fabVisible by rememberFabVisibilityState(
+        lazyListState = calendarListState,
+    )
 
     LaunchedEffect(showUndoButton) {
         if (showUndoButton) {
@@ -58,7 +67,11 @@ fun CalendarScreen(
                         taskViewModel.updateDraftDueDate(millis)
                     }
                     showCreationSheet = true
-                }
+                },
+                modifier = Modifier.animateFloatingActionButton(
+                    visible = fabVisible,
+                    alignment = Alignment.BottomEnd,
+                )
             ) {
                 Icon(
                     ImageVector.vectorResource(R.drawable.add_24px),
@@ -98,7 +111,8 @@ fun CalendarScreen(
                                     showUndoButton = true
 
                                 }
-                            }
+                            },
+                            listState = calendarListState
                         )
                     }
                 }
