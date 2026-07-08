@@ -77,8 +77,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
-    // Navigation
-    implementation(libs.androidx.navigation.compose)
+    // Navigation 3
+    implementation(libs.navigation3.runtime)
+    implementation(libs.navigation3.ui)
+    implementation(libs.lifecycle.viewmodel.navigation3)
 
     // HILT (Inyección de Dependencias)
     implementation(libs.hilt.android)

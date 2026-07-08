@@ -27,13 +27,36 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.markel.flowstate.navigation.BottomNavScreen
+import com.markel.flowstate.navigation.TabKey
+
+/**
+ * Bottom navigation bar.
+ *
+ * In the nav3 architecture this composable lives INSIDE the Scene Decorator
+ * (see [com.markel.flowstate.navigation.FlowStateSceneDecoratorStrategy]). The
+ * decorator wraps non-fullscreen scenes with this bar; fullscreen scenes pass
+ * through unwrapped and cover the bar visually.
+ *
+ * The bar reads the active tab directly from the [backStack] (last entry that
+ * is a [TabKey]) and mutates the stack via [onSwitchTab] when the user taps a
+ * different tab. No NavController involved.
+ */
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean, items: List<BottomNavScreen> = emptyList()) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val destination = navBackStackEntry?.destination
+fun FlowBottomBar(
+    backStack: NavBackStack<NavKey>,
+    onSwitchTab: (TabKey) -> Unit,
+    isLandscape: Boolean,
+    items: List<BottomNavScreen> = emptyList(),
+) {
+    // The active tab is the topmost TabKey in the back stack. When a fullscreen
+    // destination is on top, the bar is not visible, so this lookup is only consulted
+    // when the bar is actually rendered.
+    val currentTab = backStack.lastOrNull { it is TabKey } as? TabKey
 
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalDivider(
@@ -51,21 +74,12 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean, items:
             windowInsets = ShortNavigationBarDefaults.windowInsets,
         ) {
             items.forEach { screen ->
-                val selected = destination?.hasRoute(screen.route::class) == true
+                val selected = currentTab == screen.key
                 val label = stringResource(screen.labelRes)
                 ShortNavigationBarItem(
                     selected = selected,
                     onClick = {
-                        if (!selected) {
-                            navController.navigate(screen.route) {
-                                // Avoid accumulating screens in the back stack
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
+                        if (!selected) onSwitchTab(screen.key)
                     },
                     icon = {
                         val iconDrawable = if (selected) screen.iconSelectedRes else screen.iconRes

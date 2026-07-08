@@ -26,26 +26,24 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.rememberNavBackStack
 import com.markel.flowstate.components.FlowBottomBar
 import com.markel.flowstate.components.PlaceholderScreen
 import com.markel.flowstate.core.designsystem.theme.FlowStateTheme
 import com.markel.flowstate.core.designsystem.ui.LocalAnimatedVisibilityScope
 import com.markel.flowstate.core.designsystem.ui.LocalSharedTransitionScope
 import com.markel.flowstate.core.data.MainTab
-import com.markel.flowstate.navigation.fromRoute
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
-import com.markel.flowstate.navigation.FlowStateNavHost
 import com.markel.flowstate.navigation.BottomNavScreen
+import com.markel.flowstate.navigation.FlowStateNavDisplay
+import com.markel.flowstate.navigation.FlowStateSavedStateConfiguration
+import com.markel.flowstate.navigation.MainTabsKey
+import com.markel.flowstate.navigation.TabKey
+import com.markel.flowstate.navigation.fromKey
+import com.markel.flowstate.navigation.toKey
 import dagger.hilt.android.AndroidEntryPoint
-
-// All possible bottom nav screens, used as a lookup map
-private val allBottomNavScreens = listOf(
-    BottomNavScreen.Tasks,
-    BottomNavScreen.Calendar,
-    BottomNavScreen.Habits,
-    BottomNavScreen.Mood,
-    BottomNavScreen.Settings
-)
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -56,17 +54,16 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val mainViewModel: MainViewModel = hiltViewModel()
-            val startDestination by mainViewModel.startDestination.collectAsState()
+            val isReady by mainViewModel.isReady.collectAsState()
+            val initialTab by mainViewModel.initialTab.collectAsState()
             val bottomNavOrder by mainViewModel.bottomNavOrder.collectAsState()
             val bottomNavHidden by mainViewModel.bottomNavHidden.collectAsState()
             val themeMode by mainViewModel.themeMode.collectAsStateWithLifecycle()
             val dynamicColor by mainViewModel.dynamicColor.collectAsStateWithLifecycle()
 
-            splashScreen.setKeepOnScreenCondition {
-                startDestination == null
-            }
+            splashScreen.setKeepOnScreenCondition { !isReady }
 
-            if (startDestination != null) {
+            if (isReady) {
                 FlowStateTheme(
                     themeMode = themeMode,
                     dynamicColor = dynamicColor
@@ -74,82 +71,83 @@ class MainActivity : ComponentActivity() {
                     // Check Orientation
                     val configuration = LocalConfiguration.current
                     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
                     HandleSystemBars(isLandscape)
-                    // Compose navigation controller
-                    val navController = rememberNavController()
-                    // The bottom bar is controlled BY ROUTE, not by manual state
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val destination = navBackStackEntry?.destination
 
-                    // Build the dynamic bottom nav items based on user configuration
+                    // Build the dynamic bottom nav items based on user configuration.
                     val visibleBottomNavItems = remember(bottomNavOrder, bottomNavHidden) {
-                        val screenMap = allBottomNavScreens.associateBy { screen ->
-                            MainTab.fromRoute(screen.route)
-                        }
+                        val screenMap = allBottomNavScreens.associateBy { MainTab.fromKey(it.key) }
                         bottomNavOrder
                             .filter { it !in bottomNavHidden }
                             .mapNotNull { screenMap[it] }
                     }
 
-                    // All routes (visible + hidden) where the bottom bar should be shown
-                    val routesWithBottomBar = remember(bottomNavOrder) {
-                        val screenMap = allBottomNavScreens.associateBy { screen ->
-                            MainTab.fromRoute(screen.route)
-                        }
-                        bottomNavOrder.mapNotNull { screenMap[it]?.route }.toSet()
-                    }
+                    // Single mutable back stack. MainTabsKey is the immutable
+                    // root at index 0; the active tab is at index 1; any
+                    // fullscreen destinations sit on top.
+                    //
+                    // KNOWN LIMITATION (Phase 1): single back stack — switching
+                    // tabs replaces the active tab and discards its scroll
+                    // position and detail history. Multi-back-stack (one per
+                    // top-level tab) will be added in Phase 2 to preserve tab
+                    // state across switches.
+                    val backStack: NavBackStack<NavKey> = rememberNavBackStack(
+                        FlowStateSavedStateConfiguration,
+                        MainTabsKey,
+                        initialTab.toKey(),
+                    )
 
-                    // Navigation 2.8 Type-Safe routes generate fully qualified class names
-                    val isBottomBarVisible = routesWithBottomBar.any { destination?.hasRoute(it::class) == true }
-                    // We show the bottom bar only if the current route is one of the main tabs
-                    LaunchedEffect(destination) {
-                        if (isBottomBarVisible && destination != null) {
-                            val activeItem = allBottomNavScreens.firstOrNull { destination.hasRoute(it.route::class) }
-                            if (activeItem != null) {
-                                MainTab.fromRoute(activeItem.route)?.let { mainViewModel.saveLastTab(it) }
+                    // Persist the active tab whenever it changes — used as the
+                    // start destination on next launch.
+                    LaunchedEffect(backStack) {
+                        snapshotFlow { backStack.lastOrNull { it is TabKey } as? TabKey }
+                            .collect { tabKey ->
+                                tabKey?.let { MainTab.fromKey(it) }?.let(mainViewModel::saveLastTab)
                             }
-                        }
                     }
 
-                    Scaffold(
-                        modifier = Modifier.fillMaxSize(),
-                        bottomBar = {
-                            if (isBottomBarVisible) {
+                    SharedTransitionLayout(
+                        modifier = Modifier.fillMaxSize().clipToBounds()
+                    ) {
+                        FlowStateNavDisplay(
+                            backStack = backStack,
+                            bottomNavOrder = bottomNavOrder,
+                            bottomNavHidden = bottomNavHidden,
+                            onBottomNavConfigChanged = mainViewModel::saveBottomNavConfig,
+                            themeMode = themeMode,
+                            dynamicColor = dynamicColor,
+                            onThemeModeChange = mainViewModel::saveThemeMode,
+                            onDynamicColorChange = mainViewModel::saveDynamicColor,
+                            sharedTransitionScope = this,
+                            bottomBar = {
                                 FlowBottomBar(
-                                    navController = navController,
-                                    isLandscape = isLandscape,
-                                    items = visibleBottomNavItems
-                                )
-                            }
-                        },
-                        contentWindowInsets = WindowInsets(0.dp)
-                    ) { innerPadding ->
-                        SharedTransitionLayout(
-                            modifier = Modifier
-                                .padding(innerPadding)
-                                .clipToBounds()
-                        ) {
-                            CompositionLocalProvider(LocalSharedTransitionScope provides this) {
-                                // Navigation host: decides which screen to show based on the route
-                                FlowStateNavHost(
-                                    navController = navController,
-                                    startDestination = startDestination!!,
-                                    bottomNavOrder = bottomNavOrder,
-                                    bottomNavHidden = bottomNavHidden,
-                                    onBottomNavConfigChanged = { order, hidden ->
-                                        mainViewModel.saveBottomNavConfig(order, hidden)
+                                    backStack = backStack,
+                                    onSwitchTab = { newTab ->
+                                        // Switch top-level tab: keep MainTabsKey at index 0,
+                                        // replace the active tab.
+                                        // KNOWN LIMITATION: discards the previous tab's back
+                                        // history. Multi-back-stack will be added in Phase 2.
+                                        while (backStack.size > 1) {
+                                            backStack.removeAt(backStack.lastIndex)
+                                        }
+                                        backStack.add(newTab)
                                     },
-                                    themeMode = themeMode,
-                                    dynamicColor = dynamicColor,
-                                    onThemeModeChange = { mainViewModel.saveThemeMode(it) },
-                                    onDynamicColorChange = { mainViewModel.saveDynamicColor(it) },
+                                    isLandscape = isLandscape,
+                                    items = visibleBottomNavItems,
                                 )
-                            }
-                        }
+                            },
+                        )
                     }
                 }
             }
         }
     }
 }
+
+/** All possible bottom-nav screens, used as a lookup map by MainActivity. */
+val allBottomNavScreens: List<BottomNavScreen> = listOf(
+    BottomNavScreen.Tasks,
+    BottomNavScreen.Calendar,
+    BottomNavScreen.Habits,
+    BottomNavScreen.Mood,
+    BottomNavScreen.Settings,
+)

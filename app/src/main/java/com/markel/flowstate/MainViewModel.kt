@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.data.MainTab
 import com.markel.flowstate.core.data.ThemeMode
 import com.markel.flowstate.core.data.UserPreferencesRepository
-import com.markel.flowstate.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,8 +20,13 @@ class MainViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    private val _startDestination = MutableStateFlow<Any?>(null)
-    val startDestination = _startDestination.asStateFlow()
+    /** Tab to use as the second element of the initial back stack. */
+    private val _initialTab = MutableStateFlow(MainTab.TASKS)
+    val initialTab = _initialTab.asStateFlow()
+
+    /** True once the initial back stack has been resolved from DataStore. */
+    private val _isReady = MutableStateFlow(false)
+    val isReady = _isReady.asStateFlow()
 
     /** Current bottom nav order (all tabs in user-configured order). */
     val bottomNavOrder: StateFlow<List<MainTab>> = userPreferencesRepository.bottomNavOrder
@@ -34,11 +38,11 @@ class MainViewModel @Inject constructor(
 
     /** Current theme mode (system, light, dark)*/
     val themeMode: StateFlow<ThemeMode> = userPreferencesRepository.themeMode
-    .stateIn(
-    scope = viewModelScope,
-    started = SharingStarted.WhileSubscribed(5000),
-    initialValue = ThemeMode.SYSTEM
-    )
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ThemeMode.SYSTEM
+        )
 
     /** Whether the dynamic color is activated or not*/
     val dynamicColor: StateFlow<Boolean> = userPreferencesRepository.dynamicColor
@@ -57,13 +61,13 @@ class MainViewModel @Inject constructor(
             ) { lastTab, hiddenTabs ->
                 if (lastTab in hiddenTabs) {
                     // Fallback to the first non-hidden tab
-                    val visibleTabs = MainTab.DEFAULT_ORDER.filter { it !in hiddenTabs }
-                    visibleTabs.firstOrNull() ?: MainTab.TASKS
+                    MainTab.DEFAULT_ORDER.firstOrNull { it !in hiddenTabs } ?: MainTab.TASKS
                 } else {
                     lastTab
                 }
             }.collect { tab ->
-                _startDestination.value = tab.toRoute()
+                _initialTab.value = tab
+                _isReady.value = true
             }
         }
     }
