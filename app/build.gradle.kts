@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.markel.flowstate"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.markel.flowstate"

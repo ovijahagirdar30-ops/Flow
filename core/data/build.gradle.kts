@@ -9,7 +9,7 @@ plugins {
 android {
     namespace = "com.markel.flowstate.core.data"
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     defaultConfig {
