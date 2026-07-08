@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.background
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -24,9 +25,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.markel.flowstate.navigation.BottomNavScreen
@@ -58,7 +56,10 @@ fun FlowBottomBar(
     // when the bar is actually rendered.
     val currentTab = backStack.lastOrNull { it is TabKey } as? TabKey
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .background(MaterialTheme.colorScheme.surface)
+    ) {
         HorizontalDivider(
             thickness = 0.3.dp,
             color = MaterialTheme.colorScheme.outlineVariant
