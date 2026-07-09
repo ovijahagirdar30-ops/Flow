@@ -11,6 +11,7 @@ import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +44,11 @@ class CheckListViewModel @Inject constructor(
     private val _editor = MutableStateFlow(CheckListEditorState())
     val editor: StateFlow<CheckListEditorState> = _editor.asStateFlow()
 
+
+
+    /** Handle to the debounced autosave collector so it can be canceled in */
+    private var autosaveJob: Job? = null
+
     /** User categories, exposed so the editor can populate the category selector. */
     val categories: StateFlow<List<Category>> = categoryRepository.getCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -55,7 +61,7 @@ class CheckListViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
-        viewModelScope.launch {
+        autosaveJob = viewModelScope.launch {
             _editor
                 .drop(1)
                 .debounce(800)
@@ -85,6 +91,7 @@ class CheckListViewModel @Inject constructor(
     }
 
     fun closeAndSave() {
+        autosaveJob?.cancel()
         viewModelScope.launch {
             persistIfNeeded(_editor.value)
         }
@@ -96,6 +103,11 @@ class CheckListViewModel @Inject constructor(
                 .firstOrNull { it.id == checkListId } ?: return@launch
             checkListRepository.deleteList(found)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        _editor.value = CheckListEditorState()
     }
 
     // ── Field updates ─────────────────────────────────────────────────────────
