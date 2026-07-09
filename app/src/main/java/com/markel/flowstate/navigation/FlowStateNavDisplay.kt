@@ -48,38 +48,27 @@ import com.markel.flowstate.feature.settings.SettingsScreen
 // ─────────────────────────────────────────────────────────────────────────────
 // FlowStateNavDisplay
 //
-// The single NavDisplay for the whole app. Replaces the old FlowStateNavHost.
+// Per-tab back stacks.
 //
-// Architecture (Nested Navigation via Scene Decorator):
-//
-//   SharedTransitionLayout  ← provides SharedTransitionScope to NavDisplay
+//   SharedTransitionLayout
 //   └── NavDisplay
+//       ├── entries = navigationState.toEntries(entryProvider)  ← Phase 2 change
 //       ├── sceneDecoratorStrategies = [FlowStateSceneDecoratorStrategy]
-//       │   ├── non-fullscreen scenes → wrapped with Scaffold + bottom bar
-//       │   └── fullscreen scenes (FullScreenMeta=true) → pass-through, edge-to-edge
-//       │
-//       └── entryProvider
-//           ├── MainTabsKey           (root, decorated)
-//           ├── TabKey.Tasks          (decorated)
-//           ├── TabKey.Calendar       (decorated)
-//           ├── TabKey.Habits         (decorated)
-//           ├── TabKey.Mood           (decorated)
-//           ├── TabKey.Settings       (decorated)
-//           │
-//           └── FullScreenKey.*       (NOT decorated, slide-up + fade)
-//               ├── TaskEditor, IdeaEditor, CheckListEditor
-//               ├── HabitDetail
-//               └── About, Appearance, BottomNavConfig, Integrations, Categories
+//       ├── non-fullscreen scenes → wrapped with bottom bar
+//       │   └── fullscreen scenes (FullScreenMeta=true) → pass-through
+//       ├── sharedTransitionScope = this
+//       └── onBack = { navigator.goBack() }
 //
-// The bottom bar lives in the Scene Decorator. When the user navigates to a
-// fullscreen key, the decorator stops wrapping the scene and the bar gets
-// covered by the new scene sliding in over it.
+// Each top-level tab has its own NavBackStack (see NavigationState). The
+// SaveableStateHolder decorator inside `toEntries` preserves each tab's
+// scroll position and `rememberSaveable` state across tab switches.
 // ─────────────────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun FlowStateNavDisplay(
-    backStack: NavBackStack<NavKey>,
+    navigationState: NavigationState,
+    navigator: FlowStateNavigator,
     bottomNavOrder: List<MainTab>,
     bottomNavHidden: Set<MainTab>,
     onBottomNavConfigChanged: (order: List<MainTab>, hidden: Set<MainTab>) -> Unit,
@@ -96,203 +85,192 @@ fun FlowStateNavDisplay(
         bottomBar = bottomBar,
     )
 
-    NavDisplay(
-        backStack = backStack,
-        modifier = modifier,
-        onBack = {
-            if (backStack.size > 1) {
-                backStack.removeLastOrNull()
-            }
-        },
-        entryDecorators = listOf(
-            rememberSaveableStateHolderNavEntryDecorator(),
-            rememberViewModelStoreNavEntryDecorator() // REQUIRED for hiltViewModel() to be entry-scoped (one VM per entry rather than one per Activity)
-        ),
-        sceneDecoratorStrategies = listOf(sceneDecorator),
-        sharedTransitionScope = sharedTransitionScope,
-        entryProvider = entryProvider {
-            // ── ROOT (decorated, no-op shell) ───────────────────────────────
-            // MainTabsKey is the immutable root of the back stack. It carries
-            // no UI of its own — a tab entry is always on top of it. The
-            // decorator wraps it with the bar, but since the visible scene is
-            // always the tab on top, this entry's content is never actually
-            // seen by the user.
-            entry<MainTabsKey> { /* no-op shell */ }
+    val entryProvider = entryProvider {
+        // ── TABS (decorated with the bottom bar) ────────────────────────
+        entry<TabKey.Tasks>(metadata = fadeTransition()) {
+            val flowViewModel: FlowViewModel = hiltViewModel()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            DisposableEffect(lifecycleOwner) {
+                lifecycleOwner.lifecycle.addObserver(flowViewModel)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(flowViewModel) }
 
-            // ── TABS (decorated) ────────────────────────────────────────────
-            entry<TabKey.Tasks>(metadata = fadeTransition()) {
-                val flowViewModel: FlowViewModel = hiltViewModel()
-                // Register as lifecycle observer so onResume() fires correctly.
-                val lifecycleOwner = LocalLifecycleOwner.current
-                DisposableEffect(lifecycleOwner) {
-                    lifecycleOwner.lifecycle.addObserver(flowViewModel)
-                    onDispose { lifecycleOwner.lifecycle.removeObserver(flowViewModel) }
-                }
-                val navScope = LocalNavAnimatedContentScope.current
-                CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
-                    FlowScreen(
-                        flowViewModel = flowViewModel,
-                        onNavigateToTaskEditor = { taskId ->
-                            backStack.add(FullScreenKey.TaskEditor(taskId))
-                        },
-                        onNavigateToIdeaEditor = { ideaId ->
-                            backStack.add(FullScreenKey.IdeaEditor(ideaId, null))
-                        },
-                        onNavigateToNewIdea = { categoryId ->
-                            backStack.add(FullScreenKey.IdeaEditor(null, categoryId))
-                        },
-                        onNavigateToCheckListEditor = { checkListId, categoryId ->
-                            backStack.add(FullScreenKey.CheckListEditor(checkListId, categoryId))
-                        },
-                    )
-                }
             }
 
-            entry<TabKey.Calendar>(metadata = fadeTransition()) {
-                val calendarViewModel: CalendarViewModel = hiltViewModel()
-                CalendarScreen(viewModel = calendarViewModel)
-            }
-
-            entry<TabKey.Habits>(metadata = fadeTransition()) {
-                HabitScreen(
-                    onNavigateToDetail = { habitId ->
-                        backStack.add(FullScreenKey.HabitDetail(habitId))
+            val navScope = LocalNavAnimatedContentScope.current
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
+                FlowScreen(
+                    flowViewModel = flowViewModel,
+                    onNavigateToTaskEditor = { taskId ->
+                        navigator.navigate(FullScreenKey.TaskEditor(taskId))
+                    },
+                    onNavigateToIdeaEditor = { ideaId ->
+                        navigator.navigate(FullScreenKey.IdeaEditor(ideaId, null))
+                    },
+                    onNavigateToNewIdea = { categoryId ->
+                        navigator.navigate(FullScreenKey.IdeaEditor(null, categoryId))
+                    },
+                    onNavigateToCheckListEditor = { checkListId, categoryId ->
+                        navigator.navigate(FullScreenKey.CheckListEditor(checkListId, categoryId))
                     },
                 )
             }
+        }
 
-            entry<TabKey.Mood>(metadata = fadeTransition()) {
-                PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.mood))
+        entry<TabKey.Calendar>(metadata = fadeTransition()) {
+            val calendarViewModel: CalendarViewModel = hiltViewModel()
+            CalendarScreen(viewModel = calendarViewModel)
+        }
+
+
+        entry<TabKey.Habits>(metadata = fadeTransition()) {
+            HabitScreen(
+                onNavigateToDetail = { habitId ->
+                    navigator.navigate(FullScreenKey.HabitDetail(habitId))
+                },
+            )
+        }
+
+
+        entry<TabKey.Mood>(metadata = fadeTransition()) {
+            PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.mood))
+        }
+
+        entry<TabKey.Settings>(metadata = fadeTransition()) {
+            val context = LocalContext.current
+            val notificationSettingsProvider = remember {
+                NotificationSettingsIntentProvider(context)
             }
 
-            entry<TabKey.Settings>(metadata = fadeTransition()) {
-                val context = LocalContext.current
-                val notificationSettingsProvider = remember {
-                    NotificationSettingsIntentProvider(context)
-                }
-                // Observe notification permission state — refresh when returning from settings
-                var notificationsEnabled by remember {
-                    mutableStateOf(notificationSettingsProvider.isNotificationPermissionGranted())
-                }
-                // Refresh state when returning from system settings
-                val lifecycleOwner = LocalLifecycleOwner.current
-                DisposableEffect(lifecycleOwner) {
-                    val observer = LifecycleEventObserver { _, event ->
-                        if (event == Lifecycle.Event.ON_RESUME) {
-                            notificationsEnabled =
-                                notificationSettingsProvider.isNotificationPermissionGranted()
-                        }
+            var notificationsEnabled by remember {
+                mutableStateOf(notificationSettingsProvider.isNotificationPermissionGranted())
+            }
+            val lifecycleOwner = LocalLifecycleOwner.current
+            DisposableEffect(lifecycleOwner) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        notificationsEnabled =
+                            notificationSettingsProvider.isNotificationPermissionGranted()
                     }
-                    lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
                 }
-                SettingsScreen(
-                    appVersion = BuildConfig.VERSION_NAME,
-                    onNavigateToNotifications = {
-                        notificationSettingsProvider.createIntent()?.let { context.startActivity(it) }
-                    },
-                    onNavigateToAppearance = { backStack.add(FullScreenKey.Appearance) },
-                    onNavigateToBottomNavConfig = { backStack.add(FullScreenKey.BottomNavConfig) },
-                    onNavigateToCategories = { backStack.add(FullScreenKey.Categories) },
-                    onNavigateToIntegrations = { backStack.add(FullScreenKey.Integrations) },
-                    onNavigateToAbout = { backStack.add(FullScreenKey.About) },
-                    notificationsEnabled = notificationsEnabled,
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+            }
+            SettingsScreen(
+                appVersion = BuildConfig.VERSION_NAME,
+                onNavigateToNotifications = {
+                    notificationSettingsProvider.createIntent()?.let { context.startActivity(it) }
+                },
+                onNavigateToAppearance = { navigator.navigate(FullScreenKey.Appearance) },
+                onNavigateToBottomNavConfig = { navigator.navigate(FullScreenKey.BottomNavConfig) },
+                onNavigateToCategories = { navigator.navigate(FullScreenKey.Categories) },
+                onNavigateToIntegrations = { navigator.navigate(FullScreenKey.Integrations) },
+                onNavigateToAbout = { navigator.navigate(FullScreenKey.About) },
+                notificationsEnabled = notificationsEnabled,
+            )
+        }
+        // ── FULLSCREEN — Flow editors (shared transitions) ─────────────
+        entry<FullScreenKey.TaskEditor>(
+            metadata = fullScreenVerticalSlide()
+        ) { key ->
+            val navScope = LocalNavAnimatedContentScope.current
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
+                TaskEditorScreen(
+                    taskId = key.taskId,
+                    onBack = { navigator.goBack() },
                 )
             }
-
-            // ── FULLSCREEN — Flow editors (shared transitions) ─────────────
-            entry<FullScreenKey.TaskEditor>(
-                metadata = fullScreenVerticalSlide()
-            ) { key ->
-                val navScope = LocalNavAnimatedContentScope.current
-                CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
-                    TaskEditorScreen(
-                        taskId = key.taskId,
-                        onBack = { backStack.removeLastOrNull() },
-                    )
-                }
-            }
-
-            entry<FullScreenKey.IdeaEditor>(
-                metadata = fullScreenVerticalSlide()
-            ) { key ->
-                val navScope = LocalNavAnimatedContentScope.current
-                CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
-                    IdeaEditorScreen(
-                        ideaId = key.ideaId,
-                        categoryId = key.categoryId,
-                        onBack = { backStack.removeLastOrNull() },
-                    )
-                }
-            }
-
-            entry<FullScreenKey.CheckListEditor>(
-                metadata = fullScreenVerticalSlide()
-            ) { key ->
-                val navScope = LocalNavAnimatedContentScope.current
-                CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
-                    CheckListEditorScreen(
-                        checkListId = key.checkListId,
-                        categoryId = key.categoryId,
-                        onBack = { backStack.removeLastOrNull() },
-                    )
-                }
-            }
-
-            // ── FULLSCREEN — Habit detail ──────────────────────────────────
-            entry<FullScreenKey.HabitDetail>(
-                metadata = fullScreenVerticalSlide()
-            ) { key ->
-                HabitDetailScreen(
-                    habitId = key.habitId,
-                    onBack = { backStack.removeLastOrNull() },
+        }
+        entry<FullScreenKey.IdeaEditor>(
+            metadata = fullScreenVerticalSlide()
+        ) { key ->
+            val navScope = LocalNavAnimatedContentScope.current
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
+                IdeaEditorScreen(
+                    ideaId = key.ideaId,
+                    categoryId = key.categoryId,
+                    onBack = { navigator.goBack() },
                 )
             }
+        }
 
-            // ── FULLSCREEN — Settings sub-screens ──────────────────────────
-            entry<FullScreenKey.About>(
-                metadata = fullScreenVerticalSlide()
-            ) {
-                AboutScreen(
-                    appVersion = BuildConfig.VERSION_NAME,
-                    onBack = { backStack.removeLastOrNull() },
+        entry<FullScreenKey.CheckListEditor>(
+            metadata = fullScreenVerticalSlide()
+        ) { key ->
+            val navScope = LocalNavAnimatedContentScope.current
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
+                CheckListEditorScreen(
+                    checkListId = key.checkListId,
+                    categoryId = key.categoryId,
+                    onBack = { navigator.goBack() },
                 )
             }
+        }
 
-            entry<FullScreenKey.BottomNavConfig>(
-                metadata = fullScreenVerticalSlide()
-            ) {
-                BottomNavConfigScreen(
-                    currentOrder = bottomNavOrder,
-                    currentHidden = bottomNavHidden,
-                    onConfigChanged = onBottomNavConfigChanged,
-                    onBack = { backStack.removeLastOrNull() },
-                )
-            }
+        // ── FULLSCREEN — Habit detail ──────────────────────────────────
+        entry<FullScreenKey.HabitDetail>(
+            metadata = fullScreenVerticalSlide()
+        ) { key ->
+            HabitDetailScreen(
+                habitId = key.habitId,
+                onBack = { navigator.goBack() },
+            )
+        }
 
-            entry<FullScreenKey.Appearance>(
-                metadata = fullScreenVerticalSlide()
-            ) {
-                AppearanceScreen(
-                    currentThemeMode = themeMode,
-                    currentDynamicColor = dynamicColor,
-                    onThemeModeChange = onThemeModeChange,
-                    onDynamicColorChange = onDynamicColorChange,
-                    onBack = { backStack.removeLastOrNull() },
-                )
-            }
+        // ── FULLSCREEN — Settings sub-screens ──────────────────────────
+        entry<FullScreenKey.About>(
+            metadata = fullScreenVerticalSlide()
+        ) {
+            AboutScreen(
+                appVersion = BuildConfig.VERSION_NAME,
+                onBack = { navigator.goBack() },
+            )
+        }
 
-            entry<FullScreenKey.Integrations>(
-                metadata = fullScreenVerticalSlide()
-            ) {
-                BackupScreen(onBack = { backStack.removeLastOrNull() })
-            }
+        entry<FullScreenKey.BottomNavConfig>(
+            metadata = fullScreenVerticalSlide()
+        ) {
+            BottomNavConfigScreen(
+                currentOrder = bottomNavOrder,
+                currentHidden = bottomNavHidden,
+                onConfigChanged = onBottomNavConfigChanged,
+                onBack = { navigator.goBack() },
+            )
+        }
 
-            entry<FullScreenKey.Categories>(
-                metadata = fullScreenVerticalSlide()
-            ) {
-                CategoriesScreen(onBack = { backStack.removeLastOrNull() })
-            }
-        },
+        entry<FullScreenKey.Appearance>(
+            metadata = fullScreenVerticalSlide()
+        ) {
+            AppearanceScreen(
+                currentThemeMode = themeMode,
+                currentDynamicColor = dynamicColor,
+                onThemeModeChange = onThemeModeChange,
+                onDynamicColorChange = onDynamicColorChange,
+                onBack = { navigator.goBack() },
+            )
+        }
+
+        entry<FullScreenKey.Integrations>(
+            metadata = fullScreenVerticalSlide()
+        ) {
+            BackupScreen(onBack = { navigator.goBack() })
+        }
+
+        entry<FullScreenKey.Categories>(
+            metadata = fullScreenVerticalSlide()
+        ) {
+            CategoriesScreen(onBack = { navigator.goBack() })
+        }
+    }
+
+    NavDisplay(
+        // Use the entries overload so each tab's stack gets its own
+        // SaveableStateHolder + ViewModelStore decorators (applied inside
+        // NavigationState.toEntries). The `entries=` overload does NOT apply
+        // entryDecorators itself.
+        entries = navigationState.toEntries(entryProvider),
+        modifier = modifier,
+        onBack = { navigator.goBack() },
+        sceneDecoratorStrategies = listOf(sceneDecorator),
+        sharedTransitionScope = sharedTransitionScope
     )
 }

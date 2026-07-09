@@ -23,7 +23,7 @@ import androidx.navigation3.ui.LocalNavAnimatedContentScope
 // ─────────────────────────────────────────────────────────────────────────────
 // FlowStateSceneDecoratorStrategy
 //
-// Wraps NON-fullscreen scenes (the MainTabsKey root + the five tab keys) with a
+// Wraps NON-fullscreen scenes (the five tab keys) with a
 // Scaffold that hosts the bottom navigation bar. Fullscreen scenes (detail
 // screens, editors, settings sub-screens) carry the `FullScreenMeta` flag and
 // pass through unwrapped, so they render edge-to-edge over the bar.

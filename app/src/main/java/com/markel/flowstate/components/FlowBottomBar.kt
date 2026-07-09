@@ -38,24 +38,21 @@ import com.markel.flowstate.navigation.TabKey
  * decorator wraps non-fullscreen scenes with this bar; fullscreen scenes pass
  * through unwrapped and cover the bar visually.
  *
- * The bar reads the active tab directly from the [backStack] (last entry that
- * is a [TabKey]) and mutates the stack via [onSwitchTab] when the user taps a
- * different tab. No NavController involved.
+ * The bar receives the current [topLevelRoute] directly from
+ * [com.markel.flowstate.navigation.NavigationState] and routes every tap
+ * through [onNavigate], which calls [com.markel.flowstate.navigation.FlowStateNavigator.navigate].
+ * The navigator decides whether to switch tabs or push a detail based on the
+ * key type.
  */
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FlowBottomBar(
-    backStack: NavBackStack<NavKey>,
-    onSwitchTab: (TabKey) -> Unit,
+    topLevelRoute: NavKey,
+    onNavigate: (NavKey) -> Unit,
     isLandscape: Boolean,
     items: List<BottomNavScreen> = emptyList(),
 ) {
-    // The active tab is the topmost TabKey in the back stack. When a fullscreen
-    // destination is on top, the bar is not visible, so this lookup is only consulted
-    // when the bar is actually rendered.
-    val currentTab = backStack.lastOrNull { it is TabKey } as? TabKey
-
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(MaterialTheme.colorScheme.surface)
@@ -75,12 +72,12 @@ fun FlowBottomBar(
             windowInsets = ShortNavigationBarDefaults.windowInsets,
         ) {
             items.forEach { screen ->
-                val selected = currentTab == screen.key
+                val selected = topLevelRoute == screen.key
                 val label = stringResource(screen.labelRes)
                 ShortNavigationBarItem(
                     selected = selected,
                     onClick = {
-                        if (!selected) onSwitchTab(screen.key)
+                        if (!selected) onNavigate(screen.key)
                     },
                     icon = {
                         val iconDrawable = if (selected) screen.iconSelectedRes else screen.iconRes

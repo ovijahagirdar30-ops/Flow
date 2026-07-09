@@ -21,14 +21,6 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.rememberNavBackStack
 import com.markel.flowstate.components.FlowBottomBar
 import com.markel.flowstate.components.PlaceholderScreen
 import com.markel.flowstate.core.designsystem.theme.FlowStateTheme
@@ -38,10 +30,12 @@ import com.markel.flowstate.core.data.MainTab
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import com.markel.flowstate.navigation.BottomNavScreen
 import com.markel.flowstate.navigation.FlowStateNavDisplay
+import com.markel.flowstate.navigation.FlowStateNavigator
 import com.markel.flowstate.navigation.FlowStateSavedStateConfiguration
-import com.markel.flowstate.navigation.MainTabsKey
+import com.markel.flowstate.navigation.NavigationState
 import com.markel.flowstate.navigation.TabKey
 import com.markel.flowstate.navigation.fromKey
+import com.markel.flowstate.navigation.rememberNavigationState
 import com.markel.flowstate.navigation.toKey
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -81,25 +75,38 @@ class MainActivity : ComponentActivity() {
                             .mapNotNull { screenMap[it] }
                     }
 
-                    // Single mutable back stack. MainTabsKey is the immutable
-                    // root at index 0; the active tab is at index 1; any
-                    // fullscreen destinations sit on top.
-                    //
-                    // KNOWN LIMITATION (Phase 1): single back stack — switching
-                    // tabs replaces the active tab and discards its scroll
-                    // position and detail history. Multi-back-stack (one per
-                    // top-level tab) will be added in Phase 2 to preserve tab
-                    // state across switches.
-                    val backStack: NavBackStack<NavKey> = rememberNavBackStack(
-                        FlowStateSavedStateConfiguration,
-                        MainTabsKey,
-                        initialTab.toKey(),
-                    )
+                    // The set of all top-level tabs — each gets its own NavBackStack.
+                    val topLevelRoutes: Set<TabKey> = remember(bottomNavOrder, bottomNavHidden) {
+                        bottomNavOrder
+                            .filter { it !in bottomNavHidden }
+                            .map { it.toKey() }
+                            .toSet()
+                    }
 
-                    // Persist the active tab whenever it changes — used as the
-                    // start destination on next launch.
-                    LaunchedEffect(backStack) {
-                        snapshotFlow { backStack.lastOrNull { it is TabKey } as? TabKey }
+                    // Per-tab back stacks. Each visible tab has its own NavBackStack.
+                    // Switching tabs preserves the target tab's scroll position and detail history.
+                    //
+                    // `initialRoute` is the persisted last tab from DataStore —
+                    // used only to seed `topLevelRoute` on first composition.
+                    val navigationState: NavigationState = rememberNavigationState(
+                        initialRoute = initialTab.toKey(),
+                        topLevelRoutes = topLevelRoutes,
+                    )
+                    val navigator = remember(navigationState) { FlowStateNavigator(navigationState) }
+
+                    // On first composition, switch to the persisted initial tab
+                    // (rememberSerializable restores topLevelRoute = startRoute by default).
+                    LaunchedEffect(initialTab, topLevelRoutes) {
+                        if (initialTab.toKey() in topLevelRoutes &&
+                            navigationState.topLevelRoute != initialTab.toKey()
+                        ) {
+                            navigationState.topLevelRoute = initialTab.toKey()
+                        }
+                    }
+
+                    // Persist the active top-level tab whenever it changes.
+                    LaunchedEffect(navigationState) {
+                        snapshotFlow { navigationState.topLevelRoute as? TabKey }
                             .collect { tabKey ->
                                 tabKey?.let { MainTab.fromKey(it) }?.let(mainViewModel::saveLastTab)
                             }
@@ -109,7 +116,8 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize().clipToBounds()
                     ) {
                         FlowStateNavDisplay(
-                            backStack = backStack,
+                            navigationState = navigationState,
+                            navigator = navigator,
                             bottomNavOrder = bottomNavOrder,
                             bottomNavHidden = bottomNavHidden,
                             onBottomNavConfigChanged = mainViewModel::saveBottomNavConfig,
@@ -120,19 +128,10 @@ class MainActivity : ComponentActivity() {
                             sharedTransitionScope = this,
                             bottomBar = {
                                 FlowBottomBar(
-                                    backStack = backStack,
-                                    onSwitchTab = { newTab ->
-                                        // Switch top-level tab: keep MainTabsKey at index 0,
-                                        // replace the active tab.
-                                        // KNOWN LIMITATION: discards the previous tab's back
-                                        // history. Multi-back-stack will be added in Phase 2.
-                                        while (backStack.size > 1) {
-                                            backStack.removeAt(backStack.lastIndex)
-                                        }
-                                        backStack.add(newTab)
-                                    },
+                                    topLevelRoute = navigationState.topLevelRoute,
+                                    onNavigate = { key -> navigator.navigate(key) },
                                     isLandscape = isLandscape,
-                                    items = visibleBottomNavItems,
+                                    items = visibleBottomNavItems
                                 )
                             },
                         )

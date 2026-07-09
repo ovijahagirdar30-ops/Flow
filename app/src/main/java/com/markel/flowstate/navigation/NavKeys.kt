@@ -11,19 +11,17 @@ import androidx.savedstate.serialization.SavedStateConfiguration
 // ─────────────────────────────────────────────────────────────────────────────
 // NavKey hierarchy
 //
-// Two layers, mirroring the architecture:
-//   - Tab keys (MainTabsKey + each tab): rendered INSIDE the Scene Decorator
-//     (i.e. on top of the bottom bar).
-//   - Fullscreen keys (detail/editors/settings sub-screens): rendered OUTSIDE
-//     the Scene Decorator (i.e. covering the bottom bar).
+// Two layers:
+//   - TabKey: the five bottom-nav tabs. Each gets its own NavBackStack in
+//     NavigationState. Rendered INSIDE the Scene Decorator (i.e. on top of
+//     the bottom bar).
+//   - FullScreenKey: detail/editors/settings sub-screens. Pushed onto the
+//     current tab's back stack. Rendered OUTSIDE the Scene Decorator
+//     (covering the bottom bar) thanks to the FullScreenMeta flag.
 //
-// The decorator decides which layer applies by reading the FullScreenKey
-// metadata flag from each entry — see FlowStateSceneDecoratorStrategy.kt.
+// The decorator decides which layer applies by reading the FullScreenMeta
+// flag from each entry — see FlowStateSceneDecoratorStrategy.kt.
 // ─────────────────────────────────────────────────────────────────────────────
-
-/** Root key of the back stack. Always at index 0. The decorator wraps it with the bar. */
-@Serializable
-data object MainTabsKey : NavKey
 
 /** Marker for the five bottom-nav tabs. They get decorated with the bottom bar. */
 @Serializable
@@ -99,8 +97,6 @@ object FullScreenMeta : NavMetadataKey<Boolean>
 val FlowStateSavedStateConfiguration = SavedStateConfiguration {
     serializersModule = SerializersModule {
         polymorphic(NavKey::class) {
-            // Root
-            subclass(MainTabsKey::class, MainTabsKey.serializer())
 
             // Tabs
             subclass(TabKey.Tasks::class, TabKey.Tasks.serializer())
