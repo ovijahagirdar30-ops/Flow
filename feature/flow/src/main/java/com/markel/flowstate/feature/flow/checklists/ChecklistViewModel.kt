@@ -87,7 +87,6 @@ class CheckListViewModel @Inject constructor(
     fun closeAndSave() {
         viewModelScope.launch {
             persistIfNeeded(_editor.value)
-            _editor.value = CheckListEditorState()
         }
     }
 
@@ -96,7 +95,6 @@ class CheckListViewModel @Inject constructor(
             val found = checkListRepository.getLists().first()
                 .firstOrNull { it.id == checkListId } ?: return@launch
             checkListRepository.deleteList(found)
-            _editor.value = CheckListEditorState()
         }
     }
 

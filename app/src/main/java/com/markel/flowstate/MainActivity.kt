@@ -115,26 +115,28 @@ class MainActivity : ComponentActivity() {
                     SharedTransitionLayout(
                         modifier = Modifier.fillMaxSize().clipToBounds()
                     ) {
-                        FlowStateNavDisplay(
-                            navigationState = navigationState,
-                            navigator = navigator,
-                            bottomNavOrder = bottomNavOrder,
-                            bottomNavHidden = bottomNavHidden,
-                            onBottomNavConfigChanged = mainViewModel::saveBottomNavConfig,
-                            themeMode = themeMode,
-                            dynamicColor = dynamicColor,
-                            onThemeModeChange = mainViewModel::saveThemeMode,
-                            onDynamicColorChange = mainViewModel::saveDynamicColor,
-                            sharedTransitionScope = this,
-                            bottomBar = {
-                                FlowBottomBar(
-                                    topLevelRoute = navigationState.topLevelRoute,
-                                    onNavigate = { key -> navigator.navigate(key) },
-                                    isLandscape = isLandscape,
-                                    items = visibleBottomNavItems
-                                )
-                            },
-                        )
+                        CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+                            FlowStateNavDisplay(
+                                navigationState = navigationState,
+                                navigator = navigator,
+                                bottomNavOrder = bottomNavOrder,
+                                bottomNavHidden = bottomNavHidden,
+                                onBottomNavConfigChanged = mainViewModel::saveBottomNavConfig,
+                                themeMode = themeMode,
+                                dynamicColor = dynamicColor,
+                                onThemeModeChange = mainViewModel::saveThemeMode,
+                                onDynamicColorChange = mainViewModel::saveDynamicColor,
+                                sharedTransitionScope = this,
+                                bottomBar = {
+                                    FlowBottomBar(
+                                        topLevelRoute = navigationState.topLevelRoute,
+                                        onNavigate = { key -> navigator.navigate(key) },
+                                        isLandscape = isLandscape,
+                                        items = visibleBottomNavItems
+                                    )
+                                },
+                            )
+                        }
                     }
                 }
             }

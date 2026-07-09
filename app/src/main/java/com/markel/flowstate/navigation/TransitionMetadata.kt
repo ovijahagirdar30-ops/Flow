@@ -81,3 +81,21 @@ fun fullScreenVerticalSlide(durationMillis: Int = SLIDE_MS) = metadata {
             ) + fadeOut(tween(durationMillis - 80))
     }
 }
+
+/**
+ * Fullscreen + container-transform (shared bounds).
+ * KeepUntilTransitionsFinished entering and popping.
+ */
+fun fullScreenSharedBounds(durationMillis: Int = 250) = metadata {
+    put(FullScreenMeta, true)
+
+    put(NavDisplay.TransitionKey) {
+        fadeIn(tween(durationMillis)) togetherWith ExitTransition.KeepUntilTransitionsFinished
+    }
+    put(NavDisplay.PopTransitionKey) {
+        EnterTransition.None togetherWith fadeOut(tween(durationMillis))
+    }
+    put(NavDisplay.PredictivePopTransitionKey) {
+        EnterTransition.None togetherWith fadeOut(tween(durationMillis))
+    }
+}

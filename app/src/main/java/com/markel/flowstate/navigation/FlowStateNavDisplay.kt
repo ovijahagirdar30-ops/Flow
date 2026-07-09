@@ -28,6 +28,7 @@ import com.markel.flowstate.components.PlaceholderScreen
 import com.markel.flowstate.core.data.MainTab
 import com.markel.flowstate.core.data.ThemeMode
 import com.markel.flowstate.core.designsystem.ui.LocalAnimatedVisibilityScope
+import com.markel.flowstate.core.designsystem.ui.LocalSharedTransitionScope
 import com.markel.flowstate.core.notifications.NotificationSettingsIntentProvider
 import com.markel.flowstate.feature.calendar.CalendarScreen
 import com.markel.flowstate.feature.calendar.CalendarViewModel
@@ -181,7 +182,7 @@ fun FlowStateNavDisplay(
             }
         }
         entry<FullScreenKey.IdeaEditor>(
-            metadata = fullScreenVerticalSlide()
+            metadata = fullScreenSharedBounds()
         ) { key ->
             val navScope = LocalNavAnimatedContentScope.current
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
@@ -194,7 +195,7 @@ fun FlowStateNavDisplay(
         }
 
         entry<FullScreenKey.CheckListEditor>(
-            metadata = fullScreenVerticalSlide()
+            metadata = fullScreenSharedBounds()
         ) { key ->
             val navScope = LocalNavAnimatedContentScope.current
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
@@ -210,10 +211,13 @@ fun FlowStateNavDisplay(
         entry<FullScreenKey.HabitDetail>(
             metadata = fullScreenVerticalSlide()
         ) { key ->
-            HabitDetailScreen(
-                habitId = key.habitId,
-                onBack = { navigator.goBack() },
-            )
+            val navScope = LocalNavAnimatedContentScope.current
+            CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
+                HabitDetailScreen(
+                    habitId = key.habitId,
+                    onBack = { navigator.goBack() },
+                )
+            }
         }
 
         // ── FULLSCREEN — Settings sub-screens ──────────────────────────
@@ -262,15 +266,17 @@ fun FlowStateNavDisplay(
         }
     }
 
-    NavDisplay(
-        // Use the entries overload so each tab's stack gets its own
-        // SaveableStateHolder + ViewModelStore decorators (applied inside
-        // NavigationState.toEntries). The `entries=` overload does NOT apply
-        // entryDecorators itself.
-        entries = navigationState.toEntries(entryProvider),
-        modifier = modifier,
-        onBack = { navigator.goBack() },
-        sceneDecoratorStrategies = listOf(sceneDecorator),
-        sharedTransitionScope = sharedTransitionScope
-    )
+    CompositionLocalProvider(LocalSharedTransitionScope provides sharedTransitionScope) {
+        NavDisplay(
+            // Use the entries overload so each tab's stack gets its own
+            // SaveableStateHolder + ViewModelStore decorators (applied inside
+            // NavigationState.toEntries). The `entries=` overload does NOT apply
+            // entryDecorators itself.
+            entries = navigationState.toEntries(entryProvider),
+            modifier = modifier,
+            onBack = { navigator.goBack() },
+            sceneDecoratorStrategies = listOf(sceneDecorator),
+            sharedTransitionScope = sharedTransitionScope
+        )
+    }
 }

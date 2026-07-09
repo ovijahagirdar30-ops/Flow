@@ -93,7 +93,6 @@ class IdeaEditorViewModel @Inject constructor(
     fun closeAndSave() {
         viewModelScope.launch {
             persistIfNeeded(_editor.value)
-            _editor.value = IdeaEditorState()  // reset
         }
     }
 
@@ -123,7 +122,6 @@ class IdeaEditorViewModel @Inject constructor(
         viewModelScope.launch {
             val idea = ideaRepository.getIdeaById(ideaId) ?: return@launch
             ideaRepository.deleteIdea(idea)
-            _editor.value = IdeaEditorState()
         }
     }
 
