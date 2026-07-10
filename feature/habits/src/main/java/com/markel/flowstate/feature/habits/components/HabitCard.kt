@@ -104,7 +104,10 @@ fun HabitCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
+        colors = CardDefaults.cardColors(
+            containerColor = cardBg,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
 

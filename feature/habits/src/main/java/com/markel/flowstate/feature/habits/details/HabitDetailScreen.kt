@@ -70,7 +70,8 @@ fun HabitDetailScreen(
                 Icon(
                     imageVector = ImageVector.vectorResource(DesignR.drawable.arrow_back_24px),
                     contentDescription = "Back",
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -90,7 +91,8 @@ fun HabitDetailScreen(
             Text(
                 text = habit.name,
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
 

@@ -56,8 +56,7 @@ fun CalendarScreen(
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding(),
+            .fillMaxSize(),
         floatingActionButton = {
             MediumFloatingActionButton(
                 onClick = {
@@ -85,6 +84,7 @@ fun CalendarScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .statusBarsPadding()
         ) {
             Column(
                 modifier = Modifier
