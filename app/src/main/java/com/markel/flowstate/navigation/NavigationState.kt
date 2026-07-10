@@ -60,16 +60,24 @@ fun rememberNavigationState(
         mutableStateOf<NavKey>(initialRoute)
     }
 
+    // Preserve the back stacks of the visible tabs when the user hides/reorders the tabs
+    val allTabKeys = remember {
+        setOf(
+            TabKey.Tasks, TabKey.Calendar, TabKey.Habits, TabKey.Mood, TabKey.Settings
+        )
+    }
+
     // One back stack per top-level tab. Each is remembered individually so it
     // survives recomposition and process death.
     val backStacks: Map<NavKey, NavBackStack<NavKey>> =
-        topLevelRoutes.associateWith { key -> rememberNavBackStack(key) }
+        allTabKeys.associateWith { key -> rememberNavBackStack(key) }
 
     return remember(initialRoute, topLevelRoutes) {
         NavigationState(
             initialRoute = initialRoute,
             topLevelRoute = topLevelRoute,
             backStacks = backStacks,
+            visibleTopLevelRoutes = { topLevelRoutes }
         )
     }
 }
@@ -82,6 +90,7 @@ class NavigationState(
     val initialRoute: TabKey,
     topLevelRoute: MutableState<NavKey>,
     val backStacks: Map<NavKey, NavBackStack<NavKey>>,
+    val visibleTopLevelRoutes: () -> Set<NavKey>
 ) {
     /** The currently active top-level tab. Mutated by [FlowStateNavigator.navigate]. */
     var topLevelRoute: NavKey by topLevelRoute
@@ -93,7 +102,12 @@ class NavigationState(
      * NavBackStack instances live in [backStacks]) but are not composed.
      */
     val stacksInUse: List<NavKey>
-        get() = listOf(topLevelRoute)
+        get() {
+            val visible = visibleTopLevelRoutes()
+            // If the active tab is still visible compose only that
+            // Else don't compose anything, caller will reassign the topLevelRoute
+            return if (topLevelRoute in visible) listOf(topLevelRoute) else emptyList()
+        }
 
     /**
      * Convert the navigation state into a flat list of decorated [NavEntry]s
