@@ -31,7 +31,6 @@ import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import com.markel.flowstate.navigation.BottomNavScreen
 import com.markel.flowstate.navigation.FlowStateNavDisplay
 import com.markel.flowstate.navigation.FlowStateNavigator
-import com.markel.flowstate.navigation.FlowStateSavedStateConfiguration
 import com.markel.flowstate.navigation.NavigationState
 import com.markel.flowstate.navigation.TabKey
 import com.markel.flowstate.navigation.fromKey

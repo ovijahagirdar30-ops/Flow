@@ -44,8 +44,6 @@ class CheckListViewModel @Inject constructor(
     private val _editor = MutableStateFlow(CheckListEditorState())
     val editor: StateFlow<CheckListEditorState> = _editor.asStateFlow()
 
-
-
     /** Handle to the debounced autosave collector so it can be canceled in */
     private var autosaveJob: Job? = null
 
