@@ -22,7 +22,6 @@ import java.time.LocalDate
 import com.markel.flowstate.core.designsystem.R as DesignR
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.markel.flowstate.feature.habits.R
 import com.markel.flowstate.feature.habits.details.components.numeric.NumericEvolutionCard
 import com.markel.flowstate.feature.habits.details.components.bool.HabitMonthCalendar
@@ -39,7 +38,7 @@ import com.markel.flowstate.feature.habits.util.formatFloat
 fun HabitDetailScreen(
     habitId: Int,
     onBack: () -> Unit,
-    viewModel: HabitDetailViewModel = hiltViewModel()
+    viewModel: HabitDetailViewModel,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val habit = state.habit ?: return

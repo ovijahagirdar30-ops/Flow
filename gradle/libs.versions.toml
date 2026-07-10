@@ -13,9 +13,8 @@ appcompat = "1.7.1"
 material = "1.13.0"
 room = "2.8.4"
 ksp = "2.3.2"
-navigation = "2.9.6"  # DELETE AFTER MIGRATION TO NAVIGATION 3
 navigation3 = "1.1.4"
-lifecycleViewmodelNav3 = "2.11.0"  # COMPROBAR A VER SI FUNCIONA TODO SIN ESTO PRIMERO Y LUEGO CON
+lifecycleViewmodelNav3 = "2.11.0"
 hilt = "2.57.2"
 hiltNavigation = "1.3.0"
 reorderable = "3.0.0"
@@ -58,7 +57,6 @@ room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "
 navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
 navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }
 lifecycle-viewmodel-navigation3 = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }  # DELETE AFTER MIGRATION TO NAVIGATION 3
 hilt-android = { group = "com.google.dagger", name = "hilt-android" , version.ref = "hilt"}
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler" , version.ref = "hilt"}
 hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigation" }
@@ -76,7 +74,6 @@ glance-material3 = { group = "androidx.glance", name = "glance-material3", versi
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundationVersion" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
-androidx-savedstate-ktx = { group = "androidx.savedstate", name = "savedstate-ktx", version.ref = "savedstateKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

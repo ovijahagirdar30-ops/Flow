@@ -16,6 +16,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
@@ -39,6 +40,7 @@ import com.markel.flowstate.feature.flow.ideas.IdeaEditorScreen
 import com.markel.flowstate.feature.flow.tasks.components.TaskEditorScreen
 import com.markel.flowstate.feature.habits.HabitScreen
 import com.markel.flowstate.feature.habits.details.HabitDetailScreen
+import com.markel.flowstate.feature.habits.details.HabitDetailViewModel
 import com.markel.flowstate.feature.settings.AboutScreen
 import com.markel.flowstate.feature.settings.AppearanceScreen
 import com.markel.flowstate.feature.settings.BackupScreen
@@ -213,9 +215,13 @@ fun FlowStateNavDisplay(
         ) { key ->
             val navScope = LocalNavAnimatedContentScope.current
             CompositionLocalProvider(LocalAnimatedVisibilityScope provides navScope) {
+                val viewModel = hiltViewModel<HabitDetailViewModel, HabitDetailViewModel.Factory>(
+                    creationCallback = { factory -> factory.create(key.habitId) }
+                )
                 HabitDetailScreen(
                     habitId = key.habitId,
                     onBack = { navigator.goBack() },
+                    viewModel = viewModel
                 )
             }
         }
