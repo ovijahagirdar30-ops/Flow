@@ -103,7 +103,7 @@ fun HabitDetailScreen(
                 habit.createdAt.toString(),
                 entriesCount
             ),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 44.dp, bottom = 20.dp)
         )
