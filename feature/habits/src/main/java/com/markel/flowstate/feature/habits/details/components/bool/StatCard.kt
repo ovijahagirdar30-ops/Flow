@@ -1,5 +1,6 @@
 package com.markel.flowstate.feature.habits.details.components.bool
 
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -42,7 +43,11 @@ fun StatCard(
                 fontWeight = FontWeight.Medium,
                 color = if (valueColor != Color.Unspecified) valueColor
                         else MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .basicMarquee(repeatDelayMillis = 3500)
             )
             Text(
                 text = label,

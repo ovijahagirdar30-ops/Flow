@@ -22,6 +22,7 @@ import java.time.LocalDate
 import com.markel.flowstate.core.designsystem.R as DesignR
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import com.markel.flowstate.feature.habits.R
 import com.markel.flowstate.feature.habits.details.components.numeric.NumericEvolutionCard
 import com.markel.flowstate.feature.habits.details.components.bool.HabitMonthCalendar
@@ -34,6 +35,7 @@ import com.markel.flowstate.feature.habits.details.components.numeric.NumericHea
 import com.markel.flowstate.feature.habits.details.components.numeric.ValueDistributionCard
 import com.markel.flowstate.feature.habits.util.formatFloat
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HabitDetailScreen(
     habitId: Int,
@@ -52,20 +54,20 @@ fun HabitDetailScreen(
             .statusBarsPadding()
             .verticalScroll(rememberScrollState())
     ) {
-        // ── Top bar ───────────────────────────────────────────────
-        Row(
+        // ── Top bar + Hero ───────────────────────────────────────────────
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            contentAlignment = Alignment.Center
         ) {
-            IconButton(
+            FilledTonalIconButton(
                 onClick = onBack,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                modifier = Modifier.align(Alignment.CenterStart),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = habitColor.copy(alpha = 0.20f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
             ) {
                 Icon(
                     imageVector = ImageVector.vectorResource(DesignR.drawable.arrow_back_24px),
@@ -74,28 +76,17 @@ fun HabitDetailScreen(
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
-        }
 
-        // ── Hero ──────────────────────────────────────────────────
-        Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(14.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(habitColor)
-            )
             Text(
                 text = habit.name,
-                style = MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.headlineMediumEmphasized,
                 maxLines = 1,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 56.dp)
                     .basicMarquee(repeatDelayMillis = 3500)
             )
         }
