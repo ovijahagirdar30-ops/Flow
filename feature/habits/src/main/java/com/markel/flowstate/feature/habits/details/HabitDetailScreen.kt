@@ -90,9 +90,13 @@ fun HabitDetailScreen(
             )
             Text(
                 text = habit.name,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineLarge,
+                maxLines = 1,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .weight(1f)
+                    .basicMarquee(repeatDelayMillis = 3500)
             )
         }
 
