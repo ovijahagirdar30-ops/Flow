@@ -28,6 +28,7 @@ import com.markel.flowstate.feature.habits.details.components.numeric.NumericEvo
 import com.markel.flowstate.feature.habits.details.components.bool.HabitMonthCalendar
 import com.markel.flowstate.feature.habits.details.components.bool.RadarChart
 import com.markel.flowstate.feature.habits.details.components.SectionHeader
+import com.markel.flowstate.feature.habits.details.components.bool.BooleanHabitSummaryCard
 import com.markel.flowstate.feature.habits.details.components.bool.StatCard
 import com.markel.flowstate.feature.habits.details.components.bool.WeeklyBarsCard
 import com.markel.flowstate.feature.habits.details.components.numeric.MonthlyGoalCard
@@ -91,45 +92,39 @@ fun HabitDetailScreen(
             )
         }
 
-        val entriesCount = if (state.isNumeric) state.numericEntries.size else state.allEntries.size
-        Text(
-            text = stringResource(
-                R.string.habit_detail_since,
-                habit.createdAt.toString(),
-                entriesCount
-            ),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 44.dp, bottom = 20.dp)
-        )
-
-        // ── Metrics ──────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            StatCard(
-                value = state.currentStreak.toString(),
-                label = stringResource(R.string.habit_detail_streak_current),
-                valueColor = habitColor,
-                modifier = Modifier.weight(1f)
-            )
-            StatCard(
-                value = state.bestStreak.toString(),
-                label = stringResource(R.string.habit_detail_streak_best),
-                modifier = Modifier.weight(1f)
+        // ── Header summary ──────────────────────────────────────────────
+        SectionHeader(title = stringResource(R.string.habit_detail_section_summary))
+        if (state.isNumeric) {
+            val entriesCount = state.numericEntries.size
+            Text(
+                text = stringResource(
+                    R.string.habit_detail_since,
+                    habit.createdAt.toString(),
+                    entriesCount
+                ),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 44.dp, bottom = 20.dp)
             )
 
-            if (!state.isNumeric) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 StatCard(
-                    value = state.completionPct(),
-                    label = state.pctLabel(),
+                    value = state.currentStreak.toString(),
+                    label = stringResource(R.string.habit_detail_streak_current),
+                    valueColor = habitColor,
                     modifier = Modifier.weight(1f)
                 )
-            } else {
+                StatCard(
+                    value = state.bestStreak.toString(),
+                    label = stringResource(R.string.habit_detail_streak_best),
+                    modifier = Modifier.weight(1f)
+                )
                 val avgValue = state.monthlyProgress?.dailyAverage ?: 0f
                 StatCard(
                     value = formatFloat(avgValue) + " " + (habit.unit ?: ""),
@@ -137,7 +132,19 @@ fun HabitDetailScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-
+        } else {
+            BooleanHabitSummaryCard(
+                startDate = habit.createdAt,
+                currentStreak = state.currentStreak,
+                bestStreak = state.bestStreak,
+                consistency = state.completionPct(),
+                consistencyLabel = state.pctLabel(),
+                accentColor = habitColor,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp)
+            )
         }
 
         if (state.isNumeric) {
