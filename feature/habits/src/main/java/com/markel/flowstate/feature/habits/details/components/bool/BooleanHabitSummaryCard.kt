@@ -2,6 +2,7 @@ package com.markel.flowstate.feature.habits.details.components.bool
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,6 +30,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.markel.flowstate.feature.habits.R
@@ -134,6 +137,11 @@ fun BooleanHabitSummaryCard(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                             Row(
+                                modifier = Modifier
+                                    .widthIn(max = 70.dp)
+                                    .basicMarquee(
+                                        repeatDelayMillis = 3500
+                                    ),
                                 verticalAlignment = Alignment.Bottom,
                                 horizontalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
@@ -145,7 +153,10 @@ fun BooleanHabitSummaryCard(
                                         fontWeight = FontWeight.Black,
                                         letterSpacing = (-1).sp
                                     ),
-                                    color = accentColor
+                                    color = accentColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Clip
+
                                 )
                                 Text(
                                     text = stringResource(R.string.habit_summary_days_suffix),
@@ -179,6 +190,9 @@ fun BooleanHabitSummaryCard(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                             Row(
+                                modifier = Modifier
+                                    .widthIn(max = 70.dp)
+                                    .basicMarquee(repeatDelayMillis = 3500),
                                 verticalAlignment = Alignment.Bottom,
                                 horizontalArrangement = Arrangement.spacedBy(3.dp)
                             ) {
@@ -190,7 +204,9 @@ fun BooleanHabitSummaryCard(
                                         fontWeight = FontWeight.ExtraBold,
                                         letterSpacing = (-1).sp
                                     ),
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Clip
                                 )
                                 Text(
                                     text = stringResource(R.string.habit_summary_days_suffix),
@@ -221,11 +237,11 @@ fun BooleanHabitSummaryCard(
                         color = accentColor,
                         trackColor = accentColor.copy(alpha = 0.12f),
                         stroke = Stroke(
-                            width = 17f,
+                            width = 15f,
                             cap = StrokeCap.Round
                         ),
                         trackStroke = Stroke(
-                            width = 17f,
+                            width = 15f,
                             cap = StrokeCap.Round
                         ),
                     )

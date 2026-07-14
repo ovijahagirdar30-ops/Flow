@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.markel.flowstate.feature.habits.R
@@ -144,6 +146,9 @@ fun NumericHabitSummaryCard(
                             )
                         )
                         Row(
+                            modifier = Modifier
+                                .widthIn(max = 70.dp)
+                                .basicMarquee(repeatDelayMillis = 3500),
                             verticalAlignment = Alignment.Bottom,
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
@@ -155,7 +160,9 @@ fun NumericHabitSummaryCard(
                                     fontWeight = FontWeight.Black,
                                     letterSpacing = (-1).sp
                                 ),
-                                color = accentColor
+                                color = accentColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Clip
                             )
                             Text(
                                 text = stringResource(R.string.habit_summary_days_suffix),
@@ -187,6 +194,9 @@ fun NumericHabitSummaryCard(
                             )
                         )
                         Row(
+                            modifier = Modifier
+                                .widthIn(max = 70.dp)
+                                .basicMarquee(repeatDelayMillis = 3500),
                             verticalAlignment = Alignment.Bottom,
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
@@ -198,7 +208,9 @@ fun NumericHabitSummaryCard(
                                     fontWeight = FontWeight.ExtraBold,
                                     letterSpacing = (-1).sp
                                 ),
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Clip
                             )
                             Text(
                                 text = stringResource(R.string.habit_summary_days_suffix),
