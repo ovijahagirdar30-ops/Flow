@@ -326,6 +326,9 @@ fun FlowStateTheme(
             val window = (view.context as Activity).window
             window.isNavigationBarContrastEnforced = false  // remove translucent scrim behind button navigation bars
             val insetsController = WindowCompat.getInsetsController(window, view)
+            // Syncs the OS window background with the active colorScheme to prevent flickers
+            // during transitions, keeping the XML background only as a startup fallback.
+            window.decorView.setBackgroundColor(colorScheme.background.toArgb())
             insetsController.isAppearanceLightStatusBars = !darkTheme
             insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
