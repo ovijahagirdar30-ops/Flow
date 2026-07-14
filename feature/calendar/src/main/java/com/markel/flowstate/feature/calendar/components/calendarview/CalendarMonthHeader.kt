@@ -86,7 +86,7 @@ fun CalendarMonthHeader(
                 Text(
                     text = buildAnnotatedString {
                         withStyle(
-                            style = SpanStyle(
+                            style = MaterialTheme.typography.headlineMedium.toSpanStyle().copy(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = (-0.35).sp,
                                 fontStyle = FontStyle.Italic,
@@ -98,14 +98,12 @@ fun CalendarMonthHeader(
                         }
                         append("  ")
                         withStyle(
-                            style = SpanStyle(
+                            style = MaterialTheme.typography.displaySmall.toSpanStyle().copy(
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                        ) {
-                            append(displayMonth.year.toString())
-                        }
+                        ) { append(displayMonth.year.toString()) }
                     },
                     lineHeight = 36.sp
                 )
