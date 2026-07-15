@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +54,9 @@ fun CalendarContent(
     selectedDate: java.time.LocalDate,
     onDateSelected: (java.time.LocalDate) -> Unit,
     onTaskToggle: (Task) -> Unit,
+    // Hoisted from CalendarScreen so that the screen can derive
+    // FAB visibility from the same LazyListState that drives this list.
+    listState: LazyListState,
 ) {
     val currentMonth = remember { YearMonth.now() }
     val startMonth = remember { currentMonth.minusMonths(100) }
@@ -78,8 +82,6 @@ fun CalendarContent(
         firstVisibleWeekDate = selectedDate,
         firstDayOfWeek = firstDayOfWeek
     )
-
-    val listState = rememberLazyListState()  // Tasks list
 
     // Automatically navigate to the month of the selected date
     LaunchedEffect(selectedDate, isExpanded, scrollTrigger) {

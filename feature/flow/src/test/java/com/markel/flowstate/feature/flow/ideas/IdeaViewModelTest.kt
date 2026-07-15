@@ -11,6 +11,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -239,10 +240,9 @@ class IdeaViewModelTest {
 
     /**
      * deleteIdea must call the repository with the correct idea
-     * and reset the editor state.
      */
     @Test
-    fun deleteIdea_callsRepositoryAndResetsState() = runTest {
+    fun deleteIdea_callsRepository() = runTest {
         val idea = Idea(id = 7, title = "To delete", content = "", color = 0L)
         coEvery { repository.getIdeaById(7) } returns idea
         viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
@@ -251,10 +251,93 @@ class IdeaViewModelTest {
         viewModel.deleteIdea(7)
 
         coVerify { repository.deleteIdea(idea) }
+    }
+
+
+    /**
+     * Invokes the protected [androidx.lifecycle.ViewModel.onCleared] via
+     * reflection so tests can simulate Navigation3 destroying the NavEntry.
+     *
+     * We can't call it directly because `onCleared` is `protected`. Reflection
+     * is the standard escape hatch — see nowinandroid and other AOSP samples.
+     */
+    private fun IdeaEditorViewModel.invokeOnCleared() {
+        val method = androidx.lifecycle.ViewModel::class.java.getDeclaredMethod("onCleared")
+        method.isAccessible = true
+        method.invoke(this)
+    }
+
+    /**
+     * When Navigation3 pops the editor screen, the ViewModel is destroyed and
+     * [IdeaEditorViewModel.onCleared] must reset the editor state.
+     *
+     * This replaces the per-action reset that used to live in closeAndSave /
+     * deleteIdea before the Navigation3 migration (commit 574de92 + 67bd376).
+     * Without this contract, re-opening the editor after closing it would
+     * show the previous idea's data.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun onCleared_resetsEditorState() = runTest {
+        val idea = Idea(id = 7, title = "To delete", content = "Persistent", color = 0L)
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
+        viewModel.openExisting(idea)
+
+        // Sanity: state is loaded before onCleared
+        assertEquals(idea, viewModel.editor.value.idea)
+        assertEquals("To delete", viewModel.editor.value.title)
+
+        // WHEN — Nav3 destroys the NavEntry → VM.onCleared()
+        viewModel.invokeOnCleared()
+
+        // THEN — editor state is reset to the default empty state
         viewModel.editor.test {
             val state = awaitItem()
             assertNull(state.idea)
             assertEquals("", state.title)
+            assertEquals("", state.content)
         }
     }
+
+    /**
+     * If the autosave debounce has already fired (e.g. user paused for >800ms
+     * before tapping back), [IdeaEditorViewModel.closeAndSave] must NOT
+     * trigger a second upsert — it should cancel the autosave job and only
+     * persist if there are unsaved changes.
+     *
+     * Guards against: a regression where `autosaveJob?.cancel()` is removed
+     * from closeAndSave, causing a duplicate upsert race that could write
+     * stale data over the autosaved data.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun closeAndSave_afterAutosaveFired_doesNotUpsertTwice() = runTest {
+        coEvery { repository.upsertIdea(any()) } returns 42L
+        viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
+        viewModel.openNew()
+        viewModel.updateTitle("Title")
+
+        // First autosave fires (debounce elapses)
+        advanceTimeBy(900)
+        coVerify(exactly = 1) { repository.upsertIdea(any()) }
+
+        // User taps back immediately after — no new edits
+        viewModel.closeAndSave()
+        advanceUntilIdle()
+
+        // closeAndSave calls persistIfNeeded, which sees state.idea != null
+        // (set after the first autosave) → it does ONE more upsert with id=42
+        // (an update, not a new insertion). The contract we enforce here:
+        //   - Total calls = 2 (one autosave + one closeAndSave)
+        //   - Exactly ONE insert with id == 0 (the first autosave creates the idea)
+        //   - Exactly ONE update with id == 42 (closeAndSave updates it, NOT a new insert)
+        coVerify(exactly = 2) { repository.upsertIdea(any()) }
+        coVerify(exactly = 1) {
+            repository.upsertIdea(match { it.id == 0 })
+        }
+        coVerify(exactly = 1) {
+            repository.upsertIdea(match { it.id == 42 })
+        }
+    }
+
 }

@@ -2,6 +2,7 @@ package com.markel.flowstate.feature.flow.components
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
@@ -9,7 +10,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults
+import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -29,6 +32,32 @@ import com.markel.flowstate.feature.tasks.R
  *  - The bouncy spring is provided by the M3 Expressive
  *    MotionScheme, which is only active when the app is wrapped in
  *    MaterialExpressiveTheme (see Theme.kt).
+ *
+ * Scroll-to-hide:
+ *  - Following the example in the official Android docs for
+ *    [ToggleFloatingActionButton] and [FloatingActionButtonMenu], the
+ *    [androidx.compose.material3.animateFloatingActionButton] modifier is
+ *    applied to the [ToggleFloatingActionButton] ONLY (inside the `button`
+ *    slot), NEVER to the [FloatingActionButtonMenu] itself.
+ *
+ *    Applying it to the whole menu multiplies the parent's scale+alpha with
+ *    the per-item staggered scale and the toggle's morph, producing visual
+ *    glitches. Applied to the toggle only, it is purely additive — the morph
+ *    happens at the layout level (Dp) and the scroll scale happens on top.
+ *
+ *  - [visible] is OR'd with [expanded] before reaching the modifier so that
+ *    the toggle never hides while the menu is open (otherwise the menu items
+ *    would be left floating with no way to close them).
+ *
+ *  - The `modifier` parameter of this composable is forwarded to the
+ *    [FloatingActionButtonMenu] and should only carry positioning
+ *    (e.g. `Modifier.align(Alignment.BottomEnd)`), never visibility animation.
+ *
+ * @param expanded   Whether the menu is open (drives the toggle + item stagger).
+ * @param visible    Whether the toggle should be visible (typically derived
+ *                   from scroll state). Defaults to `true` for callers that
+ *                   don't need scroll-to-hide. See FlowScreen.kt for an example.
+ * @param modifier   Positioning modifier for the menu (NOT visibility animation).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -38,7 +67,8 @@ fun ExpandableFabMenu(
     onTaskClick: () -> Unit,
     onIdeaClick: () -> Unit,
     onCheckListClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    visible: Boolean = true,
 ) {
     val addIcon = ImageVector.vectorResource(R.drawable.add_24px)
     val closeIcon = ImageVector.vectorResource(R.drawable.close_24px)
@@ -50,6 +80,11 @@ fun ExpandableFabMenu(
             ToggleFloatingActionButton(
                 checked = expanded,
                 onCheckedChange = { onToggle() },
+                modifier = Modifier.animateFloatingActionButton(
+                    visible = visible || expanded,
+                    alignment = Alignment.BottomEnd,
+                ),
+                containerSize = ToggleFloatingActionButtonDefaults.containerSizeMedium()
             ) {
                 val progress = checkedProgress
 
@@ -62,7 +97,8 @@ fun ExpandableFabMenu(
                 Icon(
                     imageVector = if (progress < 0.5f) addIcon else closeIcon,
                     contentDescription = if (expanded) "Close menu" else "Open menu",
-                    tint = iconTint
+                    tint = iconTint,
+                    modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize)
                 )
             }
         }

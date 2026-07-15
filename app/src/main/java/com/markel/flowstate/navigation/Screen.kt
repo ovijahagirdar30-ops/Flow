@@ -3,101 +3,47 @@ package com.markel.flowstate.navigation
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.markel.flowstate.R
-import com.markel.flowstate.core.data.MainTab
 
-import kotlinx.serialization.Serializable
-
-@Serializable
-object TasksRoute
-
-@Serializable
-object CalendarRoute
-
-@Serializable
-object HabitsRoute
-
-@Serializable
-object MoodRoute
-
-@Serializable
-object SettingsRoute
-
-@Serializable
-object AboutRoute
-
-@Serializable
-object BottomNavConfigRoute
-
-@Serializable object AppearanceRoute
-
-@Serializable
-object IntegrationsRoute
-@Serializable
-object CategoriesRoute
-@Serializable
-data class TaskEditorRoute(val taskId: Int)
-
-@Serializable
-data class IdeaEditorRoute(val ideaId: Int? = null, val categoryId: Int? = null)
-
-@Serializable
-data class CheckListEditorRoute(val checkListId: Int? = null, val categoryId: Int? = null)
-
-@Serializable
-data class HabitDetailRoute(val habitId: Int)
-
-
-fun MainTab.toRoute(): Any = when (this) {
-    MainTab.TASKS -> TasksRoute
-    MainTab.CALENDAR -> CalendarRoute
-    MainTab.HABITS -> HabitsRoute
-    MainTab.MOOD -> MoodRoute
-    MainTab.SETTINGS -> SettingsRoute
-}
-
-fun MainTab.Companion.fromRoute(route: Any): MainTab? = when {
-    route is TasksRoute || route::class == TasksRoute::class -> MainTab.TASKS
-    route is CalendarRoute || route::class == CalendarRoute::class -> MainTab.CALENDAR
-    route is HabitsRoute || route::class == HabitsRoute::class -> MainTab.HABITS
-    route is MoodRoute || route::class == MoodRoute::class -> MainTab.MOOD
-    route is SettingsRoute || route::class == SettingsRoute::class -> MainTab.SETTINGS
-    else -> null
-}
-
-
+/**
+ * Bottom-nav items metadata (label + icon resources) keyed by [TabKey].
+ *
+ * The actual NavKey definitions live in [NavKeys.kt]. This sealed class is
+ * just a UI-facing descriptor used by [com.markel.flowstate.components.FlowBottomBar]
+ * to render each tab.
+ */
 sealed class BottomNavScreen(
-    val route: Any,
+    val key: TabKey,
     @StringRes val labelRes: Int,
     @DrawableRes val iconRes: Int,
     @DrawableRes val iconSelectedRes: Int
 ) {
     object Tasks : BottomNavScreen(
-        route = TasksRoute,
+        key = TabKey.Tasks,
         labelRes = com.markel.flowstate.feature.tasks.R.string.flow,
         iconRes = R.drawable.task_alt_24px,
         iconSelectedRes = R.drawable.task_alt_24px
     )
     object Calendar : BottomNavScreen(
-        route = CalendarRoute,
+        key = TabKey.Calendar,
         labelRes = com.markel.flowstate.feature.tasks.R.string.calendar,
         iconRes = R.drawable.calendar_month_out_24px,
         iconSelectedRes = R.drawable.calendar_month_24px
     )
     object Habits : BottomNavScreen(
-        route = HabitsRoute,
+        key = TabKey.Habits,
         labelRes = com.markel.flowstate.feature.tasks.R.string.habits,
         iconRes = R.drawable.analytics_out_24px,
         iconSelectedRes = R.drawable.analytics_24px
     )
     object Mood : BottomNavScreen(
-        route = MoodRoute,
+        key = TabKey.Mood,
         labelRes = com.markel.flowstate.feature.tasks.R.string.mood,
         iconRes = R.drawable.self_improvement_24px,
         iconSelectedRes = R.drawable.self_improvement_24px
     )
 
     data object Settings : BottomNavScreen(
-        route = SettingsRoute,
+        key = TabKey.Settings,
         labelRes = com.markel.flowstate.feature.tasks.R.string.settings,
         iconRes = R.drawable.settings_out_24px,
         iconSelectedRes = R.drawable.settings_24px

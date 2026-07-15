@@ -22,24 +22,27 @@ import java.time.LocalDate
 import com.markel.flowstate.core.designsystem.R as DesignR
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.text.style.TextAlign
 import com.markel.flowstate.feature.habits.R
 import com.markel.flowstate.feature.habits.details.components.numeric.NumericEvolutionCard
 import com.markel.flowstate.feature.habits.details.components.bool.HabitMonthCalendar
 import com.markel.flowstate.feature.habits.details.components.bool.RadarChart
 import com.markel.flowstate.feature.habits.details.components.SectionHeader
+import com.markel.flowstate.feature.habits.details.components.bool.BooleanHabitSummaryCard
 import com.markel.flowstate.feature.habits.details.components.bool.StatCard
 import com.markel.flowstate.feature.habits.details.components.bool.WeeklyBarsCard
 import com.markel.flowstate.feature.habits.details.components.numeric.MonthlyGoalCard
+import com.markel.flowstate.feature.habits.details.components.numeric.NumericHabitSummaryCard
 import com.markel.flowstate.feature.habits.details.components.numeric.NumericHeatmapCard
 import com.markel.flowstate.feature.habits.details.components.numeric.ValueDistributionCard
 import com.markel.flowstate.feature.habits.util.formatFloat
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HabitDetailScreen(
     habitId: Int,
     onBack: () -> Unit,
-    viewModel: HabitDetailViewModel = hiltViewModel()
+    viewModel: HabitDetailViewModel,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val habit = state.habit ?: return
@@ -49,98 +52,76 @@ fun HabitDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
             .verticalScroll(rememberScrollState())
     ) {
-        // ── Top bar ───────────────────────────────────────────────
-        Row(
+        // ── Top bar + Hero ───────────────────────────────────────────────
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            contentAlignment = Alignment.Center
         ) {
-            IconButton(
+            FilledTonalIconButton(
                 onClick = onBack,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                modifier = Modifier.align(Alignment.CenterStart),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = habitColor.copy(alpha = 0.20f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
             ) {
                 Icon(
                     imageVector = ImageVector.vectorResource(DesignR.drawable.arrow_back_24px),
                     contentDescription = "Back",
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
-        }
 
-        // ── Hero ──────────────────────────────────────────────────
-        Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(14.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(habitColor)
-            )
             Text(
                 text = habit.name,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.headlineMediumEmphasized,
+                maxLines = 1,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 56.dp)
+                    .basicMarquee(repeatDelayMillis = 3500)
             )
         }
 
-        val entriesCount = if (state.isNumeric) state.numericEntries.size else state.allEntries.size
-        Text(
-            text = stringResource(
-                R.string.habit_detail_since,
-                habit.createdAt.toString(),
-                entriesCount
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 44.dp, bottom = 20.dp)
-        )
-
-        // ── Metrics ──────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            StatCard(
-                value = state.currentStreak.toString(),
-                label = stringResource(R.string.habit_detail_streak_current),
-                valueColor = habitColor,
-                modifier = Modifier.weight(1f)
+        // ── Header summary ──────────────────────────────────────────────
+        SectionHeader(title = stringResource(R.string.habit_detail_section_summary))
+        if (state.isNumeric) {
+            val avgValue = state.monthlyProgress?.dailyAverage ?: 0f
+            NumericHabitSummaryCard(
+                startDate = habit.createdAt,
+                currentStreak = state.currentStreak,
+                bestStreak = state.bestStreak,
+                averageValue = avgValue,
+                unit = habit.unit ?: "",
+                accentColor = habitColor,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 20.dp)
             )
-            StatCard(
-                value = state.bestStreak.toString(),
-                label = stringResource(R.string.habit_detail_streak_best),
-                modifier = Modifier.weight(1f)
+        } else {
+            BooleanHabitSummaryCard(
+                startDate = habit.createdAt,
+                currentStreak = state.currentStreak,
+                bestStreak = state.bestStreak,
+                consistency = state.completionPct(),
+                consistencyLabel = state.pctLabel(),
+                accentColor = habitColor,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp)
             )
-
-            if (!state.isNumeric) {
-                StatCard(
-                    value = state.completionPct(),
-                    label = state.pctLabel(),
-                    modifier = Modifier.weight(1f)
-                )
-            } else {
-                val avgValue = state.monthlyProgress?.dailyAverage ?: 0f
-                StatCard(
-                    value = formatFloat(avgValue) + " " + (habit.unit ?: ""),
-                    label = stringResource(R.string.habit_detail_average),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
         }
 
         if (state.isNumeric) {

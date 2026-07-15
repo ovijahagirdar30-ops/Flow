@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.markel.flowstate"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.markel.flowstate"
@@ -77,8 +77,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
-    // Navigation
-    implementation(libs.androidx.navigation.compose)
+    // Navigation 3
+    implementation(libs.navigation3.runtime)
+    implementation(libs.navigation3.ui)
+    implementation(libs.lifecycle.viewmodel.navigation3)
 
     // HILT (Inyección de Dependencias)
     implementation(libs.hilt.android)
@@ -87,6 +89,9 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    testImplementation(project(":core:testing"))
+    testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

@@ -1,6 +1,7 @@
 package com.markel.flowstate.feature.habits
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,6 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.animateFloatingActionButton
+import com.markel.flowstate.core.designsystem.ui.rememberFabVisibilityState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +34,7 @@ import com.markel.flowstate.core.designsystem.R as DesignR
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HabitScreen(
     viewModel: HabitViewModel = hiltViewModel(),
@@ -42,6 +45,7 @@ fun HabitScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
     ) {
         when (val state = uiState) {
@@ -55,6 +59,15 @@ fun HabitScreen(
                     rest = rests[state.motivationalMessageIndex]
                 )
 
+                // ── Scroll-aware FAB visibility ────────────────────────
+                // When there are no habits, there is no list to
+                // scroll, so we force the FAB to stay visible.
+                val listState = rememberLazyListState()
+                val fabVisible by rememberFabVisibilityState(
+                    lazyListState = listState,
+                    forceVisible = state.habits.isEmpty()
+                )
+
                 Column(modifier = Modifier.fillMaxSize()) {
                     HabitHeader(
                         completedToday = state.completedToday,
@@ -66,7 +79,6 @@ fun HabitScreen(
                             HabitEmptyState()
                         }
                     } else {
-                        val listState = rememberLazyListState()
                         val reorderableState = rememberReorderableLazyListState(listState) { from, to ->
                             viewModel.onReorder(from.index, to.index)
                         }
@@ -203,15 +215,20 @@ fun HabitScreen(
                     )
                 }
 
-                FloatingActionButton(
+                MediumFloatingActionButton(
                     onClick = { viewModel.showAddDialog() },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 16.dp, bottom = 16.dp)
+                        .animateFloatingActionButton(
+                            visible = fabVisible,
+                            alignment = Alignment.BottomEnd,
+                        )
                 ) {
                     Icon(
                         imageVector = ImageVector.vectorResource(DesignR.drawable.add_24px),
-                        contentDescription = "Add habit"
+                        contentDescription = "Add habit",
+                        modifier = Modifier.size(FloatingActionButtonDefaults.MediumIconSize),
                     )
                 }
             }

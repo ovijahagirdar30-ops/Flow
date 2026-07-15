@@ -36,6 +36,7 @@
     <string name="habit_detail_since">Desde el %1$s · %2$d días completados</string>
     <string name="habit_detail_streak_current">Racha actual</string>
     <string name="habit_detail_streak_best">Mejor racha</string>
+    <string name="habit_detail_section_summary">Resumen</string>
     <string name="habit_detail_section_history">Historial</string>
     <string name="habit_detail_section_weekly">Semana (%1$s)</string>
     <string name="habit_detail_section_weekly_empty">Semana</string>
@@ -49,6 +50,12 @@
     <string name="habit_detail_evolution">Evolución · últimos 10 días</string>
     <string name="habit_detail_today">Hoy</string>
     <string name="habit_detail_vs">vs. ayer</string>
+    <string name="habit_summary_started_on">EMPEZADO EL %1$s</string>
+    <string name="habit_summary_streak_header">RACHA</string>
+    <string name="habit_summary_current_label">Actual</string>
+    <string name="habit_summary_best_label">Mejor</string>
+    <string name="habit_summary_days_suffix">días</string>
+    <string name="habit_summary_consistency_label">Constancia</string>
     <string name="habit_heatmap">Mapa de calor</string>
     <string name="habit_heatmap_weeks">Actividad · %d semanas</string>
     <string name="habit_heatmap_less">Menos</string>

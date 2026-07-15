@@ -134,6 +134,7 @@ fun HabitHeader(
                     text = "$completedToday/${totalHabits}",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     lineHeight = 11.sp
                 )

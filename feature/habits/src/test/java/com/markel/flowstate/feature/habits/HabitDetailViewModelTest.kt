@@ -1,6 +1,5 @@
 package com.markel.flowstate.feature.habits
 
-import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.domain.Habit
@@ -69,11 +68,8 @@ class HabitDetailViewModelTest {
         value = value
     )
 
-    private fun savedStateHandle(habitId: Int = 1) =
-        SavedStateHandle(mapOf("habitId" to habitId))
-
     private fun buildViewModel(habitId: Int = 1) = HabitDetailViewModel(
-        savedStateHandle = savedStateHandle(habitId),
+        habitId = habitId,
         getHabitById = getHabitById,
         habitRepository = habitRepository,
         getNumericDetails = getNumericDetails,

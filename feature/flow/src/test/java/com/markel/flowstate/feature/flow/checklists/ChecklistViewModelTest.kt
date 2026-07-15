@@ -11,7 +11,10 @@ import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -390,20 +393,15 @@ class ChecklistViewModelTest {
     }
 
     @Test
-    fun closeAndSave_resetsEditorStateAfterSave() = runTest {
-        // GIVEN
+    fun closeAndSave_persistsCurrentState() = runTest {
         viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.updateTitle("Temp")
 
         // WHEN
         viewModel.closeAndSave()
 
-        // THEN — editor should be empty after saving
-        viewModel.editor.test {
-            val state = awaitItem()
-            assertNull(state.checkList)
-            assertEquals("", state.title)
-            assertTrue(state.items.isEmpty())
+        coVerify {
+            repository.upsertList(match { it.title == "Temp" })
         }
     }
 
@@ -435,4 +433,92 @@ class ChecklistViewModelTest {
         // THEN
         coVerify(exactly = 0) { repository.deleteList(any()) }
     }
+
+    /**
+     * Invokes the protected [androidx.lifecycle.ViewModel.onCleared] via
+     * reflection so tests can simulate Navigation3 destroying the NavEntry.
+     *
+     * We can't call it directly because `onCleared` is `protected`. Reflection
+     * is the standard escape hatch — see nowinandroid and other AOSP samples.
+     */
+    private fun CheckListViewModel.invokeOnCleared() {
+        val method = androidx.lifecycle.ViewModel::class.java.getDeclaredMethod("onCleared")
+        method.isAccessible = true
+        method.invoke(this)
+    }
+
+    /**
+     * When Navigation3 pops the editor screen, the ViewModel is destroyed and
+     * [CheckListViewModel.onCleared] must reset the editor state.
+     *
+     * This replaces the per-action reset that used to live in closeAndSave /
+     * deleteCheckList before the Navigation3 migration (commit 574de92 +
+     * 67bd376). Without this contract, re-opening the editor after closing it
+     * would show the previous checklist's data.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun onCleared_resetsEditorState() = runTest {
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
+        viewModel.updateTitle("Persistent")
+        val itemId = viewModel.addItem()
+        viewModel.updateItemText(itemId, "Persistent item")
+
+        // Sanity: state has data before onCleared
+        assertEquals("Persistent", viewModel.editor.value.title)
+        assertTrue(viewModel.editor.value.items.isNotEmpty())
+
+        // WHEN — Nav3 destroys the NavEntry → VM.onCleared()
+        viewModel.invokeOnCleared()
+
+        // THEN — editor state is reset to the default empty state
+        viewModel.editor.test {
+            val state = awaitItem()
+            assertNull(state.checkList)
+            assertEquals("", state.title)
+            assertTrue(state.items.isEmpty())
+        }
+    }
+
+    /**
+     * If the autosave debounce has already fired (user paused for >800ms
+     * before tapping back), [CheckListViewModel.closeAndSave] must NOT
+     * trigger a duplicate insertion — it cancels the autosave job and only
+     * persists an update via [persistIfNeeded].
+     *
+     * Guards against: a regression where `autosaveJob?.cancel()` is removed
+     * from closeAndSave, causing a duplicate upsert that creates a second
+     * checklist with id == 0.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun closeAndSave_afterAutosaveFired_doesNotInsertTwice() = runTest {
+        coEvery { repository.upsertList(any()) } returns 42
+        viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
+        viewModel.updateTitle("Title")
+
+        // First autosave fires (debounce elapses)
+        advanceTimeBy(900)
+        coVerify(exactly = 1) { repository.upsertList(any()) }
+
+        // User taps back immediately after — no new edits
+        viewModel.closeAndSave()
+        advanceUntilIdle()
+
+        // closeAndSave calls persistIfNeeded, which sees state.checkList != null
+        // (set after the first autosave) → it does ONE more upsert with id=42
+        // (an update, not a new insertion). The contract we enforce here:
+        //   - Total calls = 2 (one autosave + one closeAndSave)
+        //   - Exactly ONE insert with id == 0 (the first autosave creates the list)
+        //   - Exactly ONE update with id == 42 (closeAndSave updates it, NOT a new insert)
+        coVerify(exactly = 2) { repository.upsertList(any()) }
+        coVerify(exactly = 1) {
+            repository.upsertList(match { it.id == 0 })
+        }
+        coVerify(exactly = 1) {
+            repository.upsertList(match { it.id == 42 })
+        }
+    }
+
+
 }

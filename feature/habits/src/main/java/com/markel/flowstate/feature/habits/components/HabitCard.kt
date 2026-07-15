@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -104,7 +105,10 @@ fun HabitCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
+        colors = CardDefaults.cardColors(
+            containerColor = cardBg,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
 
@@ -131,8 +135,9 @@ fun HabitCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .basicMarquee(repeatDelayMillis = 3500)
                 )
                 Box {
                     IconButton(onClick = { menuExpanded = true }) {

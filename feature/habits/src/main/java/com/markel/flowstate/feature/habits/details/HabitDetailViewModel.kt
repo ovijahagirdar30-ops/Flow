@@ -1,6 +1,5 @@
 package com.markel.flowstate.feature.habits.details
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.data.UserPreferencesRepository
@@ -11,6 +10,9 @@ import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.core.domain.usecase.habits.GetHabitByIdUseCase
 import com.markel.flowstate.core.domain.usecase.habits.GetNumericEntriesUseCase
 import com.markel.flowstate.core.domain.usecase.habits.ToggleHabitEntryUseCase
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,16 +29,19 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.ceil
 
-@HiltViewModel
-class HabitDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+@HiltViewModel(assistedFactory = HabitDetailViewModel.Factory::class)
+class HabitDetailViewModel @AssistedInject constructor(
+    @Assisted private val habitId: Int,
     private val getHabitById: GetHabitByIdUseCase,
     private val habitRepository: HabitRepository,
     private val getNumericDetails: GetNumericEntriesUseCase,
     private val userPreferences: UserPreferencesRepository
 ) : ViewModel() {
 
-    private val habitId: Int = checkNotNull(savedStateHandle.get<Int>("habitId"))
+    @AssistedFactory
+    interface Factory {
+        fun create(habitId: Int): HabitDetailViewModel
+    }
     private val _uiState = MutableStateFlow(HabitDetailUiState())
     val uiState: StateFlow<HabitDetailUiState> = _uiState.asStateFlow()
 

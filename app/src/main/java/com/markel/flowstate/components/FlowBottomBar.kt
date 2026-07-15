@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.background
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -24,18 +25,38 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import com.markel.flowstate.navigation.BottomNavScreen
+import com.markel.flowstate.navigation.TabKey
+
+/**
+ * Bottom navigation bar.
+ *
+ * In the nav3 architecture this composable lives INSIDE the Scene Decorator
+ * (see [com.markel.flowstate.navigation.FlowStateSceneDecoratorStrategy]). The
+ * decorator wraps non-fullscreen scenes with this bar; fullscreen scenes pass
+ * through unwrapped and cover the bar visually.
+ *
+ * The bar receives the current [topLevelRoute] directly from
+ * [com.markel.flowstate.navigation.NavigationState] and routes every tap
+ * through [onNavigate], which calls [com.markel.flowstate.navigation.FlowStateNavigator.navigate].
+ * The navigator decides whether to switch tabs or push a detail based on the
+ * key type.
+ */
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean, items: List<BottomNavScreen> = emptyList()) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val destination = navBackStackEntry?.destination
-
-    Column(modifier = Modifier.fillMaxWidth()) {
+fun FlowBottomBar(
+    topLevelRoute: NavKey,
+    onNavigate: (NavKey) -> Unit,
+    isLandscape: Boolean,
+    items: List<BottomNavScreen> = emptyList(),
+) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .background(MaterialTheme.colorScheme.surface)
+    ) {
         HorizontalDivider(
             thickness = 0.3.dp,
             color = MaterialTheme.colorScheme.outlineVariant
@@ -51,21 +72,12 @@ fun FlowBottomBar(navController: NavHostController, isLandscape: Boolean, items:
             windowInsets = ShortNavigationBarDefaults.windowInsets,
         ) {
             items.forEach { screen ->
-                val selected = destination?.hasRoute(screen.route::class) == true
+                val selected = topLevelRoute == screen.key
                 val label = stringResource(screen.labelRes)
                 ShortNavigationBarItem(
                     selected = selected,
                     onClick = {
-                        if (!selected) {
-                            navController.navigate(screen.route) {
-                                // Avoid accumulating screens in the back stack
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
+                        if (!selected) onNavigate(screen.key)
                     },
                     icon = {
                         val iconDrawable = if (selected) screen.iconSelectedRes else screen.iconRes

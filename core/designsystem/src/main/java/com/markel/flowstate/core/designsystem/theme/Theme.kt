@@ -5,6 +5,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -325,6 +326,9 @@ fun FlowStateTheme(
             val window = (view.context as Activity).window
             window.isNavigationBarContrastEnforced = false  // remove translucent scrim behind button navigation bars
             val insetsController = WindowCompat.getInsetsController(window, view)
+            // Syncs the OS window background with the active colorScheme to prevent flickers
+            // during transitions, keeping the XML background only as a startup fallback.
+            window.decorView.setBackgroundColor(colorScheme.background.toArgb())
             insetsController.isAppearanceLightStatusBars = !darkTheme
             insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
@@ -335,7 +339,8 @@ fun FlowStateTheme(
     ) {
         MaterialExpressiveTheme(
             colorScheme = colorScheme,
-            typography = Typography,
+            typography = FlowStateTypography(),
+            motionScheme = MotionScheme.expressive(),
             content = content
         )
     }

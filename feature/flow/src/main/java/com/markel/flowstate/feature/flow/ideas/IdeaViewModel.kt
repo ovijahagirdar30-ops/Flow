@@ -10,6 +10,7 @@ import com.markel.flowstate.core.domain.IdeaRepository
 import com.markel.flowstate.feature.flow.components.COLOR_TRANSPARENT
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +40,13 @@ class IdeaEditorViewModel @Inject constructor(
     private val _editor = MutableStateFlow(IdeaEditorState())
     val editor: StateFlow<IdeaEditorState> = _editor.asStateFlow()
 
+    /**
+     * Handle to the debounced autosave collector so it can be canceled in
+     * [closeAndSave]. Without this, the collector would fire again after the
+     * user taps back.
+     */
+    private var autosaveJob: Job? = null
+
     /** User categories, exposed so the editor can populate the category selector. */
     val categories: StateFlow<List<Category>> = categoryRepository.getCategories()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -53,7 +61,7 @@ class IdeaEditorViewModel @Inject constructor(
     init {
         // Autosave: debounce of 800ms
         // drop(1) to drop the initial state when opening the editor
-        viewModelScope.launch {
+        autosaveJob = viewModelScope.launch {
             _editor
                 .drop(1)
                 .debounce(800)
@@ -90,11 +98,25 @@ class IdeaEditorViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Persists the current editor state and cancels the debounced autosave so it
+     * doesn't fire a duplicate upsert.
+     */
     fun closeAndSave() {
+        autosaveJob?.cancel()
         viewModelScope.launch {
             persistIfNeeded(_editor.value)
-            _editor.value = IdeaEditorState()  // reset
         }
+    }
+
+    /**
+     * Called by the framework when the ViewModel is no longer used (after the
+     * NavEntry — and therefore the exit animation — is destroyed). This is the
+     * safe moment to reset the editor state without causing a visual flicker.
+     */
+    override fun onCleared() {
+        super.onCleared()
+        _editor.value = IdeaEditorState()
     }
 
     /** Discards changes without saving (e.g. user explicitly cancels (not implemented yet)). */
@@ -123,7 +145,6 @@ class IdeaEditorViewModel @Inject constructor(
         viewModelScope.launch {
             val idea = ideaRepository.getIdeaById(ideaId) ?: return@launch
             ideaRepository.deleteIdea(idea)
-            _editor.value = IdeaEditorState()
         }
     }
 

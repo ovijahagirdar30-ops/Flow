@@ -78,7 +78,7 @@ fun DynamicHeader(isMinimized: Boolean)
                     exit = fadeOut() + shrinkVertically()
                 ) {
                     Text(
-                        text = stringResource(greeting),
+                        text = stringResource(greeting) + " " ,  // Added a blank space so the last word isn't cut
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = (-0.5).sp,
