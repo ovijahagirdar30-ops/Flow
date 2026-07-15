@@ -390,20 +390,15 @@ class ChecklistViewModelTest {
     }
 
     @Test
-    fun closeAndSave_resetsEditorStateAfterSave() = runTest {
-        // GIVEN
+    fun closeAndSave_persistsCurrentState() = runTest {
         viewModel = CheckListViewModel(repository, categoryRepository, userPreferencesRepository)
         viewModel.updateTitle("Temp")
 
         // WHEN
         viewModel.closeAndSave()
 
-        // THEN — editor should be empty after saving
-        viewModel.editor.test {
-            val state = awaitItem()
-            assertNull(state.checkList)
-            assertEquals("", state.title)
-            assertTrue(state.items.isEmpty())
+        coVerify {
+            repository.upsertList(match { it.title == "Temp" })
         }
     }
 

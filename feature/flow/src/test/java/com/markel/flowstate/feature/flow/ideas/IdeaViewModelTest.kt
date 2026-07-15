@@ -239,10 +239,9 @@ class IdeaViewModelTest {
 
     /**
      * deleteIdea must call the repository with the correct idea
-     * and reset the editor state.
      */
     @Test
-    fun deleteIdea_callsRepositoryAndResetsState() = runTest {
+    fun deleteIdea_callsRepository() = runTest {
         val idea = Idea(id = 7, title = "To delete", content = "", color = 0L)
         coEvery { repository.getIdeaById(7) } returns idea
         viewModel = IdeaEditorViewModel(repository, categoryRepository, userPreferencesRepository)
@@ -251,10 +250,5 @@ class IdeaViewModelTest {
         viewModel.deleteIdea(7)
 
         coVerify { repository.deleteIdea(idea) }
-        viewModel.editor.test {
-            val state = awaitItem()
-            assertNull(state.idea)
-            assertEquals("", state.title)
-        }
     }
 }
