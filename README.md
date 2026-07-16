@@ -7,20 +7,12 @@
 [![Room](https://img.shields.io/badge/Room-2.8.4-green)](https://developer.android.com/training/data-storage/room)
 [![Hilt](https://img.shields.io/badge/Hilt-2.57.2-red)](https://dagger.dev/hilt/)
 
-> **⚠️ Early Development Stage**  
-> This project is actively being developed and may have bugs. We welcome contributions from the community!
 
 ## Screenshots
 
-<div align="center">
-  <img src="screenshots/home_light.png" width="31%" />
-  <img src="screenshots/checklist_light.png" width="31%" />
-  <img src="screenshots/calendar_light.png" width="31%" />
-  <br>
-  <img src="screenshots/habits_prev.png" width="31%" />
-  <img src="screenshots/habits_details.png" width="31%" />
-  <img src="screenshots/habits_numeric_details.png" width="31%" />
-</div>
+<p align="center" width="100%">
+  <img src="screenshots/Frame1.png" width="32%" /><img src="screenshots/Frame2.png" width="32%" /><img src="screenshots/Frame3.png" width="32%" /><img src="screenshots/Frame4.png" width="32%" /><img src="screenshots/Frame5.png" width="32%" /><img src="screenshots/Frame6.png" width="32%" />
+</p>
 
 ## Features
 
@@ -41,7 +33,7 @@
 ### In Development
 - **Widgets**: More widgets
 - **Mood Tracking**: Log daily emotions and view trends
-- **Improve UI**: in the tasks and habits module
+- **Improve UI**: in the flow module
 - **Themes**: More customization options
 - Any new **suggestion**
 
@@ -138,12 +130,12 @@ Data Layer (Infrastructure)
 
 ## Tech Stack
 
-| Component      | Technology                  |
-|----------------|-----------------------------|
-| **UI Framework** | Jetpack Compose            |
+| Component      | Technology                |
+|----------------|---------------------------|
+| **UI Framework** | Jetpack Compose           |
 | **Architecture** | Clean Architecture + MVVM |
 | **Database**     | Room                      |
 | **DI**           | Hilt                      |
 | **Async**        | Kotlin Coroutines         |
-| **Navigation**   | Navigation Compose        |
+| **Navigation**   | Navigation 3              |
 | **Animations**   | Compose Animation APIs    |
