@@ -267,6 +267,9 @@ fun BooleanHabitSummaryCard(
                             width = 12f,
                             cap = StrokeCap.Round
                         ),
+                        amplitude = { progress ->
+                            if (progress <= 0f || progress >= 1f) 0f else 1f
+                        }
                     )
 
                     Column(
