@@ -240,7 +240,7 @@ fun NumericHabitSummaryCard(
                 modifier = Modifier
                     .fillMaxHeight()
                     .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 16.dp, start = 20.dp, end = 20.dp),
+                    .padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 16.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -251,8 +251,8 @@ fun NumericHabitSummaryCard(
                     Text(
                         text = formattedAverage,
                         style = MaterialTheme.typography.displayMedium.copy(
-                            fontSize = 44.sp,
-                            lineHeight = 42.sp,
+                            fontSize = 40.sp,
+                            lineHeight = 40.sp,
                             fontWeight = FontWeight.Black,
                             letterSpacing = (-3.5).sp,
                         ),
