@@ -39,16 +39,19 @@ interface HabitDao {
 
     // toggle en una sola transacción
     @Transaction
-    suspend fun toggleEntry(habitId: Int, epochDay: Long) {
+    suspend fun toggleEntry(habitId: Int, epochDay: Long, mood: Int? = null) {
         val existing = getEntry(habitId, epochDay)
         if (existing != null) {
             deleteEntry(habitId, epochDay)
         } else {
-            insertEntry(HabitEntryEntity(habitId = habitId, completedAt = epochDay))
+            insertEntry(HabitEntryEntity(habitId = habitId, completedAt = epochDay, mood = mood))
         }
     }
 
-    @Query("SELECT habitId, completedAt as epochDay FROM habit_entries")
+    @Query("UPDATE habit_entries SET mood = :mood WHERE habitId = :habitId AND completedAt = :epochDay")
+    suspend fun setMood(habitId: Int, epochDay: Long, mood: Int?)
+
+    @Query("SELECT habitId, completedAt as epochDay, mood FROM habit_entries")
     fun getAllEntries(): Flow<List<HabitEntryFlatEntity>>  // only the entries of boolean habits
 
     @Query("UPDATE habits SET position = :position WHERE id = :id")

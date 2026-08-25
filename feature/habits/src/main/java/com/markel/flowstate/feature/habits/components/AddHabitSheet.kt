@@ -36,6 +36,8 @@ import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.toShape
@@ -88,7 +90,9 @@ fun AddHabitSheet(
         habitType: HabitType,
         unit: String?,
         targetValue: Float?,
-        step: Float
+        step: Float,
+        priorityRank: Int,
+        rolloverIfMissed: Boolean
     ) -> Unit,
     initialName: String = "",
     initialIcon: String = "none",
@@ -96,7 +100,9 @@ fun AddHabitSheet(
     initialHabitType: HabitType = HabitType.BOOLEAN,
     initialUnit: String? = null,
     initialTargetValue: Float? = null,
-    initialStep: Float = 1f
+    initialStep: Float = 1f,
+    initialPriorityRank: Int = 5,
+    initialRolloverIfMissed: Boolean = false
 ) {
     val isEditMode = initialName.isNotEmpty() || initialColor != null
     var name by remember { mutableStateOf(initialName) }
@@ -108,6 +114,8 @@ fun AddHabitSheet(
     var unit by remember { mutableStateOf(initialUnit ?: "") }
     var targetValueText by remember { mutableStateOf(initialTargetValue?.let { formatFloat(it) } ?: "") }
     var stepText by remember { mutableStateOf(formatFloat(initialStep)) }
+    var priorityRank by remember { mutableStateOf(initialPriorityRank) }
+    var rolloverIfMissed by remember { mutableStateOf(initialRolloverIfMissed) }
 
     val parsedTarget = targetValueText.toFloatOrNull()
     val parsedStep = stepText.toFloatOrNull()
@@ -277,6 +285,47 @@ fun AddHabitSheet(
                 }
             }
 
+            // ── Priority & rollover (used by the evening check-in's scheduler) ──
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "Priority ($priorityRank/10)",
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Text(
+                    text = "Higher-priority habits are the last to get cut when today's plan doesn't have room for everything.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Slider(
+                    value = priorityRank.toFloat(),
+                    onValueChange = { priorityRank = it.toInt() },
+                    valueRange = 1f..10f,
+                    steps = 8 // 8 steps between the two endpoints = 10 total whole-number stops (1..10)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Carry over if missed",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Text(
+                        text = "If you miss a day, move it into tomorrow's plan instead of skipping it.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = rolloverIfMissed,
+                    onCheckedChange = { rolloverIfMissed = it }
+                )
+            }
+
             // ── Actions (M3 Expressive press morph) ─
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -300,7 +349,9 @@ fun AddHabitSheet(
                             habitType,
                             if (habitType == HabitType.NUMERIC && unit.isNotBlank()) unit else null,
                             if (habitType == HabitType.NUMERIC) target else null,
-                            if (habitType == HabitType.NUMERIC && stepText.isNotBlank()) step else 1f
+                            if (habitType == HabitType.NUMERIC && stepText.isNotBlank()) step else 1f,
+                            priorityRank,
+                            rolloverIfMissed
                         )
                         onDismiss()
                     },
@@ -326,21 +377,33 @@ fun AddHabitSheet(
 @Composable
 fun AddHabitSheet(
     onDismiss: () -> Unit,
-    onConfirm: (name: String, icon: String, colorArgb: Int) -> Unit,
+    onConfirm: (
+        name: String,
+        icon: String,
+        colorArgb: Int,
+        priorityRank: Int,
+        rolloverIfMissed: Boolean
+    ) -> Unit,
     initialName: String = "",
     initialIcon: String = "none",
-    initialColor: Color? = null
+    initialColor: Color? = null,
+    initialPriorityRank: Int = 5,
+    initialRolloverIfMissed: Boolean = false
 ) {
     AddHabitSheet(
         onDismiss = onDismiss,
-        onConfirm = { name, icon, colorArgb, _, _, _, _ -> onConfirm(name, icon, colorArgb) },
+        onConfirm = { name, icon, colorArgb, _, _, _, _, priorityRank, rolloverIfMissed ->
+            onConfirm(name, icon, colorArgb, priorityRank, rolloverIfMissed)
+        },
         initialName = initialName,
         initialIcon = initialIcon,
         initialColor = initialColor,
         initialHabitType = HabitType.BOOLEAN,
         initialUnit = null,
         initialTargetValue = null,
-        initialStep = 1f
+        initialStep = 1f,
+        initialPriorityRank = initialPriorityRank,
+        initialRolloverIfMissed = initialRolloverIfMissed
     )
 }
 

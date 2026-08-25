@@ -5,6 +5,6 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 class ToggleHabitEntryUseCase @Inject constructor(private val repository: HabitRepository) {
-    suspend operator fun invoke(habitId: Int, date: LocalDate = LocalDate.now()) =
-        repository.toggleEntry(habitId, date)
+    suspend operator fun invoke(habitId: Int, date: LocalDate = LocalDate.now(), mood: Int? = null) =
+        repository.toggleEntry(habitId, date, mood)
 }

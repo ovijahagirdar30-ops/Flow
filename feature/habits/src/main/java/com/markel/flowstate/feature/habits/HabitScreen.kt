@@ -27,6 +27,7 @@ import com.markel.flowstate.feature.habits.components.AddHabitSheet
 import com.markel.flowstate.feature.habits.components.HabitCard
 import com.markel.flowstate.feature.habits.components.HabitEmptyState
 import com.markel.flowstate.feature.habits.components.HabitFabMenu
+import com.markel.flowstate.feature.habits.components.HabitMoodPromptSheet
 import com.markel.flowstate.feature.habits.components.NumericHabitCard
 import com.markel.flowstate.feature.habits.details.components.HabitHeader
 import com.markel.flowstate.feature.habits.details.components.MotivationalMessage
@@ -132,12 +133,14 @@ fun HabitScreen(
                                                             habitWithStatus.habit
                                                         )
                                                     },
-                                                    onEdit = { name, icon, colorArgb ->
+                                                    onEdit = { name, icon, colorArgb, priorityRank, rolloverIfMissed ->
                                                         viewModel.editHabit(
-                                                            habitWithStatus.habit,
-                                                            name,
-                                                            icon,
-                                                            colorArgb
+                                                            habit = habitWithStatus.habit,
+                                                            newName = name,
+                                                            newIcon = icon,
+                                                            newColorArgb = colorArgb,
+                                                            newPriorityRank = priorityRank,
+                                                            newRolloverIfMissed = rolloverIfMissed
                                                         )
                                                     },
                                                     onNavigateToDetail = {
@@ -188,15 +191,17 @@ fun HabitScreen(
                                                             habitWithStatus.habit
                                                         )
                                                     },
-                                                    onEdit = { name, icon, colorArgb, unit, targetValue, step ->
+                                                    onEdit = { name, icon, colorArgb, unit, targetValue, step, priorityRank, rolloverIfMissed ->
                                                         viewModel.editHabit(
-                                                            habitWithStatus.habit,
-                                                            name,
-                                                            icon,
-                                                            colorArgb,
-                                                            unit,
-                                                            targetValue,
-                                                            step
+                                                            habit = habitWithStatus.habit,
+                                                            newName = name,
+                                                            newIcon = icon,
+                                                            newColorArgb = colorArgb,
+                                                            newUnit = unit,
+                                                            newTargetValue = targetValue,
+                                                            newStep = step,
+                                                            newPriorityRank = priorityRank,
+                                                            newRolloverIfMissed = rolloverIfMissed
                                                         )
                                                     },
                                                     onNavigateToDetail = {
@@ -218,9 +223,17 @@ fun HabitScreen(
                     AddHabitSheet(
                         initialHabitType = addSheetType,
                         onDismiss = { viewModel.hideAddDialog() },
-                        onConfirm = { name, icon, color, habitType, unit, targetValue, step ->
-                            viewModel.addHabit(name, icon, color, habitType, unit, targetValue, step)
+                        onConfirm = { name, icon, color, habitType, unit, targetValue, step, priorityRank, rolloverIfMissed ->
+                            viewModel.addHabit(name, icon, color, habitType, unit, targetValue, step, priorityRank, rolloverIfMissed)
                         }
+                    )
+                }
+
+                state.pendingMoodPrompt?.let { prompt ->
+                    HabitMoodPromptSheet(
+                        habitName = prompt.habitName,
+                        onMoodSelected = { mood -> viewModel.submitMood(mood) },
+                        onSkip = { viewModel.dismissMoodPrompt() }
                     )
                 }
 

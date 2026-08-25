@@ -18,7 +18,9 @@ data class HabitEntity(
     val unit: String? = null,
     val targetValue: Float? = null,
     val step: Float = 1f,
-    val position: Int = 0
+    val position: Int = 0,
+    val priorityRank: Int = 5,
+    val rolloverIfMissed: Boolean = false
 )
 
 @Entity(
@@ -39,10 +41,11 @@ data class HabitEntryEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val habitId: Int,
-    val completedAt: Long
+    val completedAt: Long,
+    val mood: Int? = null // 1-5, optional — how the activity felt, asked right after marking complete
 )
 
-data class HabitEntryFlatEntity(val habitId: Int, val epochDay: Long)
+data class HabitEntryFlatEntity(val habitId: Int, val epochDay: Long, val mood: Int? = null)
 
 @Entity(
     tableName = "habit_numeric_entries",

@@ -43,12 +43,15 @@ class HabitRepositoryImpl @Inject constructor(
     override suspend fun deleteHabit(habit: Habit) =
         dao.deleteHabit(habit.toEntity())
 
-    override suspend fun toggleEntry(habitId: Int, date: LocalDate) =
-        dao.toggleEntry(habitId, date.toEpochDay())
+    override suspend fun toggleEntry(habitId: Int, date: LocalDate, mood: Int?) =
+        dao.toggleEntry(habitId, date.toEpochDay(), mood)
+
+    override suspend fun setEntryMood(habitId: Int, date: LocalDate, mood: Int) =
+        dao.setMood(habitId, date.toEpochDay(), mood)
 
     override fun getAllEntries(): Flow<List<HabitEntryFlat>> =  // boolean habits only
         dao.getAllEntries().map { list ->
-            list.map { HabitEntryFlat(it.habitId, it.epochDay) }
+            list.map { HabitEntryFlat(it.habitId, it.epochDay, it.mood) }
         }
 
     override fun getAllNumericEntries(): Flow<List<HabitNumericEntry>> =
@@ -90,7 +93,9 @@ class HabitRepositoryImpl @Inject constructor(
         unit = unit,
         targetValue = targetValue,
         step = step,
-        position = position
+        position = position,
+        priorityRank = priorityRank,
+        rolloverIfMissed = rolloverIfMissed
     )
 
     private fun Habit.toEntity() = HabitEntity(
@@ -104,7 +109,9 @@ class HabitRepositoryImpl @Inject constructor(
         unit = unit,
         targetValue = targetValue,
         step = step,
-        position = position
+        position = position,
+        priorityRank = priorityRank,
+        rolloverIfMissed = rolloverIfMissed
     )
 
     private fun HabitNumericEntryEntity.toDomain() = HabitNumericEntry(

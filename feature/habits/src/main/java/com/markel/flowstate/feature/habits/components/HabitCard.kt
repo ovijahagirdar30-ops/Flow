@@ -38,7 +38,7 @@ fun HabitCard(
     weekEntries: Set<Long>,
     onToggleDay: (LocalDate) -> Unit,
     onDelete: () -> Unit,
-    onEdit: (name: String, icon:String, colorArgb: Int) -> Unit,
+    onEdit: (name: String, icon: String, colorArgb: Int, priorityRank: Int, rolloverIfMissed: Boolean) -> Unit,
     onNavigateToDetail: (() -> Unit)? = null
 ) {
     val habit = habitWithStatus.habit
@@ -61,10 +61,10 @@ fun HabitCard(
             habitColor.copy(alpha = 0.2f).compositeOver(surfaceColor)
         else
             surfaceColor,
-            animationSpec = tween(
-                durationMillis = 300,
-                easing = FastOutSlowInEasing
-            ),
+        animationSpec = tween(
+            durationMillis = 300,
+            easing = FastOutSlowInEasing
+        ),
         label = "card_bg"
     )
 
@@ -94,9 +94,11 @@ fun HabitCard(
             initialName = habit.name,
             initialIcon = habit.iconName,
             initialColor = habitColor,
+            initialPriorityRank = habit.priorityRank,
+            initialRolloverIfMissed = habit.rolloverIfMissed,
             onDismiss = { showEditDialog = false },
-            onConfirm = { name, icon, colorArgb ->
-                onEdit(name, icon, colorArgb)
+            onConfirm = { name, icon, colorArgb, priorityRank, rolloverIfMissed ->
+                onEdit(name, icon, colorArgb, priorityRank, rolloverIfMissed)
                 showEditDialog = false
             }
         )
@@ -152,7 +154,7 @@ fun HabitCard(
                         onDismissRequest = { menuExpanded = false },
                         shape = RoundedCornerShape(16.dp),
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                        ) {
+                    ) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.habit_menu_edit)) },
                             onClick = {

@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class], // List of all tables
-    version = 19,
+    version = 21,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -101,7 +101,7 @@ abstract class FlowStateDatabase : RoomDatabase() {
                         `createdAt` INTEGER NOT NULL
                     )
                 """.trimIndent())
-                        db.execSQL("""
+                db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `habit_entries` (
                         `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                         `habitId` INTEGER NOT NULL,
@@ -109,7 +109,7 @@ abstract class FlowStateDatabase : RoomDatabase() {
                         FOREIGN KEY(`habitId`) REFERENCES `habits`(`id`) ON DELETE CASCADE
                     )
                 """.trimIndent())
-                        db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_entries_habitId` ON `habit_entries` (`habitId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_habit_entries_habitId` ON `habit_entries` (`habitId`)")
             }
         }
 
@@ -251,6 +251,29 @@ abstract class FlowStateDatabase : RoomDatabase() {
                     "INSERT OR REPLACE INTO sqlite_sequence (name, seq) " +
                             "VALUES ('categories', (SELECT MAX(id) FROM categories))"
                 )
+            }
+        }
+
+        /**
+         * v19 → v20: Adds the two fields the evening-assistant scheduling logic
+         * needs on each habit — how important it is relative to other habits,
+         * and whether a missed day should roll forward into tomorrow's plan.
+         */
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habits ADD COLUMN priorityRank INTEGER NOT NULL DEFAULT 5")
+                db.execSQL("ALTER TABLE habits ADD COLUMN rolloverIfMissed INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * v20 → v21: Adds an optional mood rating (1-5) to each habit completion,
+         * captured right after marking a habit done. Nullable/skippable, since
+         * asking every single time would defeat the "reduce decisions" goal.
+         */
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habit_entries ADD COLUMN mood INTEGER DEFAULT NULL")
             }
         }
     }
