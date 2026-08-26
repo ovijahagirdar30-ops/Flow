@@ -47,6 +47,7 @@ import com.markel.flowstate.feature.settings.BackupScreen
 import com.markel.flowstate.feature.settings.BottomNavConfigScreen
 import com.markel.flowstate.feature.settings.CategoriesScreen
 import com.markel.flowstate.feature.settings.SettingsScreen
+import com.markel.flowstate.feature.mood.MoodScreen
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FlowStateNavDisplay
@@ -139,7 +140,7 @@ fun FlowStateNavDisplay(
 
 
         entry<TabKey.Mood>(metadata = fadeTransition()) {
-            PlaceholderScreen(stringResource(com.markel.flowstate.feature.tasks.R.string.mood))
+            MoodScreen()
         }
 
         entry<TabKey.Settings>(metadata = fadeTransition()) {

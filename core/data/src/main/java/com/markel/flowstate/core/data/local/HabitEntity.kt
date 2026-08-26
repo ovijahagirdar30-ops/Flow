@@ -47,6 +47,8 @@ data class HabitEntryEntity(
 
 data class HabitEntryFlatEntity(val habitId: Int, val epochDay: Long, val mood: Int? = null)
 
+data class MoodEntryWithHabitName(val habitName: String, val epochDay: Long, val mood: Int)
+
 @Entity(
     tableName = "habit_numeric_entries",
     primaryKeys = ["habitId", "epochDay"],

@@ -57,6 +57,7 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:notifications"))
     implementation(project(":core:widgets"))
+    implementation(project(":feature:mood"))
 
     // Android Core & Lifecycle
     implementation(libs.androidx.core.ktx)

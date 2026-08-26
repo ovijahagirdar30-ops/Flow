@@ -31,3 +31,12 @@ data class HabitWithStatus(
 data class HabitEntryFlat(val habitId: Int, val epochDay: Long, val mood: Int? = null)
 
 data class HabitNumericEntry(val habitId: Int, val date: LocalDate, val value: Float)
+
+enum class MoodSourceType { HABIT, TASK, CHECK_IN }
+
+data class MoodEntry(
+    val sourceType: MoodSourceType,
+    val sourceLabel: String, // the habit name today; a task title or "Evening check-in" later
+    val date: LocalDate,
+    val mood: Int
+)
