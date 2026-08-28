@@ -20,4 +20,5 @@ interface HabitRepository {
     suspend fun logNumericEntry(habitId: Int, date: LocalDate, value: Float)
     suspend fun deleteNumericEntry(habitId: Int, date: LocalDate)
     suspend fun updatePositions(positions: List<Pair<Int, Int>>)
+    suspend fun updatePriorityRanks(ranks: List<Pair<Int, Int>>)
 }

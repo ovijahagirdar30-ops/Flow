@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -29,6 +30,7 @@ import com.markel.flowstate.feature.habits.components.HabitEmptyState
 import com.markel.flowstate.feature.habits.components.HabitFabMenu
 import com.markel.flowstate.feature.habits.components.HabitMoodPromptSheet
 import com.markel.flowstate.feature.habits.components.NumericHabitCard
+import com.markel.flowstate.feature.habits.components.PriorityReorderRow
 import com.markel.flowstate.feature.habits.details.components.HabitHeader
 import com.markel.flowstate.feature.habits.details.components.MotivationalMessage
 import java.time.LocalDate
@@ -43,6 +45,7 @@ fun HabitScreen(
     onNavigateToDetail: (habitId: Int) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isPriorityReorderMode by viewModel.isPriorityReorderMode.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -61,17 +64,12 @@ fun HabitScreen(
                     rest = rests[state.motivationalMessageIndex]
                 )
 
-                // ── Scroll-aware FAB visibility ────────────────────────
-                // When there are no habits, there is no list to
-                // scroll, so we force the FAB to stay visible.
                 val listState = rememberLazyListState()
                 val fabVisible by rememberFabVisibilityState(
                     lazyListState = listState,
                     forceVisible = state.habits.isEmpty()
                 )
 
-                // ── FAB menu state: type is chosen here, so the upsert sheet
-                // renders a form specific to that type (no in-sheet selector).
                 var fabMenuExpanded by remember { mutableStateOf(false) }
                 var addSheetType by remember { mutableStateOf(HabitType.BOOLEAN) }
 
@@ -81,9 +79,48 @@ fun HabitScreen(
                         totalHabits = state.totalHabits,
                         motivationalMessage = message
                     )
+                    if (state.habits.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { viewModel.togglePriorityReorderMode() }) {
+                                Text(if (isPriorityReorderMode) "Done" else "Reorder Priority")
+                            }
+                        }
+                    }
                     if (state.habits.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             HabitEmptyState()
+                        }
+                    } else if (isPriorityReorderMode) {
+                        val priorityListState = rememberLazyListState()
+                        val priorityReorderableState = rememberReorderableLazyListState(priorityListState) { from, to ->
+                            viewModel.onPriorityReorder(from.index, to.index)
+                        }
+                        val priorityOrderedHabits = state.habits.sortedBy { it.habit.priorityRank }
+                        LazyColumn(
+                            state = priorityListState,
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                            contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(priorityOrderedHabits, key = { _, item -> item.habit.id }) { index, habitWithStatus ->
+                                ReorderableItem(priorityReorderableState, key = habitWithStatus.habit.id) {
+                                    PriorityReorderRow(
+                                        habitWithStatus = habitWithStatus,
+                                        displayRank = index + 1,
+                                        onRankTyped = { newRank ->
+                                            viewModel.setPriorityRank(habitWithStatus.habit.id, newRank)
+                                        },
+                                        modifier = Modifier.longPressDraggableHandle(
+                                            interactionSource = remember { MutableInteractionSource() }
+                                        )
+                                    )
+                                }
+                            }
                         }
                     } else {
                         val reorderableState = rememberReorderableLazyListState(listState) { from, to ->

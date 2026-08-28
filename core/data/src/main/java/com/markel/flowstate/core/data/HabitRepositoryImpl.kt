@@ -94,6 +94,10 @@ class HabitRepositoryImpl @Inject constructor(
         positions.forEach { (id, position) -> dao.updatePosition(id, position) }
     }
 
+    override suspend fun updatePriorityRanks(ranks: List<Pair<Int, Int>>) {
+        ranks.forEach { (id, rank) -> dao.updatePriorityRank(id, rank) }
+    }
+
     // --- Mappers ---
 
     private fun HabitEntity.toDomain() = Habit(

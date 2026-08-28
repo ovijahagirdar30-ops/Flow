@@ -57,6 +57,9 @@ interface HabitDao {
     @Query("UPDATE habits SET position = :position WHERE id = :id")
     suspend fun updatePosition(id: Int, position: Int)
 
+    @Query("UPDATE habits SET priorityRank = :priorityRank WHERE id = :id")
+    suspend fun updatePriorityRank(id: Int, priorityRank: Int)
+
     @Query("SELECT * FROM habit_numeric_entries WHERE habitId = :habitId ORDER BY epochDay DESC")
     fun getNumericEntries(habitId: Int): Flow<List<HabitNumericEntryEntity>>
 
