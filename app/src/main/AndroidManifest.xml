@@ -17,6 +17,13 @@
     <!-- ── Boot (to reschedule alarms after reboot) ───────────────────────── -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- ── Check-in trigger (feature:checkin) ─────────────────────────────
+         Both proven in the standalone Phase 0 test project: USE_FULL_SCREEN_INTENT
+         is the lock-screen path, SYSTEM_ALERT_WINDOW is what lets the check-in
+         interrupt the user even while the phone is unlocked and in another app. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
 
     <application
         android:name=".FlowStateApp"
@@ -40,6 +47,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- The check-in screen (feature:checkin) — launched directly by
+             CheckinAlarmReceiver, needs to appear over the lock screen too -->
+        <activity
+            android:name=".feature.checkin.CheckinActivity"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
+
+        <!-- Fires the check-in alarm — targeted by CheckinAlarmScheduler
+             (core:notifications) via its class name as a string, since core
+             modules don't depend on feature modules -->
+        <receiver
+            android:name=".feature.checkin.CheckinAlarmReceiver"
+            android:exported="false" />
 
         <!-- Fires the notification when the alarm triggers -->
         <receiver
