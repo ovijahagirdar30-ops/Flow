@@ -11,3 +11,10 @@
 local.properties
 
 **/build/
+
+# Local-only debug artifacts — never commit
+flowstate_db_backup*
+.freebuff/
+
+# Real home coordinates — local only, never commit
+HomeLocationLocal.kt
