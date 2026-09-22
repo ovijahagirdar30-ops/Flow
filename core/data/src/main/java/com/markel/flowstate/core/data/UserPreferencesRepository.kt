@@ -3,6 +3,7 @@ package com.markel.flowstate.core.data
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -89,6 +90,23 @@ class UserPreferencesRepository @Inject constructor(
         context.dataStore.edit { preferences ->
             preferences[BOTTOM_NAV_ORDER] = order.joinToString(",") { it.name }
             preferences[BOTTOM_NAV_HIDDEN] = hidden.map { it.name }.toSet()
+        }
+    }
+
+    // ── App color configuration ───────────────────────────────────
+
+    private val SELECTED_APP_COLOR_KEY = intPreferencesKey("selected_app_color")
+
+    /** Emits the currently selected [AppColor], defaulting to [AppColor.GREEN]. */
+    val selectedAppColor: Flow<AppColor> = context.dataStore.data.map { preferences ->
+        val ordinal = preferences[SELECTED_APP_COLOR_KEY] ?: AppColor.GREEN.ordinal
+        AppColor.entries.getOrNull(ordinal) ?: AppColor.GREEN
+    }
+
+    /** Persists the user's chosen app color. */
+    suspend fun saveSelectedAppColor(color: AppColor) {
+        context.dataStore.edit { preferences ->
+            preferences[SELECTED_APP_COLOR_KEY] = color.ordinal
         }
     }
 

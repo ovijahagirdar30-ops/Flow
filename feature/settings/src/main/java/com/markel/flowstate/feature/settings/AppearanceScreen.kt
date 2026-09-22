@@ -2,16 +2,20 @@ package com.markel.flowstate.feature.settings
 
 import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -23,14 +27,17 @@ import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.markel.flowstate.core.data.AppColor
 import com.markel.flowstate.core.data.ThemeMode
 import com.markel.flowstate.feature.settings.components.settingsItemShape
 
@@ -41,15 +48,18 @@ fun AppearanceScreen(
     currentDynamicColor: Boolean,
     currentPureSurfaces: Boolean,
     currentSystemFont: Boolean,
+    selectedAppColor: AppColor,
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
     onPureSurfacesChange: (Boolean) -> Unit,
     onSystemFontChange: (Boolean) -> Unit,
+    onAppColorChange: (AppColor) -> Unit,
     onBack: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val supportsDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val groupContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val totalItems = if (supportsDynamicColor) 5 else 4
 
     Scaffold(
         modifier = Modifier
@@ -84,7 +94,7 @@ fun AppearanceScreen(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            // ── App theme ──
+            // App theme
             ListItem(
                 headlineContent = {
                     Text(
@@ -123,10 +133,37 @@ fun AppearanceScreen(
                 colors = ListItemDefaults.colors(
                     containerColor = groupContainerColor
                 ),
-                modifier = Modifier.clip(settingsItemShape(index = 0, totalItems = 4))
+                modifier = Modifier.clip(settingsItemShape(index = 0, totalItems = totalItems))
             )
 
-            // ── Dynamic color ──
+            // Color palette
+            ListItem(
+                leadingContent = {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
+                        contentDescription = null,
+                        tint = Color(selectedAppColor.lightArgb)
+                    )
+                },
+                headlineContent = {
+                    Text(text = stringResource(R.string.settings_appearance_colors))
+                },
+                supportingContent = {
+                    ColorPaletteRow(
+                        selectedColor = selectedAppColor,
+                        onColorSelected = onAppColorChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp, bottom = 4.dp)
+                    )
+                },
+                colors = ListItemDefaults.colors(
+                    containerColor = groupContainerColor
+                ),
+                modifier = Modifier.clip(settingsItemShape(index = 1, totalItems = totalItems))
+            )
+
+            // Dynamic color
             ListItem(
                 leadingContent = {
                     Icon(
@@ -157,10 +194,10 @@ fun AppearanceScreen(
                 colors = ListItemDefaults.colors(
                     containerColor = groupContainerColor
                 ),
-                modifier = Modifier.clip(settingsItemShape(index = 1, totalItems = 4))
+                modifier = Modifier.clip(settingsItemShape(index = 2, totalItems = totalItems))
             )
 
-            // ── Pure surfaces ──
+            // Pure surfaces
             ListItem(
                 leadingContent = {
                     Icon(
@@ -184,10 +221,10 @@ fun AppearanceScreen(
                 colors = ListItemDefaults.colors(
                     containerColor = groupContainerColor
                 ),
-                modifier = Modifier.clip(settingsItemShape(index = 2, totalItems = 4))
+                modifier = Modifier.clip(settingsItemShape(index = 3, totalItems = totalItems))
             )
 
-            // ── System font ──
+            // System font
             ListItem(
                 leadingContent = {
                     Icon(
@@ -211,8 +248,54 @@ fun AppearanceScreen(
                 colors = ListItemDefaults.colors(
                     containerColor = groupContainerColor
                 ),
-                modifier = Modifier.clip(settingsItemShape(index = 3, totalItems = 4))
+                modifier = Modifier.clip(settingsItemShape(index = 4, totalItems = totalItems))
             )
+        }
+    }
+}
+
+@Composable
+private fun ColorPaletteRow(
+    selectedColor: AppColor,
+    onColorSelected: (AppColor) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        AppColor.entries.forEach { appColor ->
+            val isSelected = appColor == selectedColor
+            val seedColor = Color(appColor.lightArgb)
+
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(seedColor)
+                    .then(
+                        if (isSelected) {
+                            Modifier.border(
+                                width = 3.dp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                shape = CircleShape
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .clickable { onColorSelected(appColor) },
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .size(14.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onSurface)
+                    )
+                }
+            }
         }
     }
 }

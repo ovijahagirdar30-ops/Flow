@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.markel.flowstate.core.data.AppColor
 import com.markel.flowstate.core.data.ThemeMode
 
 private val lightScheme = lightColorScheme(
@@ -310,6 +311,8 @@ fun FlowStateTheme(
     // System font: true swaps the bundled Roboto Flex (plus its ss02/dlig features)
     // for the platform default typeface.
     systemFont: Boolean = false,
+    // Preset app color (green is default; other options override the primary palette)
+    selectedAppColor: AppColor = AppColor.GREEN,
     content: @Composable() () -> Unit
 ) {
     val darkTheme = when (themeMode) {
@@ -324,8 +327,8 @@ fun FlowStateTheme(
           if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
       }
 
-      darkTheme -> darkScheme
-      else -> lightScheme
+      darkTheme -> selectedAppColor.toDarkColorScheme()
+      else -> selectedAppColor.toLightColorScheme()
     }.let { if (pureSurfaces) it.pureSurfaces(darkTheme) else it }
     val priorityColorScheme = if (darkTheme) darkPriorityScheme else lightPriorityScheme
     val view = LocalView.current
@@ -382,3 +385,97 @@ val MaterialTheme.priority: PriorityColorScheme
     @Composable
     @ReadOnlyComposable
     get() = LocalPriorityColors.current
+
+// ── Derive full Material 3 color schemes from an [AppColor] seed ────────────
+
+private fun AppColor.toLightColorScheme(): ColorScheme {
+    if (this == AppColor.GREEN) return lightScheme
+    val seed = Color(lightArgb)
+    return lightColorScheme(
+        primary              = seed,
+        onPrimary            = Color.White,
+        primaryContainer     = seed.tone(90),
+        onPrimaryContainer   = seed.tone(10),
+        secondary            = seed.tone(60),
+        onSecondary          = Color.White,
+        secondaryContainer   = seed.tone(90),
+        onSecondaryContainer = seed.tone(10),
+        tertiary             = seed.tone(45),
+        onTertiary           = Color.White,
+        tertiaryContainer    = seed.tone(90),
+        onTertiaryContainer  = seed.tone(10),
+        error                = errorLight,
+        onError              = onErrorLight,
+        errorContainer       = errorContainerLight,
+        onErrorContainer     = onErrorContainerLight,
+        background           = backgroundLight,
+        onBackground         = onBackgroundLight,
+        surface              = surfaceLight,
+        onSurface            = onSurfaceLight,
+        surfaceVariant       = surfaceVariantLight,
+        onSurfaceVariant     = onSurfaceVariantLight,
+        outline              = outlineLight,
+        outlineVariant       = outlineVariantLight,
+        scrim                = scrimLight,
+        inverseSurface       = inverseSurfaceLight,
+        inverseOnSurface     = inverseOnSurfaceLight,
+        inversePrimary       = seed.tone(80),
+        surfaceDim           = surfaceDimLight,
+        surfaceBright        = surfaceBrightLight,
+        surfaceContainerLowest = surfaceContainerLowestLight,
+        surfaceContainerLow  = surfaceContainerLowLight,
+        surfaceContainer     = surfaceContainerLight,
+        surfaceContainerHigh = surfaceContainerHighLight,
+        surfaceContainerHighest = surfaceContainerHighestLight,
+    )
+}
+
+private fun AppColor.toDarkColorScheme(): ColorScheme {
+    if (this == AppColor.GREEN) return darkScheme
+    val seed = Color(darkArgb)
+    return darkColorScheme(
+        primary              = seed,
+        onPrimary            = seed.tone(20),
+        primaryContainer     = seed.tone(30),
+        onPrimaryContainer   = seed.tone(90),
+        secondary            = seed.tone(80),
+        onSecondary          = seed.tone(20),
+        secondaryContainer   = seed.tone(30),
+        onSecondaryContainer = seed.tone(90),
+        tertiary             = seed.tone(80),
+        onTertiary           = seed.tone(20),
+        tertiaryContainer    = seed.tone(30),
+        onTertiaryContainer  = seed.tone(90),
+        error                = errorDark,
+        onError              = onErrorDark,
+        errorContainer       = errorContainerDark,
+        onErrorContainer     = onErrorContainerDark,
+        background           = backgroundDark,
+        onBackground         = onBackgroundDark,
+        surface              = surfaceDark,
+        onSurface            = onSurfaceDark,
+        surfaceVariant       = surfaceVariantDark,
+        onSurfaceVariant     = onSurfaceVariantDark,
+        outline              = outlineDark,
+        outlineVariant       = outlineVariantDark,
+        scrim                = scrimDark,
+        inverseSurface       = inverseSurfaceDark,
+        inverseOnSurface     = inverseOnSurfaceDark,
+        inversePrimary       = seed.tone(30),
+        surfaceDim           = surfaceDimDark,
+        surfaceBright        = surfaceBrightDark,
+        surfaceContainerLowest = surfaceContainerLowestDark,
+        surfaceContainerLow  = surfaceContainerLowDark,
+        surfaceContainer     = surfaceContainerDark,
+        surfaceContainerHigh = surfaceContainerHighDark,
+        surfaceContainerHighest = surfaceContainerHighestDark,
+    )
+}
+
+/** Lighten/darken a Compose [Color] by mapping it to HSV and adjusting brightness. */
+private fun Color.tone(t: Int): Color {
+    val hsv = FloatArray(3)
+    android.graphics.Color.colorToHSV(toArgb(), hsv)
+    hsv[2] = t / 100f
+    return Color(android.graphics.Color.HSVToColor(hsv))
+}

@@ -26,6 +26,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import com.markel.flowstate.BuildConfig
 import com.markel.flowstate.components.PlaceholderScreen
+import com.markel.flowstate.core.data.AppColor
 import com.markel.flowstate.core.data.MainTab
 import com.markel.flowstate.core.data.ThemeMode
 import com.markel.flowstate.core.designsystem.ui.LocalAnimatedVisibilityScope
@@ -80,10 +81,12 @@ fun FlowStateNavDisplay(
     dynamicColor: Boolean,
     pureSurfaces: Boolean,
     systemFont: Boolean,
+    selectedAppColor: AppColor,
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
     onPureSurfacesChange: (Boolean) -> Unit,
     onSystemFontChange: (Boolean) -> Unit,
+    onAppColorChange: (AppColor) -> Unit,
     bottomBar: @Composable () -> Unit,
     sharedTransitionScope: SharedTransitionScope,
     modifier: Modifier = Modifier,
@@ -260,10 +263,12 @@ fun FlowStateNavDisplay(
                 currentDynamicColor = dynamicColor,
                 currentPureSurfaces = pureSurfaces,
                 currentSystemFont = systemFont,
+                selectedAppColor = selectedAppColor,
                 onThemeModeChange = onThemeModeChange,
                 onDynamicColorChange = onDynamicColorChange,
                 onPureSurfacesChange = onPureSurfacesChange,
                 onSystemFontChange = onSystemFontChange,
+                onAppColorChange = onAppColorChange,
                 onBack = { navigator.goBack() },
             )
         }

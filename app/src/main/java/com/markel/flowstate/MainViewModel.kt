@@ -2,6 +2,7 @@ package com.markel.flowstate
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.markel.flowstate.core.data.AppColor
 import com.markel.flowstate.core.data.MainTab
 import com.markel.flowstate.core.data.ThemeMode
 import com.markel.flowstate.core.data.UserPreferencesRepository
@@ -68,6 +69,14 @@ class MainViewModel @Inject constructor(
             initialValue = false
         )
 
+    /** Currently selected app color theme */
+    val selectedAppColor: StateFlow<AppColor> = userPreferencesRepository.selectedAppColor
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = AppColor.GREEN
+        )
+
     init {
         viewModelScope.launch {
             // Combine last tab with hidden tabs to ensure startDestination is always visible
@@ -121,6 +130,12 @@ class MainViewModel @Inject constructor(
     fun saveSystemFont(enabled: Boolean) {
         viewModelScope.launch {
             userPreferencesRepository.saveSystemFont(enabled)
+        }
+    }
+
+    fun saveSelectedAppColor(color: AppColor) {
+        viewModelScope.launch {
+            userPreferencesRepository.saveSelectedAppColor(color)
         }
     }
 
