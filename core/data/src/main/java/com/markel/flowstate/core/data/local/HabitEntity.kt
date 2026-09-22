@@ -42,7 +42,7 @@ data class HabitEntryEntity(
     val id: Int = 0,
     val habitId: Int,
     val completedAt: Long,
-    val mood: Int? = null // 1-5, optional — how the activity felt, asked right after marking complete
+    val mood: Int? = null
 )
 
 data class HabitEntryFlatEntity(val habitId: Int, val epochDay: Long, val mood: Int? = null)

@@ -12,8 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * and which version of the database we are using.
  */
 @Database(
-    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class], // List of all tables
-    version = 21,
+    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class, CheckinEntity::class], // List of all tables
+    version = 25,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -24,6 +24,7 @@ abstract class FlowStateDatabase : RoomDatabase() {
     abstract val checkListDao: CheckListDao
     abstract val habitDao: HabitDao
     abstract val categoryDao: CategoryDao
+    abstract val checkinDao: CheckinDao
 
     // Room will use this to create the DB instance.
     companion object {
@@ -274,6 +275,77 @@ abstract class FlowStateDatabase : RoomDatabase() {
         val MIGRATION_20_21 = object : Migration(20, 21) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE habit_entries ADD COLUMN mood INTEGER DEFAULT NULL")
+            }
+        }
+
+        /**
+         * v21 → v22: Adds the checkins table — one row per calendar day
+         * storing the evening check-in's mood values and unexpected plans.
+         * `date` (ISO string, e.g. "2026-09-16") is the primary key, matching
+         * CheckinDebounce's LocalDate.now().toString() format, so a day's
+         * check-in can only ever have one row.
+         */
+        val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `checkins` (
+                        `date` TEXT NOT NULL PRIMARY KEY,
+                        `energy` INTEGER NOT NULL,
+                        `sleepiness` INTEGER NOT NULL,
+                        `stress` INTEGER NOT NULL,
+                        `headache` INTEGER NOT NULL,
+                        `motivation` INTEGER NOT NULL,
+                        `unexpectedPlansEncoded` TEXT NOT NULL
+                    )
+                """.trimIndent())
+            }
+        }
+
+        /**
+         * v22 → v23: No structural change. This migration exists solely to
+         * force Room to recompute and re-store its schema fingerprint using
+         * the now-correct @ColumnInfo(defaultValue=...) annotations added to
+         * several existing entities (habits, tasks, subtasks, ideas,
+         * checklists, categories). Those annotations only fixed what Room
+         * *expects*; they never rewrote what's already stored on disk from
+         * the v21→v22 migration, which is why the identity-hash crash
+         * persisted even after adding them. This migration is what finally
+         * lets that stored value catch up. No SQL needed since the actual
+         * table structure was already correct.
+         */
+        val MIGRATION_22_23 = object : Migration(22, 23) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Intentionally empty — see comment above.
+            }
+        }
+
+        /**
+         * v23 → v24: Fixes schema mismatch caused by @ColumnInfo(defaultValue=...)
+         * annotations added to HabitEntity and CategoryEntity that didn't exist
+         * when v23 was exported. Removing those annotations and bumping the version
+         * lets Room re-verify against a schema without those defaults.
+         */
+        val MIGRATION_23_24 = object : Migration(23, 24) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // No structural changes — the annotations were only metadata.
+            }
+        }
+
+        /**
+         * v24 → v25: Adds the five per-slider comment columns to checkins.
+         * Deliberately nullable with NO SQL default, so each ALTER TABLE is a
+         * bare ADD COLUMN — no Room default-value comparison to get wrong.
+         * Existing rows get NULL, mapped to "" by CheckinRepositoryImpl.
+         * Comments aren't shown anywhere in the UI; they exist purely so the
+         * future AI brain can read them back via CheckinRepository.
+         */
+        val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE checkins ADD COLUMN energyComment TEXT")
+                db.execSQL("ALTER TABLE checkins ADD COLUMN sleepinessComment TEXT")
+                db.execSQL("ALTER TABLE checkins ADD COLUMN stressComment TEXT")
+                db.execSQL("ALTER TABLE checkins ADD COLUMN headacheComment TEXT")
+                db.execSQL("ALTER TABLE checkins ADD COLUMN motivationComment TEXT")
             }
         }
     }

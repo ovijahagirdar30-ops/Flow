@@ -6,6 +6,7 @@ import androidx.room.Room
 import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.data.local.CategoryDao
 import com.markel.flowstate.core.data.local.CheckListDao
+import com.markel.flowstate.core.data.local.CheckinDao
 import com.markel.flowstate.core.data.local.FlowStateDatabase
 import com.markel.flowstate.core.data.local.HabitDao
 import com.markel.flowstate.core.data.local.IdeaDao
@@ -18,11 +19,11 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 @Module
-@InstallIn(SingletonComponent::class) // It will live as long as the app lives
+@InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
     @Provides
-    @Singleton // We want a single instance of the DB
+    @Singleton
     fun provideFlowStateDatabase(app: Application): FlowStateDatabase {
         return Room.databaseBuilder(
             app,
@@ -32,12 +33,13 @@ object DatabaseModule {
             .addMigrations(FlowStateDatabase.MIGRATION_5_6, FlowStateDatabase.MIGRATION_6_7, FlowStateDatabase.MIGRATION_7_8, FlowStateDatabase.MIGRATION_8_9,
                 FlowStateDatabase.MIGRATION_9_10, FlowStateDatabase.MIGRATION_10_11, FlowStateDatabase.MIGRATION_11_12, FlowStateDatabase.MIGRATION_12_13,
                 FlowStateDatabase.MIGRATION_13_14, FlowStateDatabase.MIGRATION_14_15, FlowStateDatabase.MIGRATION_15_16, FlowStateDatabase.MIGRATION_16_17,
-                FlowStateDatabase.MIGRATION_17_18, FlowStateDatabase.MIGRATION_18_19, FlowStateDatabase.MIGRATION_19_20, FlowStateDatabase.MIGRATION_20_21)
+                FlowStateDatabase.MIGRATION_17_18, FlowStateDatabase.MIGRATION_18_19, FlowStateDatabase.MIGRATION_19_20, FlowStateDatabase.MIGRATION_20_21,                FlowStateDatabase.MIGRATION_21_22, FlowStateDatabase.MIGRATION_22_23,
+                FlowStateDatabase.MIGRATION_23_24, FlowStateDatabase.MIGRATION_24_25)
             .build()
     }
 
     @Provides
-    @Singleton // A single instance of the DAO
+    @Singleton
     fun provideTaskDao(db: FlowStateDatabase): TaskDao {
         return db.taskDao
     }
@@ -67,4 +69,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideHabitDao(db: FlowStateDatabase): HabitDao = db.habitDao
+
+    @Provides
+    @Singleton
+    fun provideCheckinDao(db: FlowStateDatabase): CheckinDao = db.checkinDao
 }

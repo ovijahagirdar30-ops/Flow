@@ -12,16 +12,15 @@ import androidx.room.PrimaryKey
             entity = TaskEntity::class,
             parentColumns = ["id"],
             childColumns = ["taskId"],
-            onDelete = ForeignKey.CASCADE // If the parent task is deleted, the children are also deleted
+            onDelete = ForeignKey.CASCADE
         )
     ],
-    // Creating an index on taskId makes queries much faster
     indices = [Index(value = ["taskId"])]
 )
 data class SubTaskEntity(
     @PrimaryKey
-    val id: String, // We use String (UUID) for subtasks
-    val taskId: Int, // The reference to the parent
+    val id: String,
+    val taskId: Int,
     val title: String,
     val description: String,
     val isDone: Boolean,
