@@ -24,6 +24,15 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!-- ── Location (geofence-based check-in trigger) ─────────────────────
+         ACCESS_FINE_LOCATION must be granted first, at runtime. Android then
+         requires ACCESS_BACKGROUND_LOCATION as a SEPARATE runtime request
+         (routes the user to system settings to pick "Allow all the time") —
+         geofence transitions only fire while the app isn't in the foreground
+         if background location is granted. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
 
     <application
         android:name=".FlowStateApp"
@@ -56,11 +65,17 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
 
-        <!-- Fires the check-in alarm — targeted by CheckinAlarmScheduler
-             (core:notifications) via its class name as a string, since core
-             modules don't depend on feature modules -->
+        <!-- Fires the check-in alarm (fallback path, or manual test) — targeted
+             by CheckinAlarmScheduler (core:notifications) via its class name as
+             a string, since core modules don't depend on feature modules -->
         <receiver
             android:name=".feature.checkin.CheckinAlarmReceiver"
+            android:exported="false" />
+
+        <!-- Fires when the device enters the home geofence — the primary
+             check-in trigger. Targeted the same way, by class-name string. -->
+        <receiver
+            android:name=".feature.checkin.GeofenceReceiver"
             android:exported="false" />
 
         <!-- Fires the notification when the alarm triggers -->

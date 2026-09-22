@@ -58,6 +58,7 @@ dependencies {
     implementation(project(":core:notifications"))
     implementation(project(":core:widgets"))
     implementation(project(":feature:mood"))
+    implementation(project(":feature:checkin"))
 
     // Android Core & Lifecycle
     implementation(libs.androidx.core.ktx)

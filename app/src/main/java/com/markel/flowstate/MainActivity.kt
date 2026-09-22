@@ -1,10 +1,15 @@
 package com.markel.flowstate
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.WindowInsets
@@ -17,16 +22,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.components.FlowBottomBar
 import com.markel.flowstate.components.PlaceholderScreen
+import com.markel.flowstate.core.data.AppColor
 import com.markel.flowstate.core.designsystem.theme.FlowStateTheme
 import com.markel.flowstate.core.designsystem.ui.LocalAnimatedVisibilityScope
 import com.markel.flowstate.core.designsystem.ui.LocalSharedTransitionScope
 import com.markel.flowstate.core.data.MainTab
+import com.markel.flowstate.core.notifications.CheckinAlarmScheduler
+import com.markel.flowstate.core.notifications.HomeGeofenceManager
+import com.markel.flowstate.feature.checkin.HomeLocation
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import com.markel.flowstate.navigation.BottomNavScreen
 import com.markel.flowstate.navigation.FlowStateNavDisplay
@@ -37,14 +47,99 @@ import com.markel.flowstate.navigation.fromKey
 import com.markel.flowstate.navigation.rememberNavigationState
 import com.markel.flowstate.navigation.toKey
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var checkinAlarmScheduler: CheckinAlarmScheduler
+
+    @Inject
+    lateinit var homeGeofenceManager: HomeGeofenceManager
+
+    // Must be registered as fields (before STARTED), not inside onCreate.
+
+    private val fineLocationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            requestBackgroundLocationIfNeeded()
+        } else {
+            Toast.makeText(
+                this,
+                "Location permission denied — check-in will only trigger via the 9PM fallback, not on arrival.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private val backgroundLocationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            homeGeofenceManager.registerHomeGeofence(
+                HomeLocation.LATITUDE, HomeLocation.LONGITUDE, HomeLocation.RADIUS_METERS
+            )
+        } else {
+            Toast.makeText(
+                this,
+                "Background location denied — check-in will only trigger via the 9PM fallback, not on arrival.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    /**
+     * Background location must be requested as a SEPARATE call after
+     * foreground is granted (Android 11+ requirement) — never combined
+     * into one request. Pre-Android 10, background location is bundled
+     * with fine location automatically, so there's nothing extra to ask.
+     */
+    private fun requestBackgroundLocationIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            backgroundLocationPermissionLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        } else {
+            homeGeofenceManager.registerHomeGeofence(
+                HomeLocation.LATITUDE, HomeLocation.LONGITUDE, HomeLocation.RADIUS_METERS
+            )
+        }
+    }
+
+    private fun hasBackgroundLocationPermission(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+                ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
+    /**
+     * Registers the home geofence if both permissions are already granted,
+     * otherwise kicks off the two-step request flow. Safe to call every
+     * launch — re-registers idempotently once granted, and won't spam a
+     * dialog if the user already permanently denied it.
+     */
+    private fun requestLocationPermissionsAndRegisterGeofence() {
+        if (hasBackgroundLocationPermission()) {
+            homeGeofenceManager.registerHomeGeofence(
+                HomeLocation.LATITUDE, HomeLocation.LONGITUDE, HomeLocation.RADIUS_METERS
+            )
+        } else {
+            fineLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Schedule the 9PM fallback alarm (self-reschedules after each fire)
+        checkinAlarmScheduler.scheduleFallbackCutoff()
+
+        // Register the home geofence (requests permissions if needed)
+        requestLocationPermissionsAndRegisterGeofence()
+
         setContent {
             val mainViewModel: MainViewModel = hiltViewModel()
             val isReady by mainViewModel.isReady.collectAsState()
@@ -55,6 +150,7 @@ class MainActivity : ComponentActivity() {
             val dynamicColor by mainViewModel.dynamicColor.collectAsStateWithLifecycle()
             val pureSurfaces by mainViewModel.pureSurfaces.collectAsStateWithLifecycle()
             val systemFont by mainViewModel.systemFont.collectAsStateWithLifecycle()
+            val selectedAppColor by mainViewModel.selectedAppColor.collectAsStateWithLifecycle()
 
             splashScreen.setKeepOnScreenCondition { !isReady }
 
@@ -63,7 +159,8 @@ class MainActivity : ComponentActivity() {
                     themeMode = themeMode,
                     dynamicColor = dynamicColor,
                     pureSurfaces = pureSurfaces,
-                    systemFont = systemFont
+                    systemFont = systemFont,
+                    selectedAppColor = selectedAppColor
                 ) {
                     // Check Orientation
                     val configuration = LocalConfiguration.current
@@ -129,10 +226,12 @@ class MainActivity : ComponentActivity() {
                                 dynamicColor = dynamicColor,
                                 pureSurfaces = pureSurfaces,
                                 systemFont = systemFont,
+                                selectedAppColor = selectedAppColor,
                                 onThemeModeChange = mainViewModel::saveThemeMode,
                                 onDynamicColorChange = mainViewModel::saveDynamicColor,
                                 onPureSurfacesChange = mainViewModel::savePureSurfaces,
                                 onSystemFontChange = mainViewModel::saveSystemFont,
+                                onAppColorChange = mainViewModel::saveSelectedAppColor,
                                 sharedTransitionScope = this,
                                 bottomBar = {
                                     FlowBottomBar(
