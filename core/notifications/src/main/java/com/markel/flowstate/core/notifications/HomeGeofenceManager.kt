@@ -72,7 +72,12 @@ class HomeGeofenceManager @Inject constructor(
             .setRequestId(HOME_GEOFENCE_ID)
             .setCircularRegion(latitude, longitude, radiusMeters)
             .setExpirationDuration(Geofence.NEVER_EXPIRE)
-            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+            // EXIT is subscribed as well as ENTER: GeofenceReceiver records every
+            // departure in HomeExitTracker and only honors an ENTER that follows a
+            // real, recent-enough EXIT. With ENTER-only subscription a phantom
+            // enter (doze-window first fix, or GPS noise wider than the fence)
+            // was indistinguishable from a genuine arrival home.
+            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
             .build()
 
         // setInitialTrigger(0) = no initial trigger, deliberately: an ENTER
