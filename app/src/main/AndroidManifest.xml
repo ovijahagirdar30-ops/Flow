@@ -3,7 +3,16 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- ── Notifications ───────────────────────────────────── -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Screen wake for the full-screen check-in — ACQUIRE_CAUSES_WAKEUP is how
+         CheckinActivity lights the display when the trigger fires with the
+         screen off (HyperOS ignores the turnScreenOn flag for background starts).
+         Also merged in from a library, declared here explicitly so it can never
+         silently disappear. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- ── Exact alarms ──────────────────────────────────────────────────── -->
     <!--

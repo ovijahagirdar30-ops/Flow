@@ -1,0 +1,266 @@
+package com.markel.flowstate.core.data.ai
+
+import android.util.Log
+import com.markel.flowstate.core.data.BuildConfig
+import com.markel.flowstate.core.domain.CheckinSnapshot
+import com.markel.flowstate.core.domain.EveningPlan
+import com.markel.flowstate.core.domain.EveningPlanner
+import com.markel.flowstate.core.domain.LocalEveningPlanner
+import com.markel.flowstate.core.domain.PlanBlock
+import com.markel.flowstate.core.domain.PlanBlockKind
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.*
+import java.net.HttpURLConnection
+import java.net.URL
+import javax.inject.Inject
+
+/**
+ * [EveningPlanner] backed by the Gemini Developer API over plain REST.
+ *
+ * Chosen over the brand-new Gen AI Kotlin SDK (v1.0, September 2026) and
+ * Firebase AI Logic deliberately: no new dependencies, one stable endpoint,
+ * and the [EveningPlanner] seam means adopting either later is a one-class
+ * swap. Structured output (responseSchema + application/json) guarantees the
+ * response parses into an EveningPlan shape.
+ *
+ * Hardened by construction:
+ *  - key comes from BuildConfig (local.properties, never committed); blank
+ *    key -> offline planner, app fully functional without any setup
+ *  - ANY failure (network, HTTP error, malformed response) logs and falls
+ *    back to [LocalEveningPlanner], so the check-in flow can never break
+ */
+class GeminiEveningPlanner @Inject constructor(
+    private val fallback: LocalEveningPlanner
+) : EveningPlanner {
+
+    override suspend fun generatePlan(snapshot: CheckinSnapshot): EveningPlan {
+        val apiKey = BuildConfig.GEMINI_API_KEY
+        if (apiKey.isBlank()) {
+            Log.i(TAG, "No gemini.api.key in local.properties — using LocalEveningPlanner")
+            return fallback.generatePlan(snapshot)
+        }
+        return try {
+            withContext(Dispatchers.IO) { requestPlan(apiKey, snapshot) }
+        } catch (e: Exception) {
+            Log.w(TAG, "Gemini plan generation failed (${e.message}) — using LocalEveningPlanner", e)
+            fallback.generatePlan(snapshot)
+        }
+    }
+
+    // ── Request ────────────────────────────────────────────────────────────
+
+    private fun requestPlan(apiKey: String, snapshot: CheckinSnapshot): EveningPlan {
+        val conn = URL(ENDPOINT).openConnection() as HttpURLConnection
+        try {
+            conn.requestMethod = "POST"
+            conn.connectTimeout = 15_000
+            conn.readTimeout = 30_000
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("x-goog-api-key", apiKey)
+
+            val body = buildRequestBody(snapshot)
+            conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+
+            val code = conn.responseCode
+            val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+            val text = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+            if (code !in 200..299) throw IllegalStateException("Gemini HTTP $code: ${text.take(300)}")
+
+            return parsePlan(text, snapshot)
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    private fun buildRequestBody(snapshot: CheckinSnapshot): String = buildJsonObject {
+        putJsonObject("systemInstruction") {
+            putJsonArray("parts") {
+                add(buildJsonObject { put("text", SYSTEM_PROMPT) })
+            }
+        }
+        putJsonArray("contents") {
+            add(buildJsonObject {
+                put("role", "user")
+                putJsonArray("parts") {
+                    add(buildJsonObject { put("text", snapshotJson(snapshot)) })
+                }
+            })
+        }
+        putJsonObject("generationConfig") {
+            put("temperature", 0.7)
+            put("responseMimeType", "application/json")
+            putJsonObject("responseSchema") { planResponseSchema() }
+        }
+    }.toString()
+
+    private fun JsonObjectBuilder.planResponseSchema() {
+        // OpenAPI-style schema; uppercase types are what v1beta expects.
+        put("type", "OBJECT")
+        putJsonObject("properties") {
+            putJsonObject("headline") { put("type", "STRING") }
+            putJsonObject("blocks") {
+                put("type", "ARRAY")
+                putJsonObject("items") {
+                    put("type", "OBJECT")
+                    putJsonObject("properties") {
+                        putJsonObject("startTime") { put("type", "STRING") }
+                        putJsonObject("durationMinutes") { put("type", "INTEGER") }
+                        putJsonObject("title") { put("type", "STRING") }
+                        putJsonObject("reason") { put("type", "STRING") }
+                        putJsonObject("kind") {
+                            put("type", "STRING")
+                            putJsonArray("enum") { PlanBlockKind.entries.forEach { add(it.name) } }
+                        }
+                        putJsonObject("referenceId") { put("type", "INTEGER") }
+                    }
+                    putJsonArray("required") {
+                        add("startTime"); add("durationMinutes"); add("title"); add("reason"); add("kind")
+                    }
+                }
+            }
+        }
+        putJsonArray("required") { add("headline"); add("blocks") }
+    }
+
+    private fun snapshotJson(snapshot: CheckinSnapshot): String = buildJsonObject {
+        put("date", snapshot.date)
+
+        val checkin = snapshot.checkin
+        if (checkin != null) {
+            putJsonObject("checkin") {
+                putJsonObject("mood") {
+                    put("energy", checkin.mood.energy)
+                    put("sleepiness", checkin.mood.sleepiness)
+                    put("stress", checkin.mood.stress)
+                    put("headache", checkin.mood.headache)
+                    put("motivation", checkin.mood.motivation)
+                    put("energyComment", checkin.mood.energyComment)
+                    put("sleepinessComment", checkin.mood.sleepinessComment)
+                    put("stressComment", checkin.mood.stressComment)
+                    put("headacheComment", checkin.mood.headacheComment)
+                    put("motivationComment", checkin.mood.motivationComment)
+                }
+                putJsonArray("unexpectedPlans") {
+                    checkin.unexpectedPlans.forEach { plan ->
+                        add(buildJsonObject {
+                            put("description", plan.description)
+                            put("startTime", plan.startTime)
+                            put("durationMinutes", plan.durationMinutes)
+                        })
+                    }
+                }
+            }
+        } else {
+            put("checkin", JsonNull)
+        }
+
+        putJsonArray("tasks") {
+            snapshot.tasks.forEach { task ->
+                add(buildJsonObject {
+                    put("id", task.id)
+                    put("title", task.title)
+                    put("description", task.description)
+                    put("priority", task.priority.name)
+                    task.dueDate?.let { put("dueDate", it) }
+                })
+            }
+        }
+
+        putJsonArray("habits") {
+            snapshot.habits.forEach { habitWithStatus ->
+                val habit = habitWithStatus.habit
+                add(buildJsonObject {
+                    put("id", habit.id)
+                    put("name", habit.name)
+                    put("type", habit.habitType.name)
+                    put("isCompletedToday", habitWithStatus.isCompletedToday)
+                    put("streak", habitWithStatus.streak)
+                    habitWithStatus.todayValue?.let { put("todayValue", it) }
+                    put("priorityRank", habit.priorityRank)
+                    put("rolloverIfMissed", habit.rolloverIfMissed)
+                })
+            }
+        }
+    }.toString()
+
+    // ── Response ───────────────────────────────────────────────────────────
+
+    private fun parsePlan(responseBody: String, snapshot: CheckinSnapshot): EveningPlan {
+        val root = Json.parseToJsonElement(responseBody).jsonObject
+        val text = root["candidates"]!!.jsonArray[0]
+            .jsonObject["content"]!!.jsonObject["parts"]!!.jsonArray[0]
+            .jsonObject["text"]!!.jsonPrimitive.content
+        val planJson = Json.parseToJsonElement(text).jsonObject
+
+        val blocks = planJson["blocks"]!!.jsonArray.map { element ->
+            val obj = element.jsonObject
+            PlanBlock(
+                startTime = obj["startTime"]!!.jsonPrimitive.content,
+                durationMinutes = obj["durationMinutes"]!!.jsonPrimitive.int,
+                title = obj["title"]!!.jsonPrimitive.content,
+                reason = obj["reason"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                kind = runCatching {
+                    PlanBlockKind.valueOf(obj["kind"]!!.jsonPrimitive.content)
+                }.getOrDefault(PlanBlockKind.OTHER),
+                referenceId = obj["referenceId"]?.jsonPrimitive?.intOrNull
+            )
+        }.sortedBy { it.startTime }
+
+        if (blocks.isEmpty()) throw IllegalStateException("Gemini returned an empty plan")
+
+        return EveningPlan(
+            date = snapshot.date,
+            generatedAtMillis = System.currentTimeMillis(),
+            headline = planJson["headline"]?.jsonPrimitive?.contentOrNull
+                ?: "Plan for this evening",
+            blocks = blocks
+        )
+    }
+
+    private companion object {
+        const val TAG = "GeminiEveningPlanner"
+        const val MODEL = "gemini-3.8-flash"
+        val ENDPOINT =
+            "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent"
+
+        val SYSTEM_PROMPT = """
+            You are the evening transition assistant inside FlowState, Ovi's personal
+            task/habit app. On arriving home after a long day, Ovi completes a quick
+            check-in and you produce tonight's plan as a single JSON object.
+
+            Input: a snapshot with the date; today's check-in (0-10 scores for energy,
+            sleepiness, stress, headache, motivation, a free-text comment on each, and
+            any unexpected plans such as "dinner with family"); today's incomplete
+            tasks (id, title, description, priority); and habits (id, name, type,
+            whether completed today, streak, today's value, priorityRank 1-10 where
+            higher matters more, rolloverIfMissed).
+
+            Output rules:
+            - headline: at most 8 words, specific to tonight's mood. Never guilt-trippy.
+            - blocks: time-ordered, between about 18:00 and 23:35 local time. Fields:
+              startTime "HH:mm", durationMinutes, title (short), reason (max ~120
+              chars, warm and matter-of-fact), kind (TASK, HABIT, MEAL, REST,
+              REFLECTION or OTHER), referenceId (the task/habit id for TASK/HABIT
+              blocks; omit it otherwise).
+            - Exactly one REFLECTION block at 23:00 for 30 minutes ("11PM ritual
+              close") and a ~60 minute REST wind-down starting around 22:00.
+            - One MEAL block around 19:00, unless unexpected plans dictate otherwise.
+
+            Behavior:
+            - Reduce decisions: give ONE concrete plan, never options or questions.
+            - Adapt to mood: low energy or high stress -> fewer and easier tasks,
+              more REST; high energy -> more tasks, hardest first.
+            - Never induce guilt: never shame undone tasks or missed habits. If
+              something doesn't fit, quietly leave it out.
+            - Respect unexpected plans: give them a block (kind OTHER or MEAL) and
+              schedule AROUND them; never overlap them.
+            - Include unfinished habits as HABIT blocks when they fit, favoring high
+              priorityRank; habits with rolloverIfMissed may be skipped freely.
+            - Use ONLY the ids provided; never invent tasks or habits.
+            - Keep block titles practical ("Finish slides", "Read 20 pages"), not
+              motivational posters.
+        """.trimIndent()
+    }
+}

@@ -1,9 +1,20 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hiltAndroid)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.plugin.serialization)
+}
+
+// Gemini API key for the evening planner — lives ONLY in local.properties
+// (gitignored, never committed). Empty default keeps the project building
+// and running without a key; GeminiEveningPlanner then falls back to the
+// offline LocalEveningPlanner.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
 }
 
 android {
@@ -17,6 +28,9 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+
+        val geminiKey = localProperties.getProperty("gemini.api.key", "")
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
 
     }
 
@@ -39,6 +53,9 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+    }
+    buildFeatures {
+        buildConfig = true
     }
 }
 
