@@ -137,6 +137,14 @@ class MainActivity : ComponentActivity() {
         // Schedule the 9PM fallback alarm (self-reschedules after each fire)
         checkinAlarmScheduler.scheduleFallbackCutoff()
 
+        // Debug-only on-demand test trigger (no UI): fires the real check-in
+        // pipeline 10 seconds out with today's debounce reset, so the screen-wake
+        // path can be tested without waiting for 9PM or a geofence walk.
+        //   adb shell am start -n com.markel.flowstate/.MainActivity --ez testCheckin true
+        if (BuildConfig.DEBUG && intent.getBooleanExtra("testCheckin", false)) {
+            checkinAlarmScheduler.scheduleTest(10)
+        }
+
         // Register the home geofence (requests permissions if needed)
         requestLocationPermissionsAndRegisterGeofence()
 
