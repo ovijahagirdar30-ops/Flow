@@ -12,8 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * and which version of the database we are using.
  */
 @Database(
-    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class, CheckinEntity::class, EveningPlanEntity::class], // List of all tables
-    version = 26,
+    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class, CheckinEntity::class, EveningPlanEntity::class, PlanFeedbackEntity::class], // List of all tables
+    version = 27,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -26,6 +26,7 @@ abstract class FlowStateDatabase : RoomDatabase() {
     abstract val categoryDao: CategoryDao
     abstract val checkinDao: CheckinDao
     abstract val eveningPlanDao: EveningPlanDao
+    abstract val planFeedbackDao: PlanFeedbackDao
 
     // Room will use this to create the DB instance.
     companion object {
@@ -369,6 +370,28 @@ abstract class FlowStateDatabase : RoomDatabase() {
                         `generatedAtMillis` INTEGER NOT NULL,
                         `blocksJson` TEXT NOT NULL,
                         `checkedIndexesJson` TEXT
+                    )
+                """.trimIndent())
+            }
+        }
+
+        /**
+         * v26 → v27: Adds the plan_feedback table — an append-only log of the
+         * regenerate notes the user typed during check-ins. This is the
+         * planner's long-term memory: GeminiEveningPlanner injects the newest
+         * few into every request so a correction ("skincare is only 5 min")
+         * survives past the session it was typed in. `createdAtMillis` orders
+         * the reads; `id` breaks same-millisecond ties. Bare columns, no SQL
+         * defaults — the v25 lesson.
+         */
+        val MIGRATION_26_27 = object : Migration(26, 27) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `plan_feedback` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `comment` TEXT NOT NULL,
+                        `createdAtMillis` INTEGER NOT NULL
                     )
                 """.trimIndent())
             }

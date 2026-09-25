@@ -15,3 +15,15 @@ data class PlanFeedback(
     /** The plan being rejected — what this feedback is about. */
     val previousPlan: EveningPlan
 )
+
+/**
+ * A regenerate note that has been PERSISTED — [date] is the ISO day it was
+ * typed. Unlike [PlanFeedback] (one request, dies with the session, carries
+ * the rejected plan), these are the durable memory entries
+ * [EveningPlanRepository.recentFeedback] reads back and GeminiEveningPlanner
+ * injects into every future generation.
+ */
+data class PlanFeedbackNote(
+    val date: String,
+    val comment: String
+)

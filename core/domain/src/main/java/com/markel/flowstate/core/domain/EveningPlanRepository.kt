@@ -30,4 +30,15 @@ interface EveningPlanRepository {
      * list clears the column back to null.
      */
     suspend fun setCheckedIndexes(date: String, indexes: List<Int>)
+
+    /**
+     * Durably records a regenerate note so LATER evenings inherit it — the
+     * planner's long-term memory ("skincare is only 5 minutes, not 20").
+     * Blank comments are ignored; every non-blank note is appended, so
+     * multiple regenerations in one check-in all survive.
+     */
+    suspend fun recordFeedback(date: String, comment: String)
+
+    /** The last [limit] recorded notes, newest first, oldest last. */
+    suspend fun recentFeedback(limit: Int): List<PlanFeedbackNote>
 }

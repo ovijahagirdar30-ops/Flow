@@ -2,10 +2,13 @@ package com.markel.flowstate.core.data
 
 import com.markel.flowstate.core.data.local.EveningPlanDao
 import com.markel.flowstate.core.data.local.EveningPlanEntity
+import com.markel.flowstate.core.data.local.PlanFeedbackDao
+import com.markel.flowstate.core.data.local.PlanFeedbackEntity
 import com.markel.flowstate.core.domain.EveningPlan
 import com.markel.flowstate.core.domain.EveningPlanRepository
 import com.markel.flowstate.core.domain.PlanBlock
 import com.markel.flowstate.core.domain.PlanBlockKind
+import com.markel.flowstate.core.domain.PlanFeedbackNote
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -21,7 +24,8 @@ import javax.inject.Inject
  * than silently corrupting a plan if the enum is ever renamed.
  */
 class EveningPlanRepositoryImpl @Inject constructor(
-    private val dao: EveningPlanDao
+    private val dao: EveningPlanDao,
+    private val feedbackDao: PlanFeedbackDao
 ) : EveningPlanRepository {
 
     private val json = Json
@@ -54,6 +58,23 @@ class EveningPlanRepositoryImpl @Inject constructor(
                 ?.let { json.encodeToString(it) }
         )
     }
+
+    override suspend fun recordFeedback(date: String, comment: String) {
+        val trimmed = comment.trim()
+        if (trimmed.isEmpty()) return
+        feedbackDao.insert(
+            PlanFeedbackEntity(
+                date = date,
+                comment = trimmed,
+                createdAtMillis = System.currentTimeMillis()
+            )
+        )
+    }
+
+    override suspend fun recentFeedback(limit: Int): List<PlanFeedbackNote> =
+        feedbackDao.recentFeedback(limit).map {
+            PlanFeedbackNote(date = it.date, comment = it.comment)
+        }
 
     private fun EveningPlanEntity.toDomain(): EveningPlan = EveningPlan(
         date = date,

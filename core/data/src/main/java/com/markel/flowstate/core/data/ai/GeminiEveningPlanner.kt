@@ -4,11 +4,13 @@ import android.util.Log
 import com.markel.flowstate.core.data.BuildConfig
 import com.markel.flowstate.core.domain.CheckinSnapshot
 import com.markel.flowstate.core.domain.EveningPlan
+import com.markel.flowstate.core.domain.EveningPlanRepository
 import com.markel.flowstate.core.domain.EveningPlanner
 import com.markel.flowstate.core.domain.LocalEveningPlanner
 import com.markel.flowstate.core.domain.PlanBlock
 import com.markel.flowstate.core.domain.PlanBlockKind
 import com.markel.flowstate.core.domain.PlanFeedback
+import com.markel.flowstate.core.domain.PlanFeedbackNote
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
@@ -35,7 +37,8 @@ import javax.inject.Inject
  *    back to [LocalEveningPlanner], so the check-in flow can never break
  */
 class GeminiEveningPlanner @Inject constructor(
-    private val fallback: LocalEveningPlanner
+    private val fallback: LocalEveningPlanner,
+    private val planRepository: EveningPlanRepository
 ) : EveningPlanner {
 
     override suspend fun generatePlan(snapshot: CheckinSnapshot, feedback: PlanFeedback?): EveningPlan {
@@ -45,7 +48,14 @@ class GeminiEveningPlanner @Inject constructor(
             return fallback.generatePlan(snapshot)
         }
         return try {
-            withContext(Dispatchers.IO) { requestPlan(apiKey, snapshot, feedback) }
+            withContext(Dispatchers.IO) {
+                // Durable memory: past regenerate notes, newest first. A DB
+                // hiccup must never break planning — worst case we plan
+                // without memory, exactly as before.
+                val memory = runCatching { planRepository.recentFeedback(MEMORY_LIMIT) }
+                    .getOrElse { emptyList() }
+                requestPlan(apiKey, snapshot, feedback, memory)
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Gemini plan generation failed (${e.message}) — using LocalEveningPlanner", e)
             fallback.generatePlan(snapshot)
@@ -54,7 +64,12 @@ class GeminiEveningPlanner @Inject constructor(
 
     // ── Request ────────────────────────────────────────────────────────────
 
-    private fun requestPlan(apiKey: String, snapshot: CheckinSnapshot, feedback: PlanFeedback?): EveningPlan {
+    private fun requestPlan(
+        apiKey: String,
+        snapshot: CheckinSnapshot,
+        feedback: PlanFeedback?,
+        memory: List<PlanFeedbackNote>
+    ): EveningPlan {
         val conn = URL(ENDPOINT).openConnection() as HttpURLConnection
         try {
             conn.requestMethod = "POST"
@@ -64,7 +79,7 @@ class GeminiEveningPlanner @Inject constructor(
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
             conn.setRequestProperty("x-goog-api-key", apiKey)
 
-            val body = buildRequestBody(snapshot, feedback)
+            val body = buildRequestBody(snapshot, feedback, memory)
             conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
 
             val code = conn.responseCode
@@ -78,7 +93,11 @@ class GeminiEveningPlanner @Inject constructor(
         }
     }
 
-    private fun buildRequestBody(snapshot: CheckinSnapshot, feedback: PlanFeedback?): String = buildJsonObject {
+    private fun buildRequestBody(
+        snapshot: CheckinSnapshot,
+        feedback: PlanFeedback?,
+        memory: List<PlanFeedbackNote>
+    ): String = buildJsonObject {
         putJsonObject("systemInstruction") {
             putJsonArray("parts") {
                 add(buildJsonObject { put("text", SYSTEM_PROMPT) })
@@ -88,7 +107,7 @@ class GeminiEveningPlanner @Inject constructor(
             add(buildJsonObject {
                 put("role", "user")
                 putJsonArray("parts") {
-                    add(buildJsonObject { put("text", userText(snapshot, feedback)) })
+                    add(buildJsonObject { put("text", userText(snapshot, feedback, memory)) })
                 }
             })
         }
@@ -128,9 +147,29 @@ class GeminiEveningPlanner @Inject constructor(
         putJsonArray("required") { add("headline"); add("blocks") }
     }
 
-    /** Snapshot JSON, plus a revise instruction when the user regenerated. */
-    private fun userText(snapshot: CheckinSnapshot, feedback: PlanFeedback?): String = buildString {
+    /** Snapshot JSON, the durable PAST CORRECTIONS memory, plus a revise instruction when the user regenerated. */
+    private fun userText(
+        snapshot: CheckinSnapshot,
+        feedback: PlanFeedback?,
+        memory: List<PlanFeedbackNote>
+    ): String = buildString {
         append(snapshotJson(snapshot))
+
+        // Long-term memory: notes typed on earlier evenings. The current
+        // session's note is excluded here — it travels in the REVISE block
+        // below, and repeating it would only add noise. Chronological order
+        // gives the newest correction the last word.
+        val currentNote = feedback?.comment?.trim().orEmpty()
+        val remembered = memory
+            .filter { it.comment.isNotBlank() && !it.comment.equals(currentNote, ignoreCase = true) }
+            .asReversed()
+        if (remembered.isNotEmpty()) {
+            append("\n\nPAST CORRECTIONS (typed by Ovi on earlier evenings):")
+            remembered.forEach {
+                append("\n- ").append(it.date).append(": \"").append(it.comment).append('"')
+            }
+        }
+
         if (feedback != null) {
             append("\n\nREVISE THE PREVIOUS PLAN.")
             if (feedback.comment.isNotBlank()) {
@@ -261,6 +300,8 @@ class GeminiEveningPlanner @Inject constructor(
     private companion object {
         const val TAG = "GeminiEveningPlanner"
         const val MODEL = "gemini-3.8-flash"
+        /** How many durable correction notes ride along in each prompt. */
+        const val MEMORY_LIMIT = 5
         val HH_MM: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
         val ENDPOINT =
             "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent"
@@ -276,7 +317,8 @@ class GeminiEveningPlanner @Inject constructor(
             any unexpected plans such as "dinner with family"); today's incomplete
             tasks (id, title, description, priority); and habits (id, name, type,
             whether completed today, streak, today's value, priorityRank 1-10 where
-            higher matters more, rolloverIfMissed).
+            higher matters more, rolloverIfMissed). A PAST CORRECTIONS section may
+            follow the snapshot: durable notes Ovi typed on earlier evenings.
 
             Output rules:
             - headline: at most 8 words, specific to tonight's mood. Never guilt-trippy.
@@ -300,6 +342,11 @@ class GeminiEveningPlanner @Inject constructor(
 
             Behavior:
             - Reduce decisions: give ONE concrete plan, never options or questions.
+            - PAST CORRECTIONS are durable facts from earlier evenings, never
+              suggestions: honor every one that applies tonight, especially
+              durations ("skincare is only 5 minutes"). Never schedule more
+              time for an activity than its correction allows, and prefer the
+              corrected activity length over any default you would assume.
             - If a "REVISE THE PREVIOUS PLAN" section follows the snapshot, treat the
               user's note as binding and revise that plan instead of re-rolling.
             - Adapt to mood: low energy or high stress -> fewer and easier tasks,

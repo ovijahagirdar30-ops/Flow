@@ -115,6 +115,10 @@ class CheckinViewModel @Inject constructor(
      * Regenerate: feeds the typed comment plus the plan being rejected back
      * into the planner, so Gemini revises instead of re-rolling. Stays on the
      * PLAN step; isPlanning drives the step's planning state.
+     *
+     * The comment is also RECORDED durably before generating — that record is
+     * what later evenings read back as long-term memory ("skincare is only
+     * 5 minutes"), so a correction outlives the session it was typed in.
      */
     fun regeneratePlan(comment: String) {
         if (_isPlanning.value) return
@@ -122,9 +126,13 @@ class CheckinViewModel @Inject constructor(
         viewModelScope.launch {
             _isPlanning.value = true
             val snapshot = buildCheckinSnapshot()
+            val trimmed = comment.trim()
+            if (trimmed.isNotBlank()) {
+                eveningPlanRepository.recordFeedback(snapshot.date, trimmed)
+            }
             _plan.value = eveningPlanner.generatePlan(
                 snapshot,
-                PlanFeedback(comment = comment.trim(), previousPlan = current)
+                PlanFeedback(comment = trimmed, previousPlan = current)
             )
             _isPlanning.value = false
         }
