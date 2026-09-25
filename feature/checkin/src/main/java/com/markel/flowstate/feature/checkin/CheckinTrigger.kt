@@ -12,8 +12,8 @@ import com.markel.flowstate.core.notifications.CheckinDebounce
 
 /**
  * Shared "fire the check-in" logic used by both trigger paths:
- * CheckinAlarmReceiver (fallback / manual test) and GeofenceReceiver
- * (arrival-at-home, the primary trigger). Keeping this in one place means
+ * CheckinAlarmReceiver (debug test) and GeofenceReceiver
+ * (arrival-at-home, the only trigger). Keeping this in one place means
  * both paths behave identically and only ever need to be fixed once —
  * including the once-per-day debounce below.
  */

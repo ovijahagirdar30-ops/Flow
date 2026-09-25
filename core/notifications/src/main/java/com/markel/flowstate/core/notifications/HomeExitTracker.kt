@@ -30,9 +30,10 @@ object HomeExitTracker {
 
     /**
      * Milliseconds since the last recorded exit, or null if the device has
-     * never been observed leaving (fresh install, cleared app data). Null
-     * must be treated as "not away" — that is exactly what blocks phantom
-     * ENTERs that arrive with no departure behind them.
+     * never been observed leaving (fresh install, cleared app data). Callers
+     * decide what null means: GeofenceReceiver treats it as trust-first
+     * (allow the ENTER — quiet hours still apply) so a fresh install never
+     * swallows the user's real first arrival.
      */
     fun millisSinceLastExit(context: Context): Long? {
         val lastExit = prefs(context).getLong(KEY_LAST_EXIT_TIME, -1L)

@@ -68,7 +68,7 @@ class MainActivity : ComponentActivity() {
         } else {
             Toast.makeText(
                 this,
-                "Location permission denied — check-in will only trigger via the 9PM fallback, not on arrival.",
+                "Location permission denied — the arrival check-in trigger will not work.",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -84,7 +84,7 @@ class MainActivity : ComponentActivity() {
         } else {
             Toast.makeText(
                 this,
-                "Background location denied — check-in will only trigger via the 9PM fallback, not on arrival.",
+                "Background location denied — the arrival check-in trigger will not work.",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -134,12 +134,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Schedule the 9PM fallback alarm (self-reschedules after each fire)
-        checkinAlarmScheduler.scheduleFallbackCutoff()
+        // Clear any 9PM cutoff alarm queued by older builds — the fallback
+        // trigger no longer exists (arrival geofence is the only one)
+        checkinAlarmScheduler.cancelFallbackCutoff()
 
         // Debug-only on-demand test trigger (no UI): fires the real check-in
         // pipeline 10 seconds out with today's debounce reset, so the screen-wake
-        // path can be tested without waiting for 9PM or a geofence walk.
+        // path can be tested without a geofence walk.
         //   adb shell am start -n com.markel.flowstate/.MainActivity --ez testCheckin true
         if (BuildConfig.DEBUG && intent.getBooleanExtra("testCheckin", false)) {
             checkinAlarmScheduler.scheduleTest(10)

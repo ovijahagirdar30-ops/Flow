@@ -6,9 +6,9 @@ import java.time.LocalDate
 /**
  * Prevents the check-in from firing more than once per calendar day.
  * Geofence ENTER fires every time you cross into the radius (leave and
- * come back = another ENTER), and the fallback alarm could in theory
- * overlap with a geofence firing earlier the same evening — both paths
- * go through this via CheckinTrigger before anything is shown.
+ * come back = another ENTER), and the debug test alarm could overlap a
+ * real arrival — both paths go through this via CheckinTrigger before
+ * anything is shown.
  */
 object CheckinDebounce {
     private const val PREFS_NAME = "checkin_debounce"

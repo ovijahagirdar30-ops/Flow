@@ -74,7 +74,7 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true" />
 
-        <!-- Fires the check-in alarm (fallback path, or manual test) — targeted
+        <!-- Fires the check-in alarm (debug test only) — targeted
              by CheckinAlarmScheduler (core:notifications) via its class name as
              a string, since core modules don't depend on feature modules -->
         <receiver
