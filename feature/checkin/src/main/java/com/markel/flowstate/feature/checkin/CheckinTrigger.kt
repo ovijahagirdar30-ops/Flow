@@ -60,6 +60,47 @@ object CheckinTrigger {
         Log.i(TAG, "check-in notification posted with full-screen intent")
     }
 
+    /**
+     * Night-review presentation: the same OEM-proof hand-off as [fire] —
+     * direct start when overlay permission allows, otherwise a full-screen
+     * intent notification — but pointed at the9PM day-recap page and
+     * deliberately WITHOUT the once-per-day debounce: it's a different page
+     * from the arrival check-in, and its alarm already fires exactly once
+     * per evening.
+     */
+    fun fireNightReview(context: Context) {
+        Log.i(TAG, "fireNightReview() — triggering night review")
+        createNotificationChannel(context)
+        val fullScreenIntent = Intent(context, CheckinActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(CheckinActivity.EXTRA_MODE, CheckinActivity.MODE_NIGHT_REVIEW)
+        }
+        if (Settings.canDrawOverlays(context)) {
+            Log.i(TAG, "starting night review directly (overlay permission granted)")
+            context.startActivity(fullScreenIntent)
+        }
+        val fullScreenPendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            fullScreenIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info) // placeholder icon
+            .setContentTitle("Night check-in")
+            .setContentText("See how today went before it winds down.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setFullScreenIntent(fullScreenPendingIntent, true)
+            .setContentIntent(fullScreenPendingIntent)
+            .setAutoCancel(true)
+            .build()
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, notification)
+        Log.i(TAG, "night review notification posted with full-screen intent")
+    }
+
     private fun createNotificationChannel(context: Context) {
         val channel = NotificationChannel(
             CHANNEL_ID,

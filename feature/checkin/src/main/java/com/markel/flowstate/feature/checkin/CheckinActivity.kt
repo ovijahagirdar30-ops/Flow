@@ -42,16 +42,23 @@ class CheckinActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
         )
+        // Two faces of the same wake-the-screen activity: the arrival
+        // check-in (mood → plan) and the 9PM night review (day recap).
+        val nightReview = intent.getStringExtra(EXTRA_MODE) == MODE_NIGHT_REVIEW
         setContent {
             MaterialTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = androidx.compose.ui.graphics.Color.Black
                 ) {
-                    CheckinScreen(
-                        onDismiss = { finish() },
-                        onOpenPlan = { openPlanTab() }
-                    )
+                    if (nightReview) {
+                        NightReviewScreen(onDone = { finish() })
+                    } else {
+                        CheckinScreen(
+                            onDismiss = { finish() },
+                            onOpenPlan = { openPlanTab() }
+                        )
+                    }
                 }
             }
         }
@@ -102,6 +109,15 @@ class CheckinActivity : ComponentActivity() {
          * Agree — the feature module can't reference the app's MainActivity.
          */
         const val EXTRA_OPEN_TAB = "com.markel.flowstate.extra.OPEN_TAB"
+
+        /**
+         * Intent extra selecting which face of this activity to show.
+         * Absent/anything else = the arrival check-in.
+         */
+        const val EXTRA_MODE = "com.markel.flowstate.extra.MODE"
+
+        /** Value for [EXTRA_MODE]: the 9PM night review page. */
+        const val MODE_NIGHT_REVIEW = "night_review"
 
         private const val TAG = "CheckinActivity"
     }

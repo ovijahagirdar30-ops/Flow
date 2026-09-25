@@ -1,6 +1,7 @@
 package com.markel.flowstate
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
@@ -133,18 +134,27 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-
-        // Clear any 9PM cutoff alarm queued by older builds — the fallback
-        // trigger no longer exists (arrival geofence is the only one)
+        enableEdgeToEdge()        // Clear any cutoff alarm queued by older builds (the old arrival
+        // fallback is gone), then arm tonight's9PM night-review page — its
+        // receiver re-arms it after every fire.
         checkinAlarmScheduler.cancelFallbackCutoff()
+        checkinAlarmScheduler.scheduleNightReview()
 
-        // Debug-only on-demand test trigger (no UI): fires the real check-in
-        // pipeline 10 seconds out with today's debounce reset, so the screen-wake
-        // path can be tested without a geofence walk.
-        //   adb shell am start -n com.markel.flowstate/.MainActivity --ez testCheckin true
+        // Debug-only on-demand triggers (no UI):
+        //   --ez testCheckin true       arrival check-in pipeline in10s
+        //   --ez testNightReview true   night review in10s (via the real alarm path)
+        //   --ez openNight true         night review immediately (skips the alarm)
+        // each: adb shell am start -n com.markel.flowstate/.MainActivity --ez <name> true
         if (BuildConfig.DEBUG && intent.getBooleanExtra("testCheckin", false)) {
             checkinAlarmScheduler.scheduleTest(10)
+        }
+        if (BuildConfig.DEBUG && intent.getBooleanExtra("testNightReview", false)) {
+            checkinAlarmScheduler.scheduleNightReviewInTest(10)
+        }
+        if (BuildConfig.DEBUG && intent.getBooleanExtra("openNight", false)) {
+            startActivity(Intent(this, CheckinActivity::class.java).apply {
+                putExtra(CheckinActivity.EXTRA_MODE, CheckinActivity.MODE_NIGHT_REVIEW)
+            })
         }
 
         // Register the home geofence (requests permissions if needed)
