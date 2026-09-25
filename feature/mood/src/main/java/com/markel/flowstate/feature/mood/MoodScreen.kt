@@ -92,6 +92,9 @@ private fun MoodHistoryHeader() {
     Text(
         text = "Mood history",
         style = MaterialTheme.typography.headlineSmall,
+        // Explicit: nothing in the app provides LocalContentColor, so the
+        // default resolves to black — invisible on the pure-black background.
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
     )
 }
@@ -110,7 +113,13 @@ private fun MoodEntryRow(entry: MoodEntry) {
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = entry.sourceLabel, style = MaterialTheme.typography.bodyLarge)
+            // Explicit for the same reason as MoodHistoryHeader — the habit
+            // name was always rendering black-on-black on pure-black surfaces.
+            Text(
+                text = entry.sourceLabel,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Text(
                 text = entry.date.format(dateFormatter),
                 style = MaterialTheme.typography.bodySmall,
