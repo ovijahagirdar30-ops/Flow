@@ -2,6 +2,7 @@ package com.markel.flowstate.feature.checkin
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.domain.CheckinRepository
 import com.markel.flowstate.core.domain.EveningPlan
 import com.markel.flowstate.core.domain.EveningPlanRepository
@@ -29,7 +30,8 @@ class CheckinViewModel @Inject constructor(
     private val addTaskUseCase: AddTaskUseCase,
     private val buildCheckinSnapshot: BuildCheckinSnapshotUseCase,
     private val eveningPlanner: EveningPlanner,
-    private val eveningPlanRepository: EveningPlanRepository
+    private val eveningPlanRepository: EveningPlanRepository,
+    private val userPreferences: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _step = MutableStateFlow(CheckinStep.MOOD)
@@ -55,6 +57,19 @@ class CheckinViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = CheckinUiState.Loading
     )
+
+    /**
+     * End-of-day cutoff (minute-of-day, 0 = midnight) — the mood step's
+     * "Day ends at" row edits it, and the Plan tab blanks out once the clock
+     * passes it. Eager so the picker never flashes the default first.
+     */
+    val endOfDayMinutes: StateFlow<Int> = userPreferences.endOfDayMinutes
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    /** Persists the end-of-day time picked on the mood step. */
+    fun setEndOfDayMinutes(minutes: Int) {
+        viewModelScope.launch { userPreferences.saveEndOfDayMinutes(minutes) }
+    }
 
     // Step 1 — mood
     fun updateEnergy(value: Int) = _mood.update { it.copy(energy = value) }

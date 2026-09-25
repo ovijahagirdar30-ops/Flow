@@ -37,6 +37,10 @@ import java.util.Locale
  * persisted by [PlanViewModel] (survive restarts); ticking a TASK block marks
  * the real task done, habit/free blocks tick visually only.
  *
+ * After the user's end-of-day time (or at midnight, the default cutoff) the
+ * plan ages out — [PlanUiState.isExpired] — and the tab shows the same empty
+ * state as a never-agreed evening, so yesterday's plan never lingers.
+ *
  * Deliberately theme-aware (unlike the black check-in screens): this renders
  * inside the main app's FlowStateTheme, so it follows light/dark and the
  * user's chosen app color.
@@ -51,7 +55,7 @@ fun PlanScreen(
     when {
         state.isLoading -> Unit
 
-        plan == null -> Box(
+        plan == null || state.isExpired -> Box(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding(),

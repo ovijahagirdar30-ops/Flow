@@ -39,6 +39,8 @@ fun MoodCheckinStep(
     onHeadacheCommentChange: (String) -> Unit,
     onMotivationCommentChange: (String) -> Unit,
     onNext: () -> Unit,
+    endOfDayMinutes: Int,
+    onEndOfDayChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -69,6 +71,13 @@ fun MoodCheckinStep(
         ) {
             Text("Next", color = Color.White)
         }
+
+        // End-of-day option: when this time passes, the Plan tab blanks out
+        // until the next check-in (persisted as a minute-of-day in DataStore).
+        EndOfDayRow(
+            minutes = endOfDayMinutes,
+            onMinutesChange = onEndOfDayChange
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
     }

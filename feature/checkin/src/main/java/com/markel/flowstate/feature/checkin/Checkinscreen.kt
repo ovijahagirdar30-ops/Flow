@@ -41,6 +41,7 @@ fun CheckinScreen(
     viewModel: CheckinViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val endOfDayMinutes by viewModel.endOfDayMinutes.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     when (val state = uiState) {
@@ -59,6 +60,8 @@ fun CheckinScreen(
                 onStressCommentChange = viewModel::updateStressComment,
                 onHeadacheCommentChange = viewModel::updateHeadacheComment,
                 onMotivationCommentChange = viewModel::updateMotivationComment,
+                endOfDayMinutes = endOfDayMinutes,
+                onEndOfDayChange = viewModel::setEndOfDayMinutes,
                 onNext = viewModel::goToNextStep
             )
 

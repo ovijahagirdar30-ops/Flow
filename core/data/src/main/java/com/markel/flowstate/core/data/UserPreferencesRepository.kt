@@ -224,4 +224,25 @@ class UserPreferencesRepository @Inject constructor(
             preferences[LAST_CATEGORY_ID_KEY] = id
         }
     }
+
+    // ── End of day (Plan tab expiry) ───────────────────────────────────────
+
+    private val END_OF_DAY_MINUTES_KEY = intPreferencesKey("end_of_day_minutes")
+
+    /**
+     * Minute-of-day (0..1439) when the agreed evening plan disappears from
+     * the Plan tab. 0 means midnight (the default): a literal 00:00 cutoff
+     * would hide the plan all day, so midnight is expressed purely by the
+     * calendar-date gate (see isPlanExpired in feature:checkin).
+     */
+    val endOfDayMinutes: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[END_OF_DAY_MINUTES_KEY] ?: 0
+    }
+
+    /** Persists the end-of-day cutoff, clamped to a valid minute-of-day. */
+    suspend fun saveEndOfDayMinutes(minutes: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[END_OF_DAY_MINUTES_KEY] = minutes.coerceIn(0, 23 * 60 + 59)
+        }
+    }
 }
