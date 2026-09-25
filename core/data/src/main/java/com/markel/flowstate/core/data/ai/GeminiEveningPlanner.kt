@@ -8,6 +8,7 @@ import com.markel.flowstate.core.domain.EveningPlanner
 import com.markel.flowstate.core.domain.LocalEveningPlanner
 import com.markel.flowstate.core.domain.PlanBlock
 import com.markel.flowstate.core.domain.PlanBlockKind
+import com.markel.flowstate.core.domain.PlanFeedback
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
@@ -34,14 +35,14 @@ class GeminiEveningPlanner @Inject constructor(
     private val fallback: LocalEveningPlanner
 ) : EveningPlanner {
 
-    override suspend fun generatePlan(snapshot: CheckinSnapshot): EveningPlan {
+    override suspend fun generatePlan(snapshot: CheckinSnapshot, feedback: PlanFeedback?): EveningPlan {
         val apiKey = BuildConfig.GEMINI_API_KEY
         if (apiKey.isBlank()) {
             Log.i(TAG, "No gemini.api.key in local.properties — using LocalEveningPlanner")
             return fallback.generatePlan(snapshot)
         }
         return try {
-            withContext(Dispatchers.IO) { requestPlan(apiKey, snapshot) }
+            withContext(Dispatchers.IO) { requestPlan(apiKey, snapshot, feedback) }
         } catch (e: Exception) {
             Log.w(TAG, "Gemini plan generation failed (${e.message}) — using LocalEveningPlanner", e)
             fallback.generatePlan(snapshot)
@@ -50,7 +51,7 @@ class GeminiEveningPlanner @Inject constructor(
 
     // ── Request ────────────────────────────────────────────────────────────
 
-    private fun requestPlan(apiKey: String, snapshot: CheckinSnapshot): EveningPlan {
+    private fun requestPlan(apiKey: String, snapshot: CheckinSnapshot, feedback: PlanFeedback?): EveningPlan {
         val conn = URL(ENDPOINT).openConnection() as HttpURLConnection
         try {
             conn.requestMethod = "POST"
@@ -60,7 +61,7 @@ class GeminiEveningPlanner @Inject constructor(
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
             conn.setRequestProperty("x-goog-api-key", apiKey)
 
-            val body = buildRequestBody(snapshot)
+            val body = buildRequestBody(snapshot, feedback)
             conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
 
             val code = conn.responseCode
@@ -74,7 +75,7 @@ class GeminiEveningPlanner @Inject constructor(
         }
     }
 
-    private fun buildRequestBody(snapshot: CheckinSnapshot): String = buildJsonObject {
+    private fun buildRequestBody(snapshot: CheckinSnapshot, feedback: PlanFeedback?): String = buildJsonObject {
         putJsonObject("systemInstruction") {
             putJsonArray("parts") {
                 add(buildJsonObject { put("text", SYSTEM_PROMPT) })
@@ -84,7 +85,7 @@ class GeminiEveningPlanner @Inject constructor(
             add(buildJsonObject {
                 put("role", "user")
                 putJsonArray("parts") {
-                    add(buildJsonObject { put("text", snapshotJson(snapshot)) })
+                    add(buildJsonObject { put("text", userText(snapshot, feedback)) })
                 }
             })
         }
@@ -123,6 +124,38 @@ class GeminiEveningPlanner @Inject constructor(
         }
         putJsonArray("required") { add("headline"); add("blocks") }
     }
+
+    /** Snapshot JSON, plus a revise instruction when the user regenerated. */
+    private fun userText(snapshot: CheckinSnapshot, feedback: PlanFeedback?): String = buildString {
+        append(snapshotJson(snapshot))
+        if (feedback != null) {
+            append("\n\nREVISE THE PREVIOUS PLAN.")
+            if (feedback.comment.isNotBlank()) {
+                append(" User's note: \"")
+                append(feedback.comment.trim())
+                append('"')
+            }
+            append(" Previous plan: ")
+            append(planJson(feedback.previousPlan))
+            append(" Produce a revised plan that honors the note while keeping what already works.")
+        }
+    }
+
+    private fun planJson(plan: EveningPlan): String = buildJsonObject {
+        put("headline", plan.headline)
+        putJsonArray("blocks") {
+            plan.blocks.forEach { block ->
+                add(buildJsonObject {
+                    put("startTime", block.startTime)
+                    put("durationMinutes", block.durationMinutes)
+                    put("title", block.title)
+                    put("reason", block.reason)
+                    put("kind", block.kind.name)
+                    block.referenceId?.let { put("referenceId", it) }
+                })
+            }
+        }
+    }.toString()
 
     private fun snapshotJson(snapshot: CheckinSnapshot): String = buildJsonObject {
         put("date", snapshot.date)
@@ -250,6 +283,8 @@ class GeminiEveningPlanner @Inject constructor(
 
             Behavior:
             - Reduce decisions: give ONE concrete plan, never options or questions.
+            - If a "REVISE THE PREVIOUS PLAN" section follows the snapshot, treat the
+              user's note as binding and revise that plan instead of re-rolling.
             - Adapt to mood: low energy or high stress -> fewer and easier tasks,
               more REST; high energy -> more tasks, hardest first.
             - Never induce guilt: never shame undone tasks or missed habits. If

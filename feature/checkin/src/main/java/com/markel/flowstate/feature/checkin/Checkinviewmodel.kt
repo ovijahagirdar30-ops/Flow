@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.domain.CheckinRepository
 import com.markel.flowstate.core.domain.EveningPlan
+import com.markel.flowstate.core.domain.EveningPlanRepository
 import com.markel.flowstate.core.domain.EveningPlanner
+import com.markel.flowstate.core.domain.PlanFeedback
 import com.markel.flowstate.core.domain.checkin.CheckinMoodState
 import com.markel.flowstate.core.domain.checkin.UnexpectedPlan
 import com.markel.flowstate.core.domain.usecase.checkin.BuildCheckinSnapshotUseCase
@@ -26,7 +28,8 @@ class CheckinViewModel @Inject constructor(
     private val checkinRepository: CheckinRepository,
     private val addTaskUseCase: AddTaskUseCase,
     private val buildCheckinSnapshot: BuildCheckinSnapshotUseCase,
-    private val eveningPlanner: EveningPlanner
+    private val eveningPlanner: EveningPlanner,
+    private val eveningPlanRepository: EveningPlanRepository
 ) : ViewModel() {
 
     private val _step = MutableStateFlow(CheckinStep.MOOD)
@@ -102,9 +105,36 @@ class CheckinViewModel @Inject constructor(
             _isPlanning.value = true
             checkinRepository.saveTodayCheckin(_mood.value, _unexpectedPlans.value)
             val snapshot = buildCheckinSnapshot()
-            _plan.value = eveningPlanner.generatePlan(snapshot)
+            _plan.value = eveningPlanner.generatePlan(snapshot, feedback = null)
             _isPlanning.value = false
             _step.value = CheckinStep.PLAN
         }
+    }
+
+    /**
+     * Regenerate: feeds the typed comment plus the plan being rejected back
+     * into the planner, so Gemini revises instead of re-rolling. Stays on the
+     * PLAN step; isPlanning drives the step's planning state.
+     */
+    fun regeneratePlan(comment: String) {
+        if (_isPlanning.value) return
+        val current = _plan.value ?: return
+        viewModelScope.launch {
+            _isPlanning.value = true
+            val snapshot = buildCheckinSnapshot()
+            _plan.value = eveningPlanner.generatePlan(
+                snapshot,
+                PlanFeedback(comment = comment.trim(), previousPlan = current)
+            )
+            _isPlanning.value = false
+        }
+    }
+
+    /**
+     * Agree: the only place an evening plan is ever persisted (first write
+     * to evening_plans). The screen dismisses the popup once this returns.
+     */
+    suspend fun agreeToPlan() {
+        _plan.value?.let { eveningPlanRepository.saveAgreedPlan(it) }
     }
 }

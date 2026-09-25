@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +32,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.markel.flowstate.core.domain.CheckinItem
 import com.markel.flowstate.core.domain.CheckinItemType
+import kotlinx.coroutines.launch
 
 @Composable
 fun CheckinScreen(
@@ -38,6 +40,7 @@ fun CheckinScreen(
     viewModel: CheckinViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
     when (val state = uiState) {
         is CheckinUiState.Loading -> Unit
@@ -74,7 +77,15 @@ fun CheckinScreen(
 
             CheckinStep.PLAN -> PlanCheckinStep(
                 plan = state.plan,
-                onDismiss = onDismiss
+                isPlanning = state.isPlanning,
+                onRegenerate = viewModel::regeneratePlan,
+                onAgree = {
+                    scope.launch {
+                        viewModel.agreeToPlan()
+                        onDismiss()
+                    }
+                },
+                onDiscard = onDismiss
             )
         }
     }

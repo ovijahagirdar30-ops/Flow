@@ -13,10 +13,14 @@ import javax.inject.Inject
  * check-in's energy score), dinner once the clock passes 19:00, unfinished
  * habits after that, then a wind-down and the 11PM ritual close. Tone is
  * deliberately guilt-free per the product philosophy.
+ *
+ * [feedback] is accepted and IGNORED — the heuristic is deterministic, so a
+ * regenerate returns the same shape; only visible when the fallback is the
+ * active backend.
  */
 class LocalEveningPlanner @Inject constructor() : EveningPlanner {
 
-    override suspend fun generatePlan(snapshot: CheckinSnapshot): EveningPlan {
+    override suspend fun generatePlan(snapshot: CheckinSnapshot, feedback: PlanFeedback?): EveningPlan {
         val energy = snapshot.checkin?.mood?.energy
         val lowEnergy = energy != null && energy <= 4
         val maxTasks = when {
