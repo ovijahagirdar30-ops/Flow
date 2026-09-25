@@ -172,7 +172,7 @@ private fun PlanBlockRow(block: PlanBlock) {
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = block.startTime,
+            text = formatPlanTime(block.startTime),
             style = MaterialTheme.typography.titleMedium,
             color = AccentPurple
         )

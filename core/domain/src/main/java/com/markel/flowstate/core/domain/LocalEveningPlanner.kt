@@ -1,5 +1,6 @@
 package com.markel.flowstate.core.domain
 
+import java.time.LocalTime
 import javax.inject.Inject
 
 /**
@@ -9,10 +10,17 @@ import javax.inject.Inject
  * time.
  *
  * Scheduling heuristic — simple on purpose, it's a placeholder:
- * evenings run 18:00 → 23:30; up to 2-4 tasks first (count adapts to the
- * check-in's energy score), dinner once the clock passes 19:00, unfinished
- * habits after that, then a wind-down and the 11PM ritual close. Tone is
- * deliberately guilt-free per the product philosophy.
+ *  - anchors on WHEN the user actually checks in: the first block starts at
+ *    the next 5-minute mark of the wall clock (no fixed 18:00),
+ *  - opens with a decompress REST whose length is derived from the mood
+ *    scores — the offline stand-in for Gemini sizing that rest itself,
+ *  - up to 2-4 tasks (count adapts to the check-in's energy score), dinner at
+ *    19:00 only when the check-in is still pre-dinner, unfinished habits after
+ *    that, then a wind-down (only if the evening still has room) and the 11PM
+ *    ritual close. Tone is deliberately guilt-free per the product philosophy.
+ *
+ * Block times are stored as zero-padded 24h "HH:mm" (wrapping past midnight);
+ * the UI renders them on a 12-hour clock.
  *
  * [feedback] is accepted and IGNORED — the heuristic is deterministic, so a
  * regenerate returns the same shape; only visible when the fallback is the
@@ -37,16 +45,33 @@ class LocalEveningPlanner @Inject constructor() : EveningPlanner {
             .take(3)
 
         val blocks = mutableListOf<PlanBlock>()
-        var clock = START_MINUTES
+        // The plan starts when the user actually checks in (next 5-minute
+        // mark) — never at a fixed hour.
+        var clock = startAnchorMinutes()
 
-        // Tasks before dinner while freshest — split around a 19:00 dinner.
-        val (beforeDinner, afterDinner) = tasks.splitAt(2)
+        // Post-check-in decompress: length derived from the mood scores.
+        val decompress = decompressMinutes(snapshot)
+        blocks += PlanBlock(
+            startTime = format(clock),
+            durationMinutes = decompress,
+            title = "Settle in",
+            reason = decompressReason(decompress),
+            kind = PlanBlockKind.REST
+        )
+        clock += decompress + GAP_MINUTES
+
+        // Tasks before dinner while freshest — split around a 19:00 dinner,
+        // but only when the check-in is still pre-dinner; a late check-in
+        // gets every task up front and no dinner block.
+        val preDinner = clock < DINNER_MINUTES
+        val (beforeDinner, afterDinner) =
+            if (preDinner) tasks.splitAt(2) else tasks to emptyList()
         beforeDinner.forEachIndexed { i, task ->
             blocks += taskBlock(task, clock, first = i == 0, energy = energy)
             clock += TASK_MINUTES + GAP_MINUTES
         }
 
-        if (tasks.isNotEmpty() || habits.isNotEmpty()) {
+        if (preDinner && (tasks.isNotEmpty() || habits.isNotEmpty())) {
             clock = maxOf(clock, DINNER_MINUTES)
             blocks += PlanBlock(format(clock), MEAL_MINUTES, "Dinner", "Screen break — refuel before the rest of the evening", PlanBlockKind.MEAL)
             clock += MEAL_MINUTES + GAP_MINUTES
@@ -74,9 +99,16 @@ class LocalEveningPlanner @Inject constructor() : EveningPlanner {
             clock += HABIT_MINUTES + GAP_MINUTES
         }
 
-        val windDownStart = maxOf(clock, WIND_DOWN_MINUTES)
-        blocks += PlanBlock(format(windDownStart), 60, "Wind down", "Low-effort rest before the close", PlanBlockKind.REST)
-        blocks += PlanBlock(format(REFLECTION_MINUTES), 30, "Reflection", "11PM ritual close — review the day, no guilt", PlanBlockKind.REFLECTION)
+        // Wind-down only when the evening still has room before the close;
+        // a late check-in goes straight to the ritual.
+        if (clock + WIND_DOWN_DURATION + GAP_MINUTES <= REFLECTION_MINUTES) {
+            val windDownStart = maxOf(clock, WIND_DOWN_MINUTES)
+            blocks += PlanBlock(format(windDownStart), WIND_DOWN_DURATION, "Wind down", "Low-effort rest before the close", PlanBlockKind.REST)
+            clock = windDownStart + WIND_DOWN_DURATION + GAP_MINUTES
+        }
+
+        val reflectionStart = maxOf(clock, REFLECTION_MINUTES)
+        blocks += PlanBlock(format(reflectionStart), 30, "Reflection", "11PM ritual close — review the day, no guilt", PlanBlockKind.REFLECTION)
 
         return EveningPlan(
             date = snapshot.date,
@@ -84,6 +116,39 @@ class LocalEveningPlanner @Inject constructor() : EveningPlanner {
             headline = headlineFor(energy, lowEnergy),
             blocks = blocks
         )
+    }
+
+    /**
+     * Wall-clock anchor: the current time rounded UP to the next 5 minutes so
+     * the first block starts just after the user actually finishes the
+     * check-in. Stays on the same day when rounding would hit 24:00.
+     */
+    private fun startAnchorMinutes(): Int {
+        val now = LocalTime.now()
+        val minutes = now.hour * 60 + now.minute
+        val rounded = ((minutes + 4) / 5) * 5
+        return if (rounded >= MINUTES_PER_DAY) minutes else rounded
+    }
+
+    /**
+     * Post-check-in decompress length — the offline stand-in for the AI
+     * sizing that rest itself: heavily drained earns a long reset, a fine day
+     * only a quick pause.
+     */
+    private fun decompressMinutes(snapshot: CheckinSnapshot): Int {
+        val mood = snapshot.checkin?.mood ?: return DEFAULT_DECOMPRESS_MINUTES
+        return when {
+            mood.sleepiness >= 8 || mood.energy <= 2 -> 40
+            mood.sleepiness >= 6 || mood.energy <= 4 || mood.stress >= 8 -> 30
+            mood.sleepiness >= 4 || mood.energy <= 6 -> 20
+            else -> 10
+        }
+    }
+
+    private fun decompressReason(minutes: Int): String = when {
+        minutes >= 30 -> "Proper reset first — you're running low"
+        minutes == 20 -> "Ease down before getting going"
+        else -> "Quick decompress, then into the evening"
     }
 
     private fun taskBlock(task: Task, start: Int, first: Boolean, energy: Int?): PlanBlock = PlanBlock(
@@ -107,20 +172,25 @@ class LocalEveningPlanner @Inject constructor() : EveningPlanner {
     }
 
     // Locale.ROOT so clock digits stay ASCII regardless of device locale.
-    private fun format(minutes: Int): String =
-        String.format(java.util.Locale.ROOT, "%02d:%02d", minutes / 60, minutes % 60)
+    // % 1440 keeps an evening that runs past midnight a valid clock time.
+    private fun format(minutes: Int): String {
+        val withinDay = ((minutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY
+        return String.format(java.util.Locale.ROOT, "%02d:%02d", withinDay / 60, withinDay % 60)
+    }
 
     private fun <T> List<T>.splitAt(index: Int): Pair<List<T>, List<T>> =
         take(index) to drop(index)
 
     private companion object {
-        const val START_MINUTES = 18 * 60       // 18:00
+        const val MINUTES_PER_DAY = 24 * 60
         const val DINNER_MINUTES = 19 * 60      // dinner not before 19:00
         const val WIND_DOWN_MINUTES = 22 * 60
         const val REFLECTION_MINUTES = 23 * 60  // the 11PM close
+        const val WIND_DOWN_DURATION = 60
         const val TASK_MINUTES = 45
         const val HABIT_MINUTES = 20
         const val MEAL_MINUTES = 30
         const val GAP_MINUTES = 10
+        const val DEFAULT_DECOMPRESS_MINUTES = 15
     }
 }

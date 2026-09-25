@@ -24,10 +24,12 @@ data class EveningPlan(
 /**
  * One scheduled chunk of the evening.
  *
- * [startTime] is a 24h local "HH:mm" string rather than epoch millis on
- * purpose: Gemini emits and understands clock strings natively, and the
- * display screen only ever shows them. Parsing back to a timestamp (for
- * future edit/approve) is a trivial "date + HH:mm" conversion when needed.
+ * [startTime] is a zero-padded 24h local "HH:mm" string rather than epoch
+ * millis on purpose: Gemini emits and understands clock strings natively and
+ * zero-padded 24h sorts cleanly. Storage stays 24h; the UI re-renders it on a
+ * 12-hour clock (formatPlanTime in feature:checkin). Parsing back to a
+ * timestamp (for future edit/approve) is a trivial "date + HH:mm" conversion
+ * when needed.
  */
 data class PlanBlock(
     /** 24h local start time, e.g. "18:30". */

@@ -14,6 +14,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -159,6 +162,9 @@ class GeminiEveningPlanner @Inject constructor(
 
     private fun snapshotJson(snapshot: CheckinSnapshot): String = buildJsonObject {
         put("date", snapshot.date)
+        // Wall-clock time as the check-in finishes — the anchor the model
+        // starts the plan from instead of a fixed evening hour.
+        put("localTime", LocalTime.now().format(HH_MM))
 
         val checkin = snapshot.checkin
         if (checkin != null) {
@@ -255,6 +261,7 @@ class GeminiEveningPlanner @Inject constructor(
     private companion object {
         const val TAG = "GeminiEveningPlanner"
         const val MODEL = "gemini-3.8-flash"
+        val HH_MM: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
         val ENDPOINT =
             "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent"
 
@@ -263,7 +270,8 @@ class GeminiEveningPlanner @Inject constructor(
             task/habit app. On arriving home after a long day, Ovi completes a quick
             check-in and you produce tonight's plan as a single JSON object.
 
-            Input: a snapshot with the date; today's check-in (0-10 scores for energy,
+            Input: a snapshot with the date and localTime (the wall-clock time
+            the check-in just finished); today's check-in (0-10 scores for energy,
             sleepiness, stress, headache, motivation, a free-text comment on each, and
             any unexpected plans such as "dinner with family"); today's incomplete
             tasks (id, title, description, priority); and habits (id, name, type,
@@ -272,14 +280,23 @@ class GeminiEveningPlanner @Inject constructor(
 
             Output rules:
             - headline: at most 8 words, specific to tonight's mood. Never guilt-trippy.
-            - blocks: time-ordered, between about 18:00 and 23:35 local time. Fields:
-              startTime "HH:mm", durationMinutes, title (short), reason (max ~120
-              chars, warm and matter-of-fact), kind (TASK, HABIT, MEAL, REST,
-              REFLECTION or OTHER), referenceId (the task/habit id for TASK/HABIT
-              blocks; omit it otherwise).
-            - Exactly one REFLECTION block at 23:00 for 30 minutes ("11PM ritual
-              close") and a ~60 minute REST wind-down starting around 22:00.
-            - One MEAL block around 19:00, unless unexpected plans dictate otherwise.
+            - blocks: time-ordered, starting at localTime (the check-in JUST
+              finished — begin the first block at or within ~10 minutes of it) and
+              running until about 23:35 local time. Fields: startTime as
+              zero-padded 24-hour "HH:mm" (e.g. "21:05"), durationMinutes, title
+              (short), reason (max ~120 chars, warm and matter-of-fact), kind
+              (TASK, HABIT, MEAL, REST, REFLECTION or OTHER), referenceId (the
+              task/habit id for TASK/HABIT blocks; omit it otherwise).
+            - REST durations are YOUR call from the mood scores — never a fixed
+              length. Make the FIRST block a decompress REST right after the
+              check-in: heavily drained (high sleepiness, low energy or high
+              stress) earns up to an hour, a fine day only 10 minutes. Size the
+              evening wind-down REST the same way (30-90 minutes).
+            - Exactly one REFLECTION block near 23:00 for 30 minutes ("11PM ritual
+              close"); if the check-in was already late, place it after your
+              blocks instead of forcing the clock.
+            - One MEAL block around 19:00, unless the check-in is already past
+              dinner time or unexpected plans dictate otherwise.
 
             Behavior:
             - Reduce decisions: give ONE concrete plan, never options or questions.
