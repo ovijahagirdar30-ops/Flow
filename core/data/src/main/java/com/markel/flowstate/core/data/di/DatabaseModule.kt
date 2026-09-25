@@ -7,6 +7,7 @@ import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.data.local.CategoryDao
 import com.markel.flowstate.core.data.local.CheckListDao
 import com.markel.flowstate.core.data.local.CheckinDao
+import com.markel.flowstate.core.data.local.EveningPlanDao
 import com.markel.flowstate.core.data.local.FlowStateDatabase
 import com.markel.flowstate.core.data.local.HabitDao
 import com.markel.flowstate.core.data.local.IdeaDao
@@ -34,7 +35,7 @@ object DatabaseModule {
                 FlowStateDatabase.MIGRATION_9_10, FlowStateDatabase.MIGRATION_10_11, FlowStateDatabase.MIGRATION_11_12, FlowStateDatabase.MIGRATION_12_13,
                 FlowStateDatabase.MIGRATION_13_14, FlowStateDatabase.MIGRATION_14_15, FlowStateDatabase.MIGRATION_15_16, FlowStateDatabase.MIGRATION_16_17,
                 FlowStateDatabase.MIGRATION_17_18, FlowStateDatabase.MIGRATION_18_19, FlowStateDatabase.MIGRATION_19_20, FlowStateDatabase.MIGRATION_20_21,                FlowStateDatabase.MIGRATION_21_22, FlowStateDatabase.MIGRATION_22_23,
-                FlowStateDatabase.MIGRATION_23_24, FlowStateDatabase.MIGRATION_24_25)
+                FlowStateDatabase.MIGRATION_23_24, FlowStateDatabase.MIGRATION_24_25, FlowStateDatabase.MIGRATION_25_26)
             .build()
     }
 
@@ -73,4 +74,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideCheckinDao(db: FlowStateDatabase): CheckinDao = db.checkinDao
+
+    @Provides
+    @Singleton
+    fun provideEveningPlanDao(db: FlowStateDatabase): EveningPlanDao = db.eveningPlanDao
 }

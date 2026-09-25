@@ -2,6 +2,7 @@ package com.markel.flowstate.core.data.di
 
 import com.markel.flowstate.core.data.CheckListRepositoryImpl
 import com.markel.flowstate.core.data.CheckinRepositoryImpl
+import com.markel.flowstate.core.data.EveningPlanRepositoryImpl
 import com.markel.flowstate.core.data.HabitRepositoryImpl
 import com.markel.flowstate.core.data.IdeaRepositoryImpl
 import com.markel.flowstate.core.data.TaskRepositoryImpl
@@ -9,6 +10,7 @@ import com.markel.flowstate.core.data.CategoryRepositoryImpl
 import com.markel.flowstate.core.domain.CategoryRepository
 import com.markel.flowstate.core.domain.CheckListRepository
 import com.markel.flowstate.core.domain.CheckinRepository
+import com.markel.flowstate.core.domain.EveningPlanRepository
 import com.markel.flowstate.core.domain.HabitRepository
 import com.markel.flowstate.core.domain.IdeaRepository
 import com.markel.flowstate.core.domain.TaskRepository
@@ -47,4 +49,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCheckinRepository(impl: CheckinRepositoryImpl): CheckinRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEveningPlanRepository(impl: EveningPlanRepositoryImpl): EveningPlanRepository
 }

@@ -12,8 +12,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * and which version of the database we are using.
  */
 @Database(
-    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class, CheckinEntity::class], // List of all tables
-    version = 25,
+    entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class, CheckinEntity::class, EveningPlanEntity::class], // List of all tables
+    version = 26,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -25,6 +25,7 @@ abstract class FlowStateDatabase : RoomDatabase() {
     abstract val habitDao: HabitDao
     abstract val categoryDao: CategoryDao
     abstract val checkinDao: CheckinDao
+    abstract val eveningPlanDao: EveningPlanDao
 
     // Room will use this to create the DB instance.
     companion object {
@@ -346,6 +347,30 @@ abstract class FlowStateDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE checkins ADD COLUMN stressComment TEXT")
                 db.execSQL("ALTER TABLE checkins ADD COLUMN headacheComment TEXT")
                 db.execSQL("ALTER TABLE checkins ADD COLUMN motivationComment TEXT")
+            }
+        }
+
+        /**
+         * v25 → v26: Adds the evening_plans table — one row per calendar day,
+         * holding the plan the user explicitly AGREED to at the end of a
+         * check-in. Generation happens in-memory first; nothing lands here
+         * without an Agree tap. blocksJson holds the PlanBlock list (DTO
+         * mapping in EveningPlanRepositoryImpl), and checkedIndexesJson
+         * (nullable, NO SQL default — bare column, the v25 lesson) reserves
+         * checklist tick state for the upcoming Plan tab: NULL = nothing
+         * ticked yet.
+         */
+        val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `evening_plans` (
+                        `date` TEXT NOT NULL PRIMARY KEY,
+                        `headline` TEXT NOT NULL,
+                        `generatedAtMillis` INTEGER NOT NULL,
+                        `blocksJson` TEXT NOT NULL,
+                        `checkedIndexesJson` TEXT
+                    )
+                """.trimIndent())
             }
         }
     }
