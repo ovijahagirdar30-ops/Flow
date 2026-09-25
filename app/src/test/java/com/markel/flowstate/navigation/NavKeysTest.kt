@@ -28,7 +28,7 @@ class NavKeysTest {
      * (e.g. `MainTab.HABITS -> TabKey.Calendar`).
      */
     @Test
-    fun toKey_roundTrip_returnsOriginalTab_forAllFiveTabs() {
+    fun toKey_roundTrip_returnsOriginalTab_forAllTabs() {
         MainTab.entries.forEach { tab ->
             val mapped = tab.toKey()
             val back = MainTab.fromKey(mapped)
@@ -99,6 +99,7 @@ class NavKeysTest {
         assertTrue(MainTab.CALENDAR.toKey() is TabKey.Calendar)
         assertTrue(MainTab.HABITS.toKey() is TabKey.Habits)
         assertTrue(MainTab.MOOD.toKey() is TabKey.Mood)
+        assertTrue(MainTab.PLAN.toKey() is TabKey.Plan)
         assertTrue(MainTab.SETTINGS.toKey() is TabKey.Settings)
     }
 
@@ -117,7 +118,7 @@ class NavKeysTest {
     @Test
     fun mainTab_and_tabKey_haveSameCardinality() {
         val tabKeys = listOf(
-            TabKey.Tasks, TabKey.Calendar, TabKey.Habits, TabKey.Mood, TabKey.Settings
+            TabKey.Tasks, TabKey.Calendar, TabKey.Habits, TabKey.Mood, TabKey.Plan, TabKey.Settings
         )
         assertEquals(
             "MainTab and TabKey must have the same number of entries",

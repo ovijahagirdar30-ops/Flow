@@ -37,6 +37,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun CheckinScreen(
     onDismiss: () -> Unit,
+    onOpenPlan: () -> Unit,
     viewModel: CheckinViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -82,7 +83,7 @@ fun CheckinScreen(
                 onAgree = {
                     scope.launch {
                         viewModel.agreeToPlan()
-                        onDismiss()
+                        onOpenPlan()
                     }
                 },
                 onDiscard = onDismiss

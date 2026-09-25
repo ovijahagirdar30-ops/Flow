@@ -18,6 +18,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.serialization.NavKeySerializer
 import androidx.savedstate.compose.serialization.serializers.MutableStateSerializer
+import com.markel.flowstate.core.data.MainTab
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NavigationState — per-tab back stacks
@@ -60,11 +61,13 @@ fun rememberNavigationState(
         mutableStateOf<NavKey>(initialRoute)
     }
 
-    // Preserve the back stacks of the visible tabs when the user hides/reorders the tabs
+    // Preserve the back stacks of the visible tabs when the user hides/reorders
+    // the tabs. Derived from MainTab so every tab always gets a stack — a tab
+    // missing from this set has no NavBackStack, toEntries yields an empty
+    // list for it, and NavDisplay crashes the moment it's tapped
+    // ("NavDisplay entries cannot be empty").
     val allTabKeys = remember {
-        setOf(
-            TabKey.Tasks, TabKey.Calendar, TabKey.Habits, TabKey.Mood, TabKey.Settings
-        )
+        MainTab.entries.map { it.toKey() }.toSet()
     }
 
     // One back stack per top-level tab. Each is remembered individually so it

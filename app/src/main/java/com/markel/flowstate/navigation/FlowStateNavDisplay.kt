@@ -34,6 +34,8 @@ import com.markel.flowstate.core.designsystem.ui.LocalSharedTransitionScope
 import com.markel.flowstate.core.notifications.NotificationSettingsIntentProvider
 import com.markel.flowstate.feature.calendar.CalendarScreen
 import com.markel.flowstate.feature.calendar.CalendarViewModel
+import com.markel.flowstate.feature.checkin.PlanScreen
+import com.markel.flowstate.feature.checkin.PlanViewModel
 import com.markel.flowstate.feature.flow.FlowScreen
 import com.markel.flowstate.feature.flow.FlowViewModel
 import com.markel.flowstate.feature.flow.checklists.CheckListEditorScreen
@@ -144,6 +146,11 @@ fun FlowStateNavDisplay(
 
         entry<TabKey.Mood>(metadata = fadeTransition()) {
             MoodScreen()
+        }
+
+        entry<TabKey.Plan>(metadata = fadeTransition()) {
+            val planViewModel: PlanViewModel = hiltViewModel()
+            PlanScreen(viewModel = planViewModel)
         }
 
         entry<TabKey.Settings>(metadata = fadeTransition()) {

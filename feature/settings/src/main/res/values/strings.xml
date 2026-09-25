@@ -28,6 +28,7 @@
     <string name="tab_calendar">Calendar</string>
     <string name="tab_habits">Habits</string>
     <string name="tab_mood">Mood</string>
+    <string name="tab_plan">Plan</string>
     <string name="tab_settings">Settings</string>
 
     <!-- About screen -->

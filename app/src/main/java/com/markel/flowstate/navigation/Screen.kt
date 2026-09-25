@@ -42,6 +42,13 @@ sealed class BottomNavScreen(
         iconSelectedRes = R.drawable.self_improvement_24px
     )
 
+    object Plan : BottomNavScreen(
+        key = TabKey.Plan,
+        labelRes = com.markel.flowstate.feature.settings.R.string.tab_plan,
+        iconRes = R.drawable.checklist_24px,
+        iconSelectedRes = R.drawable.checklist_24px
+    )
+
     data object Settings : BottomNavScreen(
         key = TabKey.Settings,
         labelRes = com.markel.flowstate.feature.tasks.R.string.settings,

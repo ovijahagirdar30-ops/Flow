@@ -300,6 +300,7 @@ private fun tabLabel(tab: MainTab): String = when (tab) {
     MainTab.CALENDAR -> stringResource(R.string.tab_calendar)
     MainTab.HABITS -> stringResource(R.string.tab_habits)
     MainTab.MOOD -> stringResource(R.string.tab_mood)
+    MainTab.PLAN -> stringResource(R.string.tab_plan)
     MainTab.SETTINGS -> stringResource(R.string.tab_settings)
 }
 
@@ -309,5 +310,6 @@ private fun tabIcon(tab: MainTab): Int = when (tab) {
     MainTab.CALENDAR -> R.drawable.calendar_month_24px
     MainTab.HABITS -> R.drawable.analytics_24px
     MainTab.MOOD -> R.drawable.self_improvement_24px
+    MainTab.PLAN -> R.drawable.checklist_24px
     MainTab.SETTINGS -> R.drawable.settings_24px
 }

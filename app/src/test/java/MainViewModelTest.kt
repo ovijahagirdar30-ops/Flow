@@ -128,7 +128,7 @@ class MainViewModelTest {
      * [MainViewModel.initialTab] must fall back to the first non-hidden tab
      * in [MainTab.DEFAULT_ORDER].
      *
-     * DEFAULT_ORDER = [TASKS, CALENDAR, HABITS, MOOD, SETTINGS]
+     * DEFAULT_ORDER = [TASKS, CALENDAR, HABITS, MOOD, PLAN, SETTINGS]
      * If HABITS is hidden, the first visible is TASKS.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -147,7 +147,7 @@ class MainViewModelTest {
      * Fallback #1 (variant): the first non-hidden tab is not always TASKS.
      * If TASKS is somehow hidden too, the next visible one must win.
      *
-     * DEFAULT_ORDER = [TASKS, CALENDAR, HABITS, MOOD, SETTINGS]
+     * DEFAULT_ORDER = [TASKS, CALENDAR, HABITS, MOOD, PLAN, SETTINGS]
      * Hiding TASKS leaves CALENDAR as the first visible. (TASKS has
      * `isRemovable = false` in practice, but the VM doesn't enforce that —
      * this test documents the contract for any future change.)

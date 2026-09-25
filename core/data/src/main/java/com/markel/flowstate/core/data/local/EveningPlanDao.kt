@@ -15,4 +15,12 @@ interface EveningPlanDao {
     /** The most recent agreed plan (newest date first), or null if none exists yet. */
     @Query("SELECT * FROM evening_plans ORDER BY date DESC LIMIT 1")
     suspend fun latestPlan(): EveningPlanEntity?
+
+    /** The stored checklist-ticks JSON for [date], or null if never ticked / no plan. */
+    @Query("SELECT checkedIndexesJson FROM evening_plans WHERE date = :date")
+    suspend fun checkedIndexesJson(date: String): String?
+
+    /** Replaces the checklist-ticks JSON for [date]; null clears every tick. */
+    @Query("UPDATE evening_plans SET checkedIndexesJson = :json WHERE date = :date")
+    suspend fun updateCheckedIndexesJson(date: String, json: String?)
 }

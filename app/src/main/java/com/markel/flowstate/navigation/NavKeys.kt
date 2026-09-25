@@ -12,7 +12,7 @@ import androidx.savedstate.serialization.SavedStateConfiguration
 // NavKey hierarchy
 //
 // Two layers:
-//   - TabKey: the five bottom-nav tabs. Each gets its own NavBackStack in
+//   - TabKey: the six bottom-nav tabs. Each gets its own NavBackStack in
 //     NavigationState. Rendered INSIDE the Scene Decorator (i.e. on top of
 //     the bottom bar).
 //   - FullScreenKey: detail/editors/settings sub-screens. Pushed onto the
@@ -23,13 +23,14 @@ import androidx.savedstate.serialization.SavedStateConfiguration
 // flag from each entry — see FlowStateSceneDecoratorStrategy.kt.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Marker for the five bottom-nav tabs. They get decorated with the bottom bar. */
+/** Marker for the six bottom-nav tabs. They get decorated with the bottom bar. */
 @Serializable
 sealed interface TabKey : NavKey {
     @Serializable data object Tasks : TabKey
     @Serializable data object Calendar : TabKey
     @Serializable data object Habits : TabKey
     @Serializable data object Mood : TabKey
+    @Serializable data object Plan : TabKey
     @Serializable data object Settings : TabKey
 }
 
@@ -57,6 +58,7 @@ fun MainTab.toKey(): TabKey = when (this) {
     MainTab.CALENDAR -> TabKey.Calendar
     MainTab.HABITS -> TabKey.Habits
     MainTab.MOOD -> TabKey.Mood
+    MainTab.PLAN -> TabKey.Plan
     MainTab.SETTINGS -> TabKey.Settings
 }
 
@@ -65,6 +67,7 @@ fun MainTab.Companion.fromKey(key: NavKey): MainTab? = when (key) {
     is TabKey.Calendar -> MainTab.CALENDAR
     is TabKey.Habits -> MainTab.HABITS
     is TabKey.Mood -> MainTab.MOOD
+    is TabKey.Plan -> MainTab.PLAN
     is TabKey.Settings -> MainTab.SETTINGS
     else -> null
 }

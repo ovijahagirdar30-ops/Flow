@@ -5,6 +5,7 @@ enum class MainTab(val isRemovable: Boolean = false) {
     CALENDAR(isRemovable = true),
     HABITS(isRemovable = false),
     MOOD(isRemovable = true),
+    PLAN(isRemovable = false),
     SETTINGS(isRemovable = false);
 
     companion object {

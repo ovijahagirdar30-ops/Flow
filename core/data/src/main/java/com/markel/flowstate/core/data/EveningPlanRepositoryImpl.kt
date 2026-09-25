@@ -41,6 +41,20 @@ class EveningPlanRepositoryImpl @Inject constructor(
     override suspend fun latestAgreedPlan(): EveningPlan? =
         dao.latestPlan()?.toDomain()
 
+    override suspend fun checkedIndexes(date: String): List<Int> =
+        dao.checkedIndexesJson(date)
+            ?.let { json.decodeFromString<List<Int>>(it) }
+            .orEmpty()
+
+    override suspend fun setCheckedIndexes(date: String, indexes: List<Int>) {
+        dao.updateCheckedIndexesJson(
+            date = date,
+            json = indexes.distinct().sorted()
+                .takeIf { it.isNotEmpty() }
+                ?.let { json.encodeToString(it) }
+        )
+    }
+
     private fun EveningPlanEntity.toDomain(): EveningPlan = EveningPlan(
         date = date,
         generatedAtMillis = generatedAtMillis,

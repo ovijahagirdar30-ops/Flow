@@ -1,5 +1,6 @@
 package com.markel.flowstate.feature.checkin
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.PowerManager
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.markel.flowstate.core.data.MainTab
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -46,7 +48,10 @@ class CheckinActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = androidx.compose.ui.graphics.Color.Black
                 ) {
-                    CheckinScreen(onDismiss = { finish() })
+                    CheckinScreen(
+                        onDismiss = { finish() },
+                        onOpenPlan = { openPlanTab() }
+                    )
                 }
             }
         }
@@ -75,7 +80,29 @@ class CheckinActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    private companion object {
-        const val TAG = "CheckinActivity"
+    /**
+     * Agree hand-off: starts the main app directly on the Plan checklist tab
+     * and closes the check-in on top of it. Targets MainActivity by class-name
+     * string — this module can't reference app-module classes — and the extra
+     * is read once in MainActivity.onCreate (fresh launches only).
+     */
+    private fun openPlanTab() {
+        val intent = Intent().apply {
+            setClassName(packageName, "com.markel.flowstate.MainActivity")
+            putExtra(EXTRA_OPEN_TAB, MainTab.PLAN.name)
+        }
+        startActivity(intent)
+        finish()
+    }
+
+    companion object {
+        /**
+         * Intent extra MainActivity reads to open directly on a bottom-nav tab.
+         * Value: a [MainTab] name (e.g. "PLAN"). Set by the check-in after
+         * Agree — the feature module can't reference the app's MainActivity.
+         */
+        const val EXTRA_OPEN_TAB = "com.markel.flowstate.extra.OPEN_TAB"
+
+        private const val TAG = "CheckinActivity"
     }
 }

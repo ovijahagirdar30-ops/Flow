@@ -36,6 +36,7 @@ import com.markel.flowstate.core.designsystem.ui.LocalSharedTransitionScope
 import com.markel.flowstate.core.data.MainTab
 import com.markel.flowstate.core.notifications.CheckinAlarmScheduler
 import com.markel.flowstate.core.notifications.HomeGeofenceManager
+import com.markel.flowstate.feature.checkin.CheckinActivity
 import com.markel.flowstate.feature.checkin.HomeLocation
 import com.markel.flowstate.feature.flow.tasks.util.HandleSystemBars
 import com.markel.flowstate.navigation.BottomNavScreen
@@ -203,13 +204,29 @@ class MainActivity : ComponentActivity() {
                     )
                     val navigator = remember(navigationState) { FlowStateNavigator(navigationState) }
 
-                    // On first composition, switch to the persisted initial tab
+                    // The check-in's Agree hand-off passes EXTRA_OPEN_TAB (a
+                    // MainTab name) so the app opens straight on the Plan
+                    // checklist tab. Only honored on a fresh launch — on
+                    // recreation (rotation) the extra is ignored so the user's
+                    // current tab survives.
+                    val openTabOverride = remember(savedInstanceState) {
+                        if (savedInstanceState == null) {
+                            intent.getStringExtra(CheckinActivity.EXTRA_OPEN_TAB)
+                                ?.let { MainTab.fromNameOrNull(it) }
+                        } else {
+                            null
+                        }
+                    }
+
+                    // On first composition, switch to the hand-off tab if one
+                    // was requested, else the persisted initial tab
                     // (rememberSerializable restores topLevelRoute = startRoute by default).
-                    LaunchedEffect(initialTab, topLevelRoutes) {
-                        if (initialTab.toKey() in topLevelRoutes &&
-                            navigationState.topLevelRoute != initialTab.toKey()
+                    LaunchedEffect(initialTab, topLevelRoutes, openTabOverride) {
+                        val targetTab = openTabOverride ?: initialTab
+                        if (targetTab.toKey() in topLevelRoutes &&
+                            navigationState.topLevelRoute != targetTab.toKey()
                         ) {
-                            navigationState.topLevelRoute = initialTab.toKey()
+                            navigationState.topLevelRoute = targetTab.toKey()
                         }
                     }
 
@@ -265,5 +282,6 @@ val allBottomNavScreens: List<BottomNavScreen> = listOf(
     BottomNavScreen.Calendar,
     BottomNavScreen.Habits,
     BottomNavScreen.Mood,
+    BottomNavScreen.Plan,
     BottomNavScreen.Settings,
 )

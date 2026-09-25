@@ -55,9 +55,16 @@ class UserPreferencesRepository @Inject constructor(
         if (raw.isNullOrBlank()) {
             MainTab.DEFAULT_ORDER
         } else {
-            raw.split(",")
+            val stored = raw.split(",")
                 .mapNotNull { MainTab.fromNameOrNull(it.trim()) }
-                .ifEmpty { MainTab.DEFAULT_ORDER }
+            if (stored.isEmpty()) {
+                MainTab.DEFAULT_ORDER
+            } else {
+                // Tabs added by app updates are absent from a stored order —
+                // append them so the new tab shows up on existing installs
+                // without clearing app data.
+                stored + MainTab.DEFAULT_ORDER.filterNot { it in stored }
+            }
         }
     }
 
