@@ -51,17 +51,23 @@ fun MoodScreen(
 
         is MoodUiState.Success -> {
             if (state.entries.isEmpty()) {
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .statusBarsPadding(),
-                    contentAlignment = Alignment.Center
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp)
                 ) {
-                    Text(
-                        text = "No moods logged yet — complete a habit and pick how it felt.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    MoodHistoryHeader()
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No moods logged yet — complete a habit and pick how it felt.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             } else {
                 LazyColumn(
@@ -70,6 +76,7 @@ fun MoodScreen(
                         .statusBarsPadding()
                         .padding(horizontal = 16.dp)
                 ) {
+                    item { MoodHistoryHeader() }
                     items(state.entries) { entry ->
                         MoodEntryRow(entry)
                         HorizontalDivider()
@@ -78,6 +85,15 @@ fun MoodScreen(
             }
         }
     }
+}
+
+@Composable
+private fun MoodHistoryHeader() {
+    Text(
+        text = "Mood history",
+        style = MaterialTheme.typography.headlineSmall,
+        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+    )
 }
 
 @Composable
