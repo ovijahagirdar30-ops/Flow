@@ -8,10 +8,10 @@ plugins {
     alias(libs.plugins.kotlin.plugin.serialization)
 }
 
-// Gemini API key for the evening planner — lives ONLY in local.properties
-// (gitignored, never committed). Empty default keeps the project building
-// and running without a key; GeminiEveningPlanner then falls back to the
-// offline LocalEveningPlanner.
+// AI provider API keys (evening planner + night message) — live ONLY in
+// local.properties (gitignored, never committed). Empty defaults keep the
+// project building and running without a key; the OpenRouter* classes then
+// log and fall back to their offline Local* implementations.
 val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { load(it) }
@@ -29,8 +29,16 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
 
-        val geminiKey = localProperties.getProperty("gemini.api.key", "")
-        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
+        val openrouterKey = localProperties.getProperty("openrouter.api.key", "")
+        buildConfigField("String", "OPENROUTER_API_KEY", "\"$openrouterKey\"")
+
+        // Free-tier model to pin; override in local.properties (openrouter.model)
+        // to A/B a different free model without touching code.
+        val openrouterModel = localProperties.getProperty(
+            "openrouter.model",
+            "nvidia/nemotron-3-ultra-550b-a55b:free"
+        )
+        buildConfigField("String", "OPENROUTER_MODEL", "\"$openrouterModel\"")
 
     }
 

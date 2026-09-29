@@ -5,7 +5,7 @@ import javax.inject.Inject
 /**
  * Offline [EncouragementGenerator]: warm templates filled with the day's
  * real numbers. Deterministic per date — the same evening always reads the
- * same line — and the fallback backend for GeminiEncouragementGenerator
+ * same line — and the fallback backend for OpenRouterEncouragementGenerator
  * (same role LocalEveningPlanner plays for the evening plan).
  *
  * Tone follows the product philosophy: celebrate what closed, treat

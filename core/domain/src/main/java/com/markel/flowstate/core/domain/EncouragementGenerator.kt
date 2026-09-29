@@ -5,7 +5,7 @@ package com.markel.flowstate.core.domain
  * guilt-free paragraph about how the day actually went.
  *
  * The swappable seam, exactly like [EveningPlanner]:
- *  - GeminiEncouragementGenerator (core:data) — writes it from
+ *  - OpenRouterEncouragementGenerator (core:data) — writes it from
  *    [DayReviewStats] over REST, falls back to [LocalEncouragementGenerator]
  *    whenever the key is missing or the call fails.
  *  - [LocalEncouragementGenerator] — deterministic offline templates.

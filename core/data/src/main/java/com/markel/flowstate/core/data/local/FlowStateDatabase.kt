@@ -378,7 +378,7 @@ abstract class FlowStateDatabase : RoomDatabase() {
         /**
          * v26 → v27: Adds the plan_feedback table — an append-only log of the
          * regenerate notes the user typed during check-ins. This is the
-         * planner's long-term memory: GeminiEveningPlanner injects the newest
+         * planner's long-term memory: OpenRouterEveningPlanner injects the newest
          * few into every request so a correction ("skincare is only 5 min")
          * survives past the session it was typed in. `createdAtMillis` orders
          * the reads; `id` breaks same-millisecond ties. Bare columns, no SQL

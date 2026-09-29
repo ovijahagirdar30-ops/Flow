@@ -13,19 +13,24 @@ import java.net.URL
 import javax.inject.Inject
 
 /**
- * [EncouragementGenerator] backed by the Gemini Developer API over plain
- * REST — the same hardening as GeminiEveningPlanner: a blank key (offline /
- * unkeyed builds) or ANY failure (network, HTTP, blank completion) logs and
- * falls back to [LocalEncouragementGenerator], so the night check-in can
- * never stall on or fail because of this call.
+ * [EncouragementGenerator] backed by OpenRouter over plain REST
+ * (OpenAI-compatible chat/completions) — the same hardening as
+ * OpenRouterEveningPlanner: a blank key (offline / unkeyed builds) or ANY
+ * failure (network, HTTP, blank completion) logs and falls back to
+ * [LocalEncouragementGenerator], so the night check-in can never stall on
+ * or fail because of this call. Replaced GeminiEncouragementGenerator when
+ * the Gemini project behind gemini.api.key was denied generateContent access.
  */
-class GeminiEncouragementGenerator @Inject constructor(
+class OpenRouterEncouragementGenerator @Inject constructor(
     private val fallback: LocalEncouragementGenerator
 ) : EncouragementGenerator {
 
     override suspend fun generate(stats: DayReviewStats): String {
-        val apiKey = BuildConfig.GEMINI_API_KEY
-        if (apiKey.isBlank()) return fallback.generate(stats)
+        val apiKey = BuildConfig.OPENROUTER_API_KEY
+        if (apiKey.isBlank()) {
+            Log.i(TAG, "No openrouter.api.key in local.properties — using LocalEncouragementGenerator")
+            return fallback.generate(stats)
+        }
         return try {
             withContext(Dispatchers.IO) { requestMessage(apiKey, stats) }
         } catch (e: Exception) {
@@ -41,20 +46,23 @@ class GeminiEncouragementGenerator @Inject constructor(
         try {
             conn.requestMethod = "POST"
             conn.connectTimeout = 15_000
-            conn.readTimeout = 30_000
+            // Same reasoning latency as the planner (70-162s measured); 30s
+            // here would time out every night-message request on device.
+            conn.readTimeout = 300_000
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            conn.setRequestProperty("x-goog-api-key", apiKey)
+            conn.setRequestProperty("Authorization", "Bearer $apiKey")
+            conn.setRequestProperty("X-Title", "FlowState")
 
             conn.outputStream.use { it.write(requestBody(stats).toByteArray(Charsets.UTF_8)) }
 
             val code = conn.responseCode
             val stream = if (code in 200..299) conn.inputStream else conn.errorStream
             val text = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-            if (code !in 200..299) throw IllegalStateException("Gemini HTTP $code: ${text.take(200)}")
+            if (code !in 200..299) throw IllegalStateException("OpenRouter HTTP $code: ${text.take(200)}")
 
             val message = parseMessage(text).trim()
-            if (message.isEmpty()) throw IllegalStateException("Gemini returned an empty message")
+            if (message.isEmpty()) throw IllegalStateException("OpenRouter returned an empty message")
             return message
         } finally {
             conn.disconnect()
@@ -62,23 +70,22 @@ class GeminiEncouragementGenerator @Inject constructor(
     }
 
     private fun requestBody(stats: DayReviewStats): String = buildJsonObject {
-        putJsonObject("systemInstruction") {
-            putJsonArray("parts") {
-                add(buildJsonObject { put("text", SYSTEM_PROMPT) })
-            }
-        }
-        putJsonArray("contents") {
+        put("model", BuildConfig.OPENROUTER_MODEL.ifBlank { DEFAULT_MODEL })
+        putJsonArray("messages") {
+            add(buildJsonObject {
+                put("role", "system")
+                put("content", SYSTEM_PROMPT)
+            })
             add(buildJsonObject {
                 put("role", "user")
-                putJsonArray("parts") {
-                    add(buildJsonObject { put("text", statsJson(stats)) })
-                }
+                put("content", statsJson(stats))
             })
         }
-        putJsonObject("generationConfig") {
-            put("temperature", 0.9)
-            put("maxOutputTokens", 300)
-        }
+        put("temperature", 0.9)
+        // The message itself is ~40 tokens, but this model's hidden reasoning
+        // counts against the cap too (280 of 300 measured) — headroom keeps a
+        // stats-heavy evening from truncating into a visibly cut sentence.
+        put("max_tokens", 1500)
     }.toString()
 
     private fun statsJson(stats: DayReviewStats): String = buildJsonObject {
@@ -93,17 +100,14 @@ class GeminiEncouragementGenerator @Inject constructor(
 
     private fun parseMessage(responseBody: String): String {
         val root = Json.parseToJsonElement(responseBody).jsonObject
-        val text = root["candidates"]!!.jsonArray[0]
-            .jsonObject["content"]!!.jsonObject["parts"]!!.jsonArray[0]
-            .jsonObject["text"]!!.jsonPrimitive.content
-        return text
+        return root["choices"]!!.jsonArray[0]
+            .jsonObject["message"]!!.jsonObject["content"]!!.jsonPrimitive.content
     }
 
     private companion object {
-        const val TAG = "GeminiNightMessage"
-        const val MODEL = "gemini-3.8-flash"
-        val ENDPOINT =
-            "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent"
+        const val TAG = "OpenRouterNightMessage"
+        const val DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
+        const val ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 
         val SYSTEM_PROMPT = """
             You write the closing message of Ovi's night check-in in FlowState,

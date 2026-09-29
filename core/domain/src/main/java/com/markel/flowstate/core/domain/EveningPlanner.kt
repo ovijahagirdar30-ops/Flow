@@ -4,7 +4,7 @@ package com.markel.flowstate.core.domain
  * Produces the evening plan from a [CheckinSnapshot]. This interface is the
  * swappable seam for the whole AI-brain decision:
  *
- *  - GeminiEveningPlanner (core:data) — posts the snapshot over REST and
+ *  - OpenRouterEveningPlanner (core:data) — posts the snapshot over REST and
  *    parses the response into [EveningPlan]; appends [PlanFeedback] on
  *    regenerate so the model revises rather than re-rolls.
  *  - [LocalEveningPlanner] — deterministic, offline, zero dependencies;

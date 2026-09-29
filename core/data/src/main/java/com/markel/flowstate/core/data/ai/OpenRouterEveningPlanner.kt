@@ -12,9 +12,11 @@ import com.markel.flowstate.core.domain.PlanBlockKind
 import com.markel.flowstate.core.domain.PlanFeedback
 import com.markel.flowstate.core.domain.PlanFeedbackNote
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -22,29 +24,32 @@ import java.util.Locale
 import javax.inject.Inject
 
 /**
- * [EveningPlanner] backed by the Gemini Developer API over plain REST.
+ * [EveningPlanner] backed by OpenRouter over plain REST (OpenAI-compatible
+ * chat/completions). Replaced GeminiEveningPlanner when the Gemini project
+ * behind gemini.api.key was denied generateContent access (403 "Your project
+ * has been denied access") — OpenRouter's free models need no billing.
  *
- * Chosen over the brand-new Gen AI Kotlin SDK (v1.0, September 2026) and
- * Firebase AI Logic deliberately: no new dependencies, one stable endpoint,
- * and the [EveningPlanner] seam means adopting either later is a one-class
- * swap. Structured output (responseSchema + application/json) guarantees the
- * response parses into an EveningPlan shape.
+ * The [EveningPlanner] seam is unchanged: swapping backends later (Gemini
+ * once billing is sorted, Ollama, a hosted service) is again a one-class
+ * swap in PlannerModule.
  *
- * Hardened by construction:
+ * Hardened exactly like its Gemini predecessor:
  *  - key comes from BuildConfig (local.properties, never committed); blank
  *    key -> offline planner, app fully functional without any setup
- *  - ANY failure (network, HTTP error, malformed response) logs and falls
- *    back to [LocalEveningPlanner], so the check-in flow can never break
+ *  - ANY failure (network, HTTP error, rate limit, malformed response) logs
+ *    and falls back to [LocalEveningPlanner], so the check-in flow can never
+ *    break — a Regenerate with a comment landing there is a no-op by design,
+ *    which is why every failure is logged with the feedback flag
  */
-class GeminiEveningPlanner @Inject constructor(
+class OpenRouterEveningPlanner @Inject constructor(
     private val fallback: LocalEveningPlanner,
     private val planRepository: EveningPlanRepository
 ) : EveningPlanner {
 
     override suspend fun generatePlan(snapshot: CheckinSnapshot, feedback: PlanFeedback?): EveningPlan {
-        val apiKey = BuildConfig.GEMINI_API_KEY
+        val apiKey = BuildConfig.OPENROUTER_API_KEY
         if (apiKey.isBlank()) {
-            Log.i(TAG, "No gemini.api.key in local.properties — using LocalEveningPlanner")
+            Log.i(TAG, "No openrouter.api.key in local.properties — using LocalEveningPlanner (feedback=${feedback != null})")
             return fallback.generatePlan(snapshot)
         }
         return try {
@@ -54,15 +59,53 @@ class GeminiEveningPlanner @Inject constructor(
                 // without memory, exactly as before.
                 val memory = runCatching { planRepository.recentFeedback(MEMORY_LIMIT) }
                     .getOrElse { emptyList() }
-                requestPlan(apiKey, snapshot, feedback, memory)
+                val started = System.currentTimeMillis()
+                val plan = requestPlanWithRetry(apiKey, snapshot, feedback, memory)
+                Log.i(
+                    TAG,
+                    "plan ok in ${System.currentTimeMillis() - started}ms — " +
+                        "blocks=${plan.blocks.size}, feedback=${feedback != null}, memory=${memory.size}"
+                )
+                plan
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Gemini plan generation failed (${e.message}) — using LocalEveningPlanner", e)
+            Log.w(
+                TAG,
+                "OpenRouter plan generation failed (${e.message}) — using LocalEveningPlanner " +
+                    "(feedback=${feedback != null})",
+                e
+            )
             fallback.generatePlan(snapshot)
         }
     }
 
     // ── Request ────────────────────────────────────────────────────────────
+
+    /**
+     * One automatic retry — the failures observed on device were a DNS blip
+     * (6s) and garbage/non-JSON bodies, all transient, and each one silently
+     * handed the user a plan that IGNORED their corrections. A read timeout
+     * does NOT retry: we already sat through the full 300s budget, so a second
+     * attempt would double the wait for the same slow model.
+     */
+    private suspend fun requestPlanWithRetry(
+        apiKey: String,
+        snapshot: CheckinSnapshot,
+        feedback: PlanFeedback?,
+        memory: List<PlanFeedbackNote>
+    ): EveningPlan {
+        var attempt = 0
+        while (true) {
+            attempt++
+            try {
+                return requestPlan(apiKey, snapshot, feedback, memory)
+            } catch (e: Exception) {
+                if (e is SocketTimeoutException || attempt >= MAX_ATTEMPTS) throw e
+                Log.w(TAG, "attempt $attempt/$MAX_ATTEMPTS failed (${e.message?.take(160)}) — retrying")
+                delay(RETRY_DELAY_MILLIS)
+            }
+        }
+    }
 
     private fun requestPlan(
         apiKey: String,
@@ -74,10 +117,17 @@ class GeminiEveningPlanner @Inject constructor(
         try {
             conn.requestMethod = "POST"
             conn.connectTimeout = 15_000
-            conn.readTimeout = 30_000
+            // NOT 30s: this reasoning model answers in 70-162s (reasoning
+            // tokens are generated BEFORE the JSON). At 30s every device
+            // request threw SocketTimeoutException and silently fell back to
+            // LocalEveningPlanner — which IGNORES feedback — so each
+            // Regenerate returned a plan that honored none of the corrections.
+            // Even 120s was too tight for the slowest measured run (162s).
+            conn.readTimeout = 300_000
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            conn.setRequestProperty("x-goog-api-key", apiKey)
+            conn.setRequestProperty("Authorization", "Bearer $apiKey")
+            conn.setRequestProperty("X-Title", "FlowState")
 
             val body = buildRequestBody(snapshot, feedback, memory)
             conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
@@ -85,9 +135,17 @@ class GeminiEveningPlanner @Inject constructor(
             val code = conn.responseCode
             val stream = if (code in 200..299) conn.inputStream else conn.errorStream
             val text = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
-            if (code !in 200..299) throw IllegalStateException("Gemini HTTP $code: ${text.take(300)}")
+            if (code !in 200..299) throw IllegalStateException("OpenRouter HTTP $code: ${text.take(300)}")
 
-            return parsePlan(text, snapshot)
+            return try {
+                parsePlan(text, snapshot)
+            } catch (e: Exception) {
+                // Parse failures need the context the HTTP-error path already
+                // logs: status, content-type and what ACTUALLY came back (seen
+                // on device: a 2xx whose body was raw model prose, not JSON).
+                Log.w(TAG, "OpenRouter HTTP $code ct=${conn.contentType} unparseable body — ${text.take(400)}")
+                throw e
+            }
         } finally {
             conn.disconnect()
         }
@@ -98,54 +156,24 @@ class GeminiEveningPlanner @Inject constructor(
         feedback: PlanFeedback?,
         memory: List<PlanFeedbackNote>
     ): String = buildJsonObject {
-        putJsonObject("systemInstruction") {
-            putJsonArray("parts") {
-                add(buildJsonObject { put("text", SYSTEM_PROMPT) })
-            }
-        }
-        putJsonArray("contents") {
+        put("model", BuildConfig.OPENROUTER_MODEL.ifBlank { DEFAULT_MODEL })
+        putJsonArray("messages") {
+            add(buildJsonObject {
+                put("role", "system")
+                put("content", SYSTEM_PROMPT)
+            })
             add(buildJsonObject {
                 put("role", "user")
-                putJsonArray("parts") {
-                    add(buildJsonObject { put("text", userText(snapshot, feedback, memory)) })
-                }
+                put("content", userText(snapshot, feedback, memory))
             })
         }
-        putJsonObject("generationConfig") {
-            put("temperature", 0.7)
-            put("responseMimeType", "application/json")
-            putJsonObject("responseSchema") { planResponseSchema() }
-        }
+        put("temperature", 0.7)
+        // Headroom over the 3167 completion tokens the heaviest measured run
+        // used (2094 of them hidden reasoning): reasoning counts against
+        // max_tokens, and truncation cuts the JSON mid-object → parse fails →
+        // silent fallback to the offline planner, which ignores corrections.
+        put("max_tokens", 8000)
     }.toString()
-
-    private fun JsonObjectBuilder.planResponseSchema() {
-        // OpenAPI-style schema; uppercase types are what v1beta expects.
-        put("type", "OBJECT")
-        putJsonObject("properties") {
-            putJsonObject("headline") { put("type", "STRING") }
-            putJsonObject("blocks") {
-                put("type", "ARRAY")
-                putJsonObject("items") {
-                    put("type", "OBJECT")
-                    putJsonObject("properties") {
-                        putJsonObject("startTime") { put("type", "STRING") }
-                        putJsonObject("durationMinutes") { put("type", "INTEGER") }
-                        putJsonObject("title") { put("type", "STRING") }
-                        putJsonObject("reason") { put("type", "STRING") }
-                        putJsonObject("kind") {
-                            put("type", "STRING")
-                            putJsonArray("enum") { PlanBlockKind.entries.forEach { add(it.name) } }
-                        }
-                        putJsonObject("referenceId") { put("type", "INTEGER") }
-                    }
-                    putJsonArray("required") {
-                        add("startTime"); add("durationMinutes"); add("title"); add("reason"); add("kind")
-                    }
-                }
-            }
-        }
-        putJsonArray("required") { add("headline"); add("blocks") }
-    }
 
     /** Snapshot JSON, the durable PAST CORRECTIONS memory, plus a revise instruction when the user regenerated. */
     private fun userText(
@@ -267,10 +295,19 @@ class GeminiEveningPlanner @Inject constructor(
 
     private fun parsePlan(responseBody: String, snapshot: CheckinSnapshot): EveningPlan {
         val root = Json.parseToJsonElement(responseBody).jsonObject
-        val text = root["candidates"]!!.jsonArray[0]
-            .jsonObject["content"]!!.jsonObject["parts"]!!.jsonArray[0]
-            .jsonObject["text"]!!.jsonPrimitive.content
-        val planJson = Json.parseToJsonElement(text).jsonObject
+        // Descriptive failures instead of NPEs: the catch in generatePlan logs
+        // e.message, and "null" told us nothing about WHY a 2xx body had no
+        // plan in it (observed on device: a 2xx response without `choices`).
+        val message = root["choices"]?.jsonArray?.firstOrNull()
+            ?.jsonObject?.get("message")?.jsonObject
+            ?: throw IllegalStateException(
+                "response has no choices/message: ${responseBody.take(300)}"
+            )
+        val text = message["content"]?.jsonPrimitive?.contentOrNull
+            ?: throw IllegalStateException(
+                "empty content, body: ${responseBody.take(300)}"
+            )
+        val planJson = Json.parseToJsonElement(extractJsonObject(text)).jsonObject
 
         val blocks = planJson["blocks"]!!.jsonArray.map { element ->
             val obj = element.jsonObject
@@ -286,7 +323,7 @@ class GeminiEveningPlanner @Inject constructor(
             )
         }.sortedBy { it.startTime }
 
-        if (blocks.isEmpty()) throw IllegalStateException("Gemini returned an empty plan")
+        if (blocks.isEmpty()) throw IllegalStateException("OpenRouter returned an empty plan")
 
         return EveningPlan(
             date = snapshot.date,
@@ -297,14 +334,33 @@ class GeminiEveningPlanner @Inject constructor(
         )
     }
 
+    /**
+     * Free models are less disciplined about JSON than Gemini's responseSchema:
+     * they may wrap the object in ```json fences or prepend a sentence. Strip
+     * both; if there is still no object, let parsing throw -> local fallback.
+     */
+    private fun extractJsonObject(content: String): String {
+        var text = content.trim()
+        if (text.startsWith("```")) {
+            text = text.removePrefix("```").removePrefix("json").removeSuffix("```").trim()
+        }
+        val start = text.indexOf('{')
+        val end = text.lastIndexOf('}')
+        if (start >= 0 && end > start) text = text.substring(start, end + 1)
+        return text
+    }
+
     private companion object {
-        const val TAG = "GeminiEveningPlanner"
-        const val MODEL = "gemini-3.8-flash"
+        const val TAG = "OpenRouterEveningPlanner"
+        /** Free-tier model pinned here; override via local.properties (openrouter.model). */
+        const val DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
         /** How many durable correction notes ride along in each prompt. */
         const val MEMORY_LIMIT = 5
+        /** Initial try + one retry for transient failures. */
+        const val MAX_ATTEMPTS = 2
+        const val RETRY_DELAY_MILLIS = 1_500L
         val HH_MM: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
-        val ENDPOINT =
-            "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent"
+        val ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 
         val SYSTEM_PROMPT = """
             You are the evening transition assistant inside FlowState, Ovi's personal
@@ -321,6 +377,7 @@ class GeminiEveningPlanner @Inject constructor(
             follow the snapshot: durable notes Ovi typed on earlier evenings.
 
             Output rules:
+            - Output ONLY the JSON object: no code fences, no commentary before or after.
             - headline: at most 8 words, specific to tonight's mood. Never guilt-trippy.
             - blocks: time-ordered, starting at localTime (the check-in JUST
               finished — begin the first block at or within ~10 minutes of it) and
@@ -337,6 +394,10 @@ class GeminiEveningPlanner @Inject constructor(
             - Exactly one REFLECTION block near 23:00 for 30 minutes ("11PM ritual
               close"); if the check-in was already late, place it after your
               blocks instead of forcing the clock.
+            - Run the plan until about 23:35: the last block must END near
+              23:35 — never stop scheduling hours early.
+            - One block per task/habit: never repeat a title or schedule the
+              same id twice.
             - One MEAL block around 19:00, unless the check-in is already past
               dinner time or unexpected plans dictate otherwise.
 

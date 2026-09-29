@@ -7,7 +7,7 @@ package com.markel.flowstate.core.domain
  * [previousPlan] rides along deliberately: a note like "start later" is only
  * actionable if the model can see what it produced last time.
  * LocalEveningPlanner ignores this entirely (deterministic by design);
- * GeminiEveningPlanner appends it to the prompt.
+ * OpenRouterEveningPlanner appends it to the prompt.
  */
 data class PlanFeedback(
     /** Free-text note from the plan step's comment box; may be blank. */
@@ -20,7 +20,7 @@ data class PlanFeedback(
  * A regenerate note that has been PERSISTED — [date] is the ISO day it was
  * typed. Unlike [PlanFeedback] (one request, dies with the session, carries
  * the rejected plan), these are the durable memory entries
- * [EveningPlanRepository.recentFeedback] reads back and GeminiEveningPlanner
+ * [EveningPlanRepository.recentFeedback] reads back and OpenRouterEveningPlanner
  * injects into every future generation.
  */
 data class PlanFeedbackNote(
