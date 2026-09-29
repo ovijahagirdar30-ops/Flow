@@ -203,17 +203,6 @@ class MainActivity : ComponentActivity() {
                             .toSet()
                     }
 
-                    // Per-tab back stacks. Each visible tab has its own NavBackStack.
-                    // Switching tabs preserves the target tab's scroll position and detail history.
-                    //
-                    // `initialRoute` is the persisted last tab from DataStore —
-                    // used only to seed `topLevelRoute` on first composition.
-                    val navigationState: NavigationState = rememberNavigationState(
-                        initialRoute = initialTab.toKey(),
-                        topLevelRoutes = topLevelRoutes,
-                    )
-                    val navigator = remember(navigationState) { FlowStateNavigator(navigationState) }
-
                     // The check-in's Agree hand-off passes EXTRA_OPEN_TAB (a
                     // MainTab name) so the app opens straight on the Plan
                     // checklist tab. Only honored on a fresh launch — on
@@ -228,15 +217,34 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // On first composition, switch to the hand-off tab if one
-                    // was requested, else the persisted initial tab
-                    // (rememberSerializable restores topLevelRoute = startRoute by default).
-                    LaunchedEffect(initialTab, topLevelRoutes, openTabOverride) {
-                        val targetTab = openTabOverride ?: initialTab
-                        if (targetTab.toKey() in topLevelRoutes &&
-                            navigationState.topLevelRoute != targetTab.toKey()
-                        ) {
-                            navigationState.topLevelRoute = targetTab.toKey()
+                    // Per-tab back stacks. Each visible tab has its own NavBackStack.
+                    // Switching tabs preserves the target tab's scroll position and detail history.
+                    //
+                    // `initialRoute` seeds `topLevelRoute` on first composition: the
+                    // Agree hand-off tab when one was requested (and is visible),
+                    // else the persisted last tab from DataStore. Seeding — instead
+                    // of pushing the override from a LaunchedEffect — is what keeps
+                    // the hand-off one-shot: an effect keyed on initialTab re-runs
+                    // on every tab switch (saveLastTab round-trips back into
+                    // initialTab), so a sticky override re-applied there yanked the
+                    // user back to the hand-off tab on every tap — the Plan tab
+                    // became inescapable after Agree.
+                    val navigationState: NavigationState = rememberNavigationState(
+                        initialRoute = openTabOverride
+                            ?.takeIf { it.toKey() in topLevelRoutes }
+                            ?.toKey()
+                            ?: initialTab.toKey(),
+                        topLevelRoutes = topLevelRoutes,
+                    )
+                    val navigator = remember(navigationState) { FlowStateNavigator(navigationState) }
+
+                    // Corrective only: if the active tab dropped out of the visible
+                    // set (it was hidden), fall back to the persisted tab. A
+                    // still-valid tab — including the seeded hand-off tab — is
+                    // deliberately never overridden here.
+                    LaunchedEffect(initialTab, topLevelRoutes) {
+                        if (navigationState.topLevelRoute !in topLevelRoutes) {
+                            navigationState.topLevelRoute = initialTab.toKey()
                         }
                     }
 
