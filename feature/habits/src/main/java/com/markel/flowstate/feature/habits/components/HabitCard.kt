@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kizitonwose.calendar.compose.WeekCalendar
 import com.kizitonwose.calendar.compose.weekcalendar.rememberWeekCalendarState
+import com.markel.flowstate.core.domain.HabitSchedule
 import com.markel.flowstate.core.domain.HabitWithStatus
 import com.markel.flowstate.feature.habits.R
 import java.time.DayOfWeek
@@ -38,7 +39,7 @@ fun HabitCard(
     weekEntries: Set<Long>,
     onToggleDay: (LocalDate) -> Unit,
     onDelete: () -> Unit,
-    onEdit: (name: String, icon: String, colorArgb: Int, priorityRank: Int, rolloverIfMissed: Boolean) -> Unit,
+    onEdit: (name: String, icon: String, colorArgb: Int, priorityRank: Int, rolloverIfMissed: Boolean, schedule: HabitSchedule) -> Unit,
     onNavigateToDetail: (() -> Unit)? = null
 ) {
     val habit = habitWithStatus.habit
@@ -96,9 +97,10 @@ fun HabitCard(
             initialColor = habitColor,
             initialPriorityRank = habit.priorityRank,
             initialRolloverIfMissed = habit.rolloverIfMissed,
+            initialSchedule = habit.schedule,
             onDismiss = { showEditDialog = false },
-            onConfirm = { name, icon, colorArgb, priorityRank, rolloverIfMissed ->
-                onEdit(name, icon, colorArgb, priorityRank, rolloverIfMissed)
+            onConfirm = { name, icon, colorArgb, priorityRank, rolloverIfMissed, schedule ->
+                onEdit(name, icon, colorArgb, priorityRank, rolloverIfMissed, schedule)
                 showEditDialog = false
             }
         )

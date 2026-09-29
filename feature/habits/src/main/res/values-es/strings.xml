@@ -59,6 +59,7 @@
     <string name="habit_summary_current_label">Actual</string>
     <string name="habit_summary_best_label">Mejor</string>
     <string name="habit_summary_days_suffix">días</string>
+    <string name="habit_summary_weeks_suffix">semanas</string>
     <string name="habit_summary_consistency_label">Constancia</string>
     <string name="habit_heatmap">Mapa de calor</string>
     <string name="habit_heatmap_weeks">Actividad · %d semanas</string>

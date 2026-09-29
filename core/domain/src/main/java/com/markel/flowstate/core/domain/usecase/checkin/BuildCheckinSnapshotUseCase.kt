@@ -30,7 +30,9 @@ class BuildCheckinSnapshotUseCase @Inject constructor(
             date = isoDate,
             checkin = checkinRepository.getCheckinByDate(isoDate),
             tasks = taskRepository.getTasks().first().filter { !it.isDone },
-            habits = getHabitsWithStatus(date).first()
+            // Off-day and weekly-target-met habits never reach either
+            // planner — "due today" is the single choke point for planning.
+            habits = getHabitsWithStatus(date).first().filter { it.isDueToday }
         )
     }
 }

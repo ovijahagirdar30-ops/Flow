@@ -4,6 +4,8 @@ import com.markel.flowstate.core.domain.Habit
 import com.markel.flowstate.core.domain.HabitEntryFlat
 import com.markel.flowstate.core.domain.HabitNumericEntry
 import com.markel.flowstate.core.domain.HabitRepository
+import com.markel.flowstate.core.domain.HabitSchedule
+import com.markel.flowstate.core.domain.HabitStreaks
 import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.core.domain.HabitWithStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,6 +17,16 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import javax.inject.Inject
 
+/**
+ * Builds today's per-habit status: completion, due-ness and streak — all
+ * driven by the habit's [HabitSchedule]:
+ *
+ *  - **Due today** = the weekday is scheduled and, for a times-per-week
+ *    habit, the weekly target isn't met yet (once it is, the habit rests
+ *    until next week — see the check-in list and header progress).
+ *  - **Streaks** come from the shared [HabitStreaks] math: consecutive
+ *    scheduled days without a target (off-days skip, never break), Consecutive ISO weeks with one.
+ */
 class GetHabitsWithStatusUseCase @Inject constructor(
     private val repository: HabitRepository
 ) {
@@ -77,12 +89,13 @@ class GetHabitsWithStatusUseCase @Inject constructor(
                 when (habit.habitType) {
                     HabitType.BOOLEAN -> {
                         val entries = boolEntriesByHabit[habit.id] ?: emptyList()
-                        val isCompletedToday = entries.any { it.epochDay == today }
-                        val streak = calculateStreak(entries.map { it.epochDay }, date)
+                        val completedDays = entries.map { it.epochDay }.toSet()
+                        val isCompletedToday = today in completedDays
                         HabitWithStatus(
                             habit = habit,
                             isCompletedToday = isCompletedToday,
-                            streak = streak
+                            streak = HabitStreaks.current(habit.schedule, completedDays, date),
+                            isDueToday = isDueToday(habit.schedule, isCompletedToday, completedDays, date)
                         )
                     }
                     HabitType.NUMERIC -> {
@@ -97,12 +110,18 @@ class GetHabitsWithStatusUseCase @Inject constructor(
                             else -> todayValue > 0f
                         }
 
-                        val streak = calculateNumericStreak(entries, habit.targetValue, date)
+                        // Days that count as completed for streak/due — the
+                        // same validity rule the old numeric streak used.
+                        val completedDays = entries
+                            .filter { habit.targetValue == null || it.value >= habit.targetValue }
+                            .map { it.date.toEpochDay() }
+                            .toSet()
 
                         HabitWithStatus(
                             habit = habit,
                             isCompletedToday = isCompletedToday,
-                            streak = streak,
+                            streak = HabitStreaks.current(habit.schedule, completedDays, date),
+                            isDueToday = isDueToday(habit.schedule, isCompletedToday, completedDays, date),
                             todayValue = todayValue
                         )
                     }
@@ -110,40 +129,21 @@ class GetHabitsWithStatusUseCase @Inject constructor(
             }
     }
 
-    private fun calculateStreak(epochDays: List<Long>, from: LocalDate): Int {
-        if (epochDays.isEmpty()) return 0
-        val sorted = epochDays.toSortedSet(reverseOrder())
-        var streak = 0
-        var expected = from.toEpochDay()
-
-        // If today is not completed, we start counting from yesterday
-        if (expected !in sorted) expected--
-
-        while (expected in sorted) {
-            streak++
-            expected--
-        }
-        return streak
-    }
-
-    private fun calculateNumericStreak(
-        entries: List<HabitNumericEntry>,
-        targetValue: Float?,
-        from: LocalDate
-    ): Int {
-        if (entries.isEmpty()) return 0
-        val validDays = entries
-            .filter { targetValue == null || it.value >= targetValue }
-            .map { it.date.toEpochDay() }
-            .toSortedSet(reverseOrder())
-
-        var streak = 0
-        var expected = from.toEpochDay()
-        if (expected !in validDays) expected--
-        while (expected in validDays) {
-            streak++
-            expected--
-        }
-        return streak
+    /**
+     * Scheduled AND (no weekly target OR the target still has room this
+     * week). Completing today always counts as due so the header's done/total
+     * keeps showing it; once a target habit is met and today's completion
+     * isn't there, it disappears until Monday.
+     */
+    private fun isDueToday(
+        schedule: HabitSchedule,
+        isCompletedToday: Boolean,
+        completedDays: Set<Long>,
+        date: LocalDate,
+    ): Boolean {
+        if (!schedule.isScheduledOn(date)) return false
+        if (isCompletedToday) return true
+        val target = schedule.weeklyTarget ?: return true
+        return HabitStreaks.completionsInWeek(schedule, completedDays, date.with(DayOfWeek.MONDAY), until = date) < target
     }
 }

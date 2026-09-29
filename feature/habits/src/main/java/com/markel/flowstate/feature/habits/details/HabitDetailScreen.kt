@@ -101,6 +101,7 @@ fun HabitDetailScreen(
                 startDate = habit.createdAt,
                 currentStreak = state.currentStreak,
                 bestStreak = state.bestStreak,
+                streaksInWeeks = habit.schedule.weeklyTarget != null,
                 averageValue = avgValue,
                 unit = habit.unit ?: "",
                 accentColor = habitColor,
@@ -114,6 +115,7 @@ fun HabitDetailScreen(
                 startDate = habit.createdAt,
                 currentStreak = state.currentStreak,
                 bestStreak = state.bestStreak,
+                streaksInWeeks = habit.schedule.weeklyTarget != null,
                 consistency = state.completionPct(),
                 consistencyLabel = state.pctLabel(),
                 accentColor = habitColor,
@@ -263,6 +265,7 @@ fun HabitDetailScreen(
                                 month = state.displayMonth,
                                 completedEpochDays = state.allEntries,
                                 habitColor = habitColor,
+                                schedule = habit.schedule,
                                 modifier = Modifier.padding(
                                     start = 12.dp, end = 12.dp, bottom = 12.dp
                                 )
@@ -286,6 +289,7 @@ fun HabitDetailScreen(
                                         year = y, month = m,
                                         completedEpochDays = state.allEntries,
                                         habitColor = habitColor,
+                                        schedule = habit.schedule,
                                         showMonthLabel = true,
                                         compact = false,
                                         showNumbers = false,
@@ -310,10 +314,11 @@ fun HabitDetailScreen(
                                             HabitMonthCalendar(
                                                 year = state.displayYear,
                                                 month = m,
-                                                completedEpochDays = state.allEntries,
-                                                habitColor = habitColor,
-                                                showMonthLabel = true,
-                                                compact = true,
+                                            completedEpochDays = state.allEntries,
+                                            habitColor = habitColor,
+                                            schedule = habit.schedule,
+                                            showMonthLabel = true,
+                                            compact = true,
                                                 modifier = Modifier.weight(1f)
                                             )
                                         }

@@ -6,6 +6,8 @@ import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.domain.Habit
 import com.markel.flowstate.core.domain.HabitNumericEntry
 import com.markel.flowstate.core.domain.HabitRepository
+import com.markel.flowstate.core.domain.HabitSchedule
+import com.markel.flowstate.core.domain.HabitStreaks
 import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.core.domain.usecase.habits.GetHabitByIdUseCase
 import com.markel.flowstate.core.domain.usecase.habits.GetNumericEntriesUseCase
@@ -72,10 +74,12 @@ class HabitDetailViewModel @AssistedInject constructor(
             _uiState.update { state ->
                 state.copy(
                     allEntries = epochDays,
-                    currentStreak = calculateCurrentStreak(epochDays),
-                    bestStreak = calculateBestStreak(epochDays),
+                    currentStreak = state.habit?.schedule
+                        ?.let { HabitStreaks.current(it, epochDays, LocalDate.now()) } ?: 0,
+                    bestStreak = state.habit?.schedule
+                        ?.let { HabitStreaks.best(it, epochDays) } ?: 0,
                     weeklyCompletions = calculateWeeklyCompletions(epochDays),
-                    dayOfWeekCompletions = calculateDayOfWeekCompletions(entries, state.habit?.createdAt)
+                    dayOfWeekCompletions = calculateDayOfWeekCompletions(entries, state.habit?.createdAt, state.habit?.schedule)
                 )
             }
         }
@@ -91,9 +95,13 @@ class HabitDetailViewModel @AssistedInject constructor(
                     dailyValues = calculateDailyValues(entries),
                     monthlyProgress = calculateMonthlyProgress(entries, state.habit),
                     heatmapData = calculateHeatmapData(entries),
-                    dayOfWeekAverages = calculateDayOfWeekAverages(entries, state.habit?.createdAt),
-                    currentStreak = calculateNumericStreak(entries, state.habit?.targetValue),
-                    bestStreak = calculateNumericBestStreak(entries, state.habit?.targetValue)
+                    dayOfWeekAverages = calculateDayOfWeekAverages(entries, state.habit?.createdAt, state.habit?.schedule),
+                    currentStreak = state.habit?.let {
+                        HabitStreaks.current(it.schedule, numericCompletedDays(entries, it.targetValue), LocalDate.now())
+                    } ?: 0,
+                    bestStreak = state.habit?.let {
+                        HabitStreaks.best(it.schedule, numericCompletedDays(entries, it.targetValue))
+                    } ?: 0
                 )
             }
         }
@@ -179,28 +187,6 @@ class HabitDetailViewModel @AssistedInject constructor(
 
     // ── Calculations for Boolean Habits ─────────────────────────────────────────────────────
 
-    private fun calculateCurrentStreak(epochDays: Set<Long>): Int {
-        if (epochDays.isEmpty()) return 0
-        var streak = 0
-        var expected = LocalDate.now().toEpochDay()
-        if (expected !in epochDays) expected--
-        while (expected in epochDays) { streak++; expected-- }
-        return streak
-    }
-
-    private fun calculateBestStreak(epochDays: Set<Long>): Int {
-        if (epochDays.isEmpty()) return 0
-        val sorted = epochDays.sorted()
-        var best = 1; var current = 1
-        for (i in 1 until sorted.size) {
-            if (sorted[i] == sorted[i - 1] + 1) {
-                current++
-                if (current > best) best = current
-            } else current = 1
-        }
-        return best
-    }
-
     private fun calculateWeeklyCompletions(epochDays: Set<Long>): List<Pair<LocalDate, Int>> {
         val today = LocalDate.now()
         val weeks = 16
@@ -213,7 +199,7 @@ class HabitDetailViewModel @AssistedInject constructor(
         }
     }
 
-    private fun calculateDayOfWeekCompletions(entries: List<LocalDate>, createdAt: LocalDate?): Map<Int, Float> {
+    private fun calculateDayOfWeekCompletions(entries: List<LocalDate>, createdAt: LocalDate?, schedule: HabitSchedule?): Map<Int, Float> {
         if (createdAt == null) return emptyMap()
         val today = LocalDate.now()
         val start = if (createdAt.isAfter(today)) today else createdAt
@@ -227,11 +213,15 @@ class HabitDetailViewModel @AssistedInject constructor(
             }
         }
 
-        // Count opportunities per day of week efficiently (O(7) instead of iterating day by day)
+        // Opportunities per day of week — only for SCHEDULED weekdays: an
+        // off-day has no expectation, so it never drags a rate down.
         val opportunitiesByDow = countDaysOfWeekBetween(start, today)
+            .filterKeys { dow -> schedule?.days?.contains(DayOfWeek.of(dow)) != false }
 
         // Calculate completion rate per day of week
-        return (1..7).associateWith { dow ->
+        return (1..7)
+            .filter { dow -> schedule?.days?.contains(DayOfWeek.of(dow)) != false }
+            .associateWith { dow ->
             val opportunities = opportunitiesByDow[dow] ?: 0
             if (opportunities > 0) {
                 (completionsByDow[dow] ?: 0).toFloat() / opportunities
@@ -290,7 +280,9 @@ class HabitDetailViewModel @AssistedInject constructor(
         val daysCompleted = dailyMaxValues.count { (_, maxValue) ->
             maxValue >= (habit.targetValue ?: 0f)
         }
-        val totalDays = yearMonth.lengthOfMonth()
+        val totalDays = (1..yearMonth.lengthOfMonth()).count { day ->
+            habit.schedule.isScheduledOn(yearMonth.atDay(day))
+        }
         val dailyAverage = if (daysWithData > 0) currentValue / daysWithData else 0f
 
         val monthName = now.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
@@ -314,7 +306,11 @@ class HabitDetailViewModel @AssistedInject constructor(
         )
     }
 
-    private fun calculateDayOfWeekAverages(entries: List<HabitNumericEntry>, createdAt: LocalDate? = null): List<ValueRange> {
+    private fun calculateDayOfWeekAverages(
+        entries: List<HabitNumericEntry>,
+        createdAt: LocalDate? = null,
+        schedule: HabitSchedule? = null
+    ): List<ValueRange> {
         if (entries.isEmpty()) return emptyList()
 
         val today = LocalDate.now()
@@ -333,7 +329,9 @@ class HabitDetailViewModel @AssistedInject constructor(
             }
         }
 
-        return daysOfWeek.map { dow ->
+        return daysOfWeek
+            .filter { dow -> schedule?.days?.contains(dow) != false }
+            .map { dow ->
             val dowValue = dow.value
             val opportunities = opportunitiesByDow[dowValue] ?: 0
             // Average over ALL opportunities: days without data count as 0
@@ -362,47 +360,11 @@ class HabitDetailViewModel @AssistedInject constructor(
             .associate { it.date to it.value }
     }
 
-    private fun calculateNumericStreak(
-        entries: List<HabitNumericEntry>,
-        targetValue: Float?
-    ): Int {
-        if (entries.isEmpty()) return 0
-        val validDays = entries
+    /** Days whose value met the target — the same rule the status use case uses. */
+    private fun numericCompletedDays(entries: List<HabitNumericEntry>, targetValue: Float?): Set<Long> =
+        entries
             .filter { targetValue == null || it.value >= targetValue }
             .map { it.date.toEpochDay() }
-            .toSortedSet(reverseOrder())
-
-        var streak = 0
-        var expected = LocalDate.now().toEpochDay()
-        if (expected !in validDays) expected--
-        while (expected in validDays) {
-            streak++
-            expected--
-        }
-        return streak
-    }
-
-    private fun calculateNumericBestStreak(
-        entries: List<HabitNumericEntry>,
-        targetValue: Float?
-    ): Int {
-        if (entries.isEmpty()) return 0
-        val validDays = entries
-            .filter { targetValue == null || it.value >= targetValue }
-            .map { it.date.toEpochDay() }
-            .sorted()
-
-        if (validDays.isEmpty()) return 0
-
-        var best = 1
-        var current = 1
-        for (i in 1 until validDays.size) {
-            if (validDays[i] == validDays[i - 1] + 1) {
-                current++
-                if (current > best) best = current
-            } else current = 1
-        }
-        return best
-    }
+            .toSet()
 
 }

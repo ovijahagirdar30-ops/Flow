@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.markel.flowstate.core.domain.HabitSchedule
 import com.markel.flowstate.core.domain.HabitWithStatus
 import com.markel.flowstate.feature.habits.R
 import com.markel.flowstate.core.designsystem.R as DesignR
@@ -44,7 +45,7 @@ fun NumericHabitCard(
     onDecrementToday: () -> Unit,
     onSetValue: (LocalDate, Float?) -> Unit,
     onDelete: () -> Unit,
-    onEdit: (name: String, icon: String, colorArgb: Int, unit: String?, targetValue: Float?, step: Float?, priorityRank: Int, rolloverIfMissed: Boolean) -> Unit,
+    onEdit: (name: String, icon: String, colorArgb: Int, unit: String?, targetValue: Float?, step: Float?, priorityRank: Int, rolloverIfMissed: Boolean, schedule: HabitSchedule) -> Unit,
     onNavigateToDetail: (() -> Unit)? = null
 ) {
     val habit = habitWithStatus.habit
@@ -142,9 +143,10 @@ fun NumericHabitCard(
             initialStep = habit.step,
             initialPriorityRank = habit.priorityRank,
             initialRolloverIfMissed = habit.rolloverIfMissed,
+            initialSchedule = habit.schedule,
             onDismiss = { showEditDialog = false },
-            onConfirm = { name, icon, colorArgb, _, unit, target, step, priorityRank, rolloverIfMissed ->
-                onEdit(name, icon, colorArgb, unit, target, step, priorityRank, rolloverIfMissed)
+            onConfirm = { name, icon, colorArgb, _, unit, target, step, priorityRank, rolloverIfMissed, schedule ->
+                onEdit(name, icon, colorArgb, unit, target, step, priorityRank, rolloverIfMissed, schedule)
                 showEditDialog = false
             }
         )

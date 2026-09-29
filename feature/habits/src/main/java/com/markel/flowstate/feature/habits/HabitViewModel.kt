@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.domain.Habit
 import com.markel.flowstate.core.domain.HabitRepository
+import com.markel.flowstate.core.domain.HabitSchedule
 import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.core.domain.usecase.habits.DecrementNumericValueUseCase
 import com.markel.flowstate.core.domain.usecase.habits.DeleteHabitUseCase
@@ -79,8 +80,8 @@ class HabitViewModel @Inject constructor(
                     weekEntriesByHabit = weekEntriesByHabit,
                     numericEntriesByHabit = numericEntriesByHabit,
                     showAddDialog = showDialog,
-                    completedToday = habits.count { it.isCompletedToday },
-                    totalHabits = habits.size,
+                    completedToday = habits.count { it.isDueToday && it.isCompletedToday },
+                    totalHabits = habits.count { it.isDueToday },
                     motivationalMessageIndex = LocalDate.now().dayOfYear % 7,
                     pendingMoodPrompt = pendingMoodPrompt
                 )
@@ -188,7 +189,8 @@ class HabitViewModel @Inject constructor(
         unit: String? = null, targetValue: Float? = null,
         step: Float = 1f,
         priorityRank: Int = 5,
-        rolloverIfMissed: Boolean = false)
+        rolloverIfMissed: Boolean = false,
+        schedule: HabitSchedule = HabitSchedule.DAILY)
     {
         if (name.isBlank()) return
         viewModelScope.launch {
@@ -202,7 +204,8 @@ class HabitViewModel @Inject constructor(
                     targetValue = targetValue,
                     step = step,
                     priorityRank = priorityRank,
-                    rolloverIfMissed = rolloverIfMissed
+                    rolloverIfMissed = rolloverIfMissed,
+                    schedule = schedule
                 )
             )
             _showAddDialog.value = false
@@ -221,7 +224,8 @@ class HabitViewModel @Inject constructor(
         newTargetValue: Float? = null,
         newStep: Float? = null,
         newPriorityRank: Int? = null,
-        newRolloverIfMissed: Boolean? = null
+        newRolloverIfMissed: Boolean? = null,
+        newSchedule: HabitSchedule? = null
     ) {
         if (newName.isBlank()) return
         viewModelScope.launch {
@@ -234,7 +238,8 @@ class HabitViewModel @Inject constructor(
                     targetValue = newTargetValue,
                     step = newStep ?: habit.step,
                     priorityRank = newPriorityRank ?: habit.priorityRank,
-                    rolloverIfMissed = newRolloverIfMissed ?: habit.rolloverIfMissed
+                    rolloverIfMissed = newRolloverIfMissed ?: habit.rolloverIfMissed,
+                    schedule = newSchedule ?: habit.schedule
                 )
             )
         }

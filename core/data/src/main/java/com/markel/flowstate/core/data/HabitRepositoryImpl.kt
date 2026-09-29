@@ -7,9 +7,9 @@ import com.markel.flowstate.core.data.local.HabitNumericEntryEntity
 import com.markel.flowstate.core.data.local.HabitWithEntries
 import com.markel.flowstate.core.domain.Habit
 import com.markel.flowstate.core.domain.HabitEntryFlat
-import com.markel.flowstate.core.domain.HabitFrequency
 import com.markel.flowstate.core.domain.HabitNumericEntry
 import com.markel.flowstate.core.domain.HabitRepository
+import com.markel.flowstate.core.domain.HabitSchedule
 import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.core.domain.MoodEntry
 import com.markel.flowstate.core.domain.MoodSourceType
@@ -105,7 +105,7 @@ class HabitRepositoryImpl @Inject constructor(
         name = name,
         iconName = iconName,
         colorArgb = colorArgb,
-        frequency = HabitFrequency.valueOf(frequency),
+        schedule = HabitSchedule.decode(frequency),
         createdAt = LocalDate.ofEpochDay(createdAt / 86400000),
         habitType = HabitType.valueOf(habitType),
         unit = unit,
@@ -121,7 +121,7 @@ class HabitRepositoryImpl @Inject constructor(
         name = name,
         iconName = iconName,
         colorArgb = colorArgb,
-        frequency = frequency.name,
+        frequency = schedule.encode(),
         createdAt = createdAt.toEpochDay() * 86400000,
         habitType = habitType.name,
         unit = unit,

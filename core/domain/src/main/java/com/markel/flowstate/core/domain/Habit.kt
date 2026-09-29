@@ -2,7 +2,6 @@ package com.markel.flowstate.core.domain
 
 import java.time.LocalDate
 
-enum class HabitFrequency { DAILY, WEEKLY }
 enum class HabitType { BOOLEAN, NUMERIC }
 
 data class Habit(
@@ -10,7 +9,7 @@ data class Habit(
     val name: String,
     val iconName: String = "self_improvement",
     val colorArgb: Int = 0xFF6650A4.toInt(),
-    val frequency: HabitFrequency = HabitFrequency.DAILY,
+    val schedule: HabitSchedule = HabitSchedule.DAILY,
     val createdAt: LocalDate = LocalDate.now(),
     val habitType: HabitType = HabitType.BOOLEAN,
     val unit: String? = null,
@@ -26,6 +25,12 @@ data class HabitWithStatus(
     val isCompletedToday: Boolean,
     val streak: Int = 0,
     val todayValue: Float? = null,
+    /**
+     * False when the habit's schedule says it isn't on today (off-day, or a
+     * times-per-week target already met this week) — lists, the header
+     * progress and the evening plan all skip it.
+     */
+    val isDueToday: Boolean = true,
 )
 
 data class HabitEntryFlat(val habitId: Int, val epochDay: Long, val mood: Int? = null)

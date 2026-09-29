@@ -170,14 +170,15 @@ fun HabitScreen(
                                                             habitWithStatus.habit
                                                         )
                                                     },
-                                                    onEdit = { name, icon, colorArgb, priorityRank, rolloverIfMissed ->
+                                                    onEdit = { name, icon, colorArgb, priorityRank, rolloverIfMissed, schedule ->
                                                         viewModel.editHabit(
                                                             habit = habitWithStatus.habit,
                                                             newName = name,
                                                             newIcon = icon,
                                                             newColorArgb = colorArgb,
                                                             newPriorityRank = priorityRank,
-                                                            newRolloverIfMissed = rolloverIfMissed
+                                                            newRolloverIfMissed = rolloverIfMissed,
+                                                            newSchedule = schedule
                                                         )
                                                     },
                                                     onNavigateToDetail = {
@@ -228,7 +229,7 @@ fun HabitScreen(
                                                             habitWithStatus.habit
                                                         )
                                                     },
-                                                    onEdit = { name, icon, colorArgb, unit, targetValue, step, priorityRank, rolloverIfMissed ->
+                                                    onEdit = { name, icon, colorArgb, unit, targetValue, step, priorityRank, rolloverIfMissed, schedule ->
                                                         viewModel.editHabit(
                                                             habit = habitWithStatus.habit,
                                                             newName = name,
@@ -238,7 +239,8 @@ fun HabitScreen(
                                                             newTargetValue = targetValue,
                                                             newStep = step,
                                                             newPriorityRank = priorityRank,
-                                                            newRolloverIfMissed = rolloverIfMissed
+                                                            newRolloverIfMissed = rolloverIfMissed,
+                                                            newSchedule = schedule
                                                         )
                                                     },
                                                     onNavigateToDetail = {
@@ -260,8 +262,8 @@ fun HabitScreen(
                     AddHabitSheet(
                         initialHabitType = addSheetType,
                         onDismiss = { viewModel.hideAddDialog() },
-                        onConfirm = { name, icon, color, habitType, unit, targetValue, step, priorityRank, rolloverIfMissed ->
-                            viewModel.addHabit(name, icon, color, habitType, unit, targetValue, step, priorityRank, rolloverIfMissed)
+                        onConfirm = { name, icon, color, habitType, unit, targetValue, step, priorityRank, rolloverIfMissed, schedule ->
+                            viewModel.addHabit(name, icon, color, habitType, unit, targetValue, step, priorityRank, rolloverIfMissed, schedule)
                         }
                     )
                 }

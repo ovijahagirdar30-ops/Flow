@@ -59,9 +59,11 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.markel.flowstate.core.domain.HabitSchedule
 import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.feature.habits.R
 import com.markel.flowstate.feature.habits.util.formatFloat
+import java.time.DayOfWeek
 import com.markel.flowstate.core.designsystem.R as DesignR
 
 private val habitColors = listOf(
@@ -92,7 +94,8 @@ fun AddHabitSheet(
         targetValue: Float?,
         step: Float,
         priorityRank: Int,
-        rolloverIfMissed: Boolean
+        rolloverIfMissed: Boolean,
+        schedule: HabitSchedule
     ) -> Unit,
     initialName: String = "",
     initialIcon: String = "none",
@@ -102,7 +105,8 @@ fun AddHabitSheet(
     initialTargetValue: Float? = null,
     initialStep: Float = 1f,
     initialPriorityRank: Int = 5,
-    initialRolloverIfMissed: Boolean = false
+    initialRolloverIfMissed: Boolean = false,
+    initialSchedule: HabitSchedule = HabitSchedule.DAILY
 ) {
     val isEditMode = initialName.isNotEmpty() || initialColor != null
     var name by remember { mutableStateOf(initialName) }
@@ -116,6 +120,9 @@ fun AddHabitSheet(
     var stepText by remember { mutableStateOf(formatFloat(initialStep)) }
     var priorityRank by remember { mutableStateOf(initialPriorityRank) }
     var rolloverIfMissed by remember { mutableStateOf(initialRolloverIfMissed) }
+    var selectedDays by remember { mutableStateOf(initialSchedule.days) }
+    var weeklyTargetEnabled by remember { mutableStateOf(initialSchedule.weeklyTarget != null) }
+    var weeklyTarget by remember { mutableStateOf(initialSchedule.weeklyTarget ?: 3) }
 
     val parsedTarget = targetValueText.toFloatOrNull()
     val parsedStep = stepText.toFloatOrNull()
@@ -285,6 +292,81 @@ fun AddHabitSheet(
                 }
             }
 
+            // ── Frequency: weekdays + optional times-per-week target ───────────
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Frequency",
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    listOf(
+                        DayOfWeek.MONDAY to "Mo",
+                        DayOfWeek.TUESDAY to "Tu",
+                        DayOfWeek.WEDNESDAY to "We",
+                        DayOfWeek.THURSDAY to "Th",
+                        DayOfWeek.FRIDAY to "Fr",
+                        DayOfWeek.SATURDAY to "Sa",
+                        DayOfWeek.SUNDAY to "Su"
+                    ).forEach { (day, letter) ->
+                        DayToggle(
+                            label = letter,
+                            selected = day in selectedDays,
+                            accent = MaterialTheme.colorScheme.primary,
+                            onClick = {
+                                if (day in selectedDays) {
+                                    // Always keep at least one scheduled day.
+                                    if (selectedDays.size > 1) selectedDays = selectedDays - day
+                                } else {
+                                    selectedDays = selectedDays + day
+                                }
+                            }
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Times per week",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Text(
+                            text = "Optional weekly goal \u2014 once it's met, the habit rests until next week.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = weeklyTargetEnabled,
+                        onCheckedChange = { weeklyTargetEnabled = it }
+                    )
+                }
+
+                if (weeklyTargetEnabled) {
+                    // The slider clamps to the scheduled days: you can't ask
+                    // for 5 times a week when only 3 days are selectable.
+                    val targetValue = weeklyTarget.coerceIn(1, selectedDays.size)
+                    Slider(
+                        value = targetValue.toFloat(),
+                        onValueChange = { weeklyTarget = it.toInt() },
+                        valueRange = 1f..selectedDays.size.toFloat(),
+                        steps = (selectedDays.size - 2).coerceAtLeast(0)
+                    )
+                    Text(
+                        text = "$targetValue times per week",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             // ── Priority & rollover (used by the evening check-in's scheduler) ──
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
@@ -351,11 +433,19 @@ fun AddHabitSheet(
                             if (habitType == HabitType.NUMERIC) target else null,
                             if (habitType == HabitType.NUMERIC && stepText.isNotBlank()) step else 1f,
                             priorityRank,
-                            rolloverIfMissed
+                            rolloverIfMissed,
+                            HabitSchedule(
+                                days = selectedDays,
+                                weeklyTarget = if (weeklyTargetEnabled) {
+                                    weeklyTarget.coerceIn(1, selectedDays.size)
+                                } else {
+                                    null
+                                }
+                            )
                         )
                         onDismiss()
                     },
-                    enabled = name.isNotBlank() && !isTargetInvalid && !isStepInvalid,
+                    enabled = name.isNotBlank() && selectedDays.isNotEmpty() && !isTargetInvalid && !isStepInvalid,
                     shapes = ButtonDefaults.shapes(),
                     modifier = Modifier.weight(1f)
                 ) {
@@ -382,18 +472,20 @@ fun AddHabitSheet(
         icon: String,
         colorArgb: Int,
         priorityRank: Int,
-        rolloverIfMissed: Boolean
+        rolloverIfMissed: Boolean,
+        schedule: HabitSchedule
     ) -> Unit,
     initialName: String = "",
     initialIcon: String = "none",
     initialColor: Color? = null,
     initialPriorityRank: Int = 5,
-    initialRolloverIfMissed: Boolean = false
+    initialRolloverIfMissed: Boolean = false,
+    initialSchedule: HabitSchedule = HabitSchedule.DAILY
 ) {
     AddHabitSheet(
         onDismiss = onDismiss,
-        onConfirm = { name, icon, colorArgb, _, _, _, _, priorityRank, rolloverIfMissed ->
-            onConfirm(name, icon, colorArgb, priorityRank, rolloverIfMissed)
+        onConfirm = { name, icon, colorArgb, _, _, _, _, priorityRank, rolloverIfMissed, schedule ->
+            onConfirm(name, icon, colorArgb, priorityRank, rolloverIfMissed, schedule)
         },
         initialName = initialName,
         initialIcon = initialIcon,
@@ -403,8 +495,40 @@ fun AddHabitSheet(
         initialTargetValue = null,
         initialStep = 1f,
         initialPriorityRank = initialPriorityRank,
-        initialRolloverIfMissed = initialRolloverIfMissed
+        initialRolloverIfMissed = initialRolloverIfMissed,
+        initialSchedule = initialSchedule
     )
+}
+
+/** Weekday toggle: two-letter chip that fills with the accent when scheduled. */
+@Composable
+private fun DayToggle(
+    label: String,
+    selected: Boolean,
+    accent: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(width = 42.dp, height = 38.dp)
+            .clip(CircleShape)
+            .background(
+                color = if (selected) accent.copy(alpha = 0.18f)
+                else MaterialTheme.colorScheme.surfaceContainerHigh
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (selected) accent else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 /** Icon option: pops into a Cookie shape with a spring when selected. */

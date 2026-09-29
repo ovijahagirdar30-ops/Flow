@@ -20,6 +20,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
 import androidx.compose.ui.platform.LocalLocale
+import com.markel.flowstate.core.domain.HabitSchedule
 
 @Composable
 fun HabitMonthCalendar(
@@ -27,6 +28,7 @@ fun HabitMonthCalendar(
     month: Int,  // 0-based
     completedEpochDays: Set<Long>,
     habitColor: Color,
+    schedule: HabitSchedule = HabitSchedule.DAILY,
     showMonthLabel: Boolean = false,
     compact: Boolean = false,
     showNumbers: Boolean = !compact,
@@ -88,10 +90,13 @@ fun HabitMonthCalendar(
                             val isDone = epochDay in completedEpochDays
                             val isFuture = date.isAfter(today)
                             val isToday = date == today
+                            // Off-days are rest: transparent like the future,
+                            // never the faint "missed" tint.
+                            val isScheduled = schedule.isScheduledOn(date)
 
                             val bg = when {
                                 isDone && !isFuture -> habitColor
-                                isFuture -> Color.Transparent
+                                isFuture || !isScheduled -> Color.Transparent
                                 else -> habitColor.copy(alpha = 0.12f)
                             }
 
@@ -102,7 +107,7 @@ fun HabitMonthCalendar(
                                     .clip(RoundedCornerShape(if (compact) 3.dp else 6.dp))
                                     .background(bg)
                                     .then(
-                                        if (isToday && !isDone)
+                                        if (isToday && !isDone && isScheduled)
                                             Modifier.border(1.5.dp, habitColor, RoundedCornerShape(6.dp))
                                         else Modifier
                                     ),
@@ -116,6 +121,7 @@ fun HabitMonthCalendar(
                                         color = when {
                                             isDone && !isFuture -> Color.White
                                             isFuture -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                                            !isScheduled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
                                             else -> MaterialTheme.colorScheme.onSurfaceVariant
                                         }
                                     )

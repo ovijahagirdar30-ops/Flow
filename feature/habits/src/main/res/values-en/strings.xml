@@ -59,6 +59,7 @@
     <string name="habit_summary_current_label">Current</string>
     <string name="habit_summary_best_label">Best</string>
     <string name="habit_summary_days_suffix">days</string>
+    <string name="habit_summary_weeks_suffix">weeks</string>
     <string name="habit_summary_consistency_label">Consistency</string>
     <string name="habit_heatmap">Heatmap</string>
     <string name="habit_heatmap_weeks">Activity · %d weeks</string>

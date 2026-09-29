@@ -58,6 +58,8 @@ fun NumericHabitSummaryCard(
     startDate: LocalDate,
     currentStreak: Int,
     bestStreak: Int,
+    /** True when the streak counts ISO weeks (times-per-week habit) instead of days. */
+    streaksInWeeks: Boolean = false,
     averageValue: Float,
     unit: String,
     accentColor: Color,
@@ -165,7 +167,7 @@ fun NumericHabitSummaryCard(
                                 overflow = TextOverflow.Clip
                             )
                             Text(
-                                text = stringResource(R.string.habit_summary_days_suffix),
+                                text = stringResource(if (streaksInWeeks) R.string.habit_summary_weeks_suffix else R.string.habit_summary_days_suffix),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold
@@ -213,7 +215,7 @@ fun NumericHabitSummaryCard(
                                 overflow = TextOverflow.Clip
                             )
                             Text(
-                                text = stringResource(R.string.habit_summary_days_suffix),
+                                text = stringResource(if (streaksInWeeks) R.string.habit_summary_weeks_suffix else R.string.habit_summary_days_suffix),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold

@@ -24,7 +24,7 @@ class GetCheckinItemsUseCase @Inject constructor(
                 .map { CheckinItem(CheckinItemType.TASK, it.id, it.title, isCompleted = false) }
 
             val habitItems = habitsWithStatus
-                .filter { !it.isCompletedToday }
+                .filter { it.isDueToday && !it.isCompletedToday }
                 .map { CheckinItem(CheckinItemType.HABIT, it.habit.id, it.habit.name, isCompleted = false) }
 
             taskItems + habitItems
