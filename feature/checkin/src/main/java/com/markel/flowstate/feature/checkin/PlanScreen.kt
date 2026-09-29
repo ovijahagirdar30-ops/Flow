@@ -16,9 +16,15 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
@@ -71,7 +77,10 @@ fun PlanScreen(
         else -> PlanContent(
             plan = plan,
             checkedIndexes = state.checkedIndexes,
-            onToggle = viewModel::toggleBlock
+            onToggle = viewModel::toggleBlock,
+            onEditBlock = viewModel::editBlock,
+            onRemoveBlock = viewModel::removeBlock,
+            onAddBlock = viewModel::addBlock
         )
     }
 }
@@ -80,9 +89,15 @@ fun PlanScreen(
 private fun PlanContent(
     plan: EveningPlan,
     checkedIndexes: Set<Int>,
-    onToggle: (Int) -> Unit
+    onToggle: (Int) -> Unit,
+    onEditBlock: (Int, PlanBlock) -> Unit,
+    onRemoveBlock: (Int) -> Unit,
+    onAddBlock: (PlanBlock) -> Unit
 ) {
     val doneCount = checkedIndexes.count { it in plan.blocks.indices }
+    // -1 sentinel = dialog closed; index = editing that block.
+    var editingIndex by remember { mutableIntStateOf(-1) }
+    var adding by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -116,10 +131,46 @@ private fun PlanContent(
             PlanBlockRow(
                 block = block,
                 checked = index in checkedIndexes,
-                onToggle = { onToggle(index) }
+                onToggle = { onToggle(index) },
+                onEdit = { editingIndex = index }
             )
             HorizontalDivider()
         }
+
+        OutlinedButton(
+            onClick = { adding = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Add block")
+        }
+    }
+
+    val editIndex = editingIndex
+    if (editIndex in plan.blocks.indices) {
+        PlanBlockEditorDialog(
+            initial = plan.blocks[editIndex],
+            onConfirm = {
+                onEditBlock(editIndex, it)
+                editingIndex = -1
+            },
+            onRemove = {
+                onRemoveBlock(editIndex)
+                editingIndex = -1
+            },
+            onDismiss = { editingIndex = -1 }
+        )
+    }
+
+    if (adding) {
+        PlanBlockEditorDialog(
+            initial = null,
+            onConfirm = {
+                onAddBlock(it)
+                adding = false
+            },
+            onRemove = null,
+            onDismiss = { adding = false }
+        )
     }
 }
 
@@ -127,7 +178,8 @@ private fun PlanContent(
 private fun PlanBlockRow(
     block: PlanBlock,
     checked: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -173,6 +225,10 @@ private fun PlanBlockRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+
+        TextButton(onClick = onEdit) {
+            Text("Edit", style = MaterialTheme.typography.labelMedium)
         }
     }
 }

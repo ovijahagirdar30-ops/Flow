@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.domain.EveningPlan
 import com.markel.flowstate.core.domain.EveningPlanRepository
+import com.markel.flowstate.core.domain.PlanBlock
 import com.markel.flowstate.core.domain.PlanBlockKind
 import com.markel.flowstate.core.domain.TaskRepository
 import com.markel.flowstate.core.domain.usecase.tasks.ToggleTaskUseCase
@@ -141,6 +142,57 @@ class PlanViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Replaces the block at [index] (time/details), re-sorting by time and
+     * carrying every tick to its block's new position ([PlanBlockEdits]).
+     * Saving with no actual change is a no-op — no DB write, no memory note.
+     */
+    fun editBlock(index: Int, newBlock: PlanBlock) {
+        val current = _uiState.value
+        val plan = current.plan ?: return
+        if (current.isExpired) return
+        val result = PlanBlockEdits.replace(plan.blocks, current.checkedIndexes, index, newBlock)
+        if (result.blocks == plan.blocks && result.checkedIndexes == current.checkedIndexes) return
+        applyEdit(current, result, PlanBlockEdits.editNote(newBlock))
+    }
+
+    /** Removes the block at [index]; its tick disappears with it. */
+    fun removeBlock(index: Int) {
+        val current = _uiState.value
+        val plan = current.plan ?: return
+        if (current.isExpired) return
+        if (index !in plan.blocks.indices) return
+        val result = PlanBlockEdits.remove(plan.blocks, current.checkedIndexes, index)
+        applyEdit(current, result, PlanBlockEdits.removeNote(plan.blocks[index]))
+    }
+
+    /** Inserts [block] in time order; the new block starts unticked. */
+    fun addBlock(block: PlanBlock) {
+        val current = _uiState.value
+        val plan = current.plan ?: return
+        if (current.isExpired) return
+        val result = PlanBlockEdits.insert(plan.blocks, current.checkedIndexes, block)
+        applyEdit(current, result, PlanBlockEdits.addNote(block))
+    }
+
+    /**
+     * Applies an edit: optimistic UI update, then persist in the only order
+     * that survives — saveAgreedPlan RESETS checkedIndexesJson to null, so
+     * the remapped tick set must be written AFTER the plan itself. The note
+     * lands in durable AI memory (same channel as typed regenerate comments).
+     */
+    private fun applyEdit(current: PlanUiState, result: PlanEditResult, note: String) {
+        val plan = current.plan ?: return
+        val updated = plan.copy(blocks = result.blocks)
+        _uiState.value = current.copy(plan = updated, checkedIndexes = result.checkedIndexes)
+
+        viewModelScope.launch {
+            planRepository.saveAgreedPlan(updated)
+            planRepository.setCheckedIndexes(updated.date, result.checkedIndexes.toList().sorted())
+            planRepository.recordFeedback(updated.date, note)
         }
     }
 

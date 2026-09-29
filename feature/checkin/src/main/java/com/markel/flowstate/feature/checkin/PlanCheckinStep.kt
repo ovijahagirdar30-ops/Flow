@@ -25,7 +25,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,9 +44,11 @@ private val DividerGray = Color(0xFF424242)
 /**
  * Final check-in step: renders the generated evening plan (headline +
  * time-ordered blocks) and collects the user's verdict:
+ *  - Edit / Add block — manual edits to the plan being reviewed; they live
+ *    in memory only until Agree persists whatever shape the plan has.
  *  - Regenerate — the optional comment plus this plan go back into the
  *    planner (Gemini revises, Local ignores feedback); the result replaces
- *    the plan on screen.
+ *    the plan on screen (manual edits become part of the previousPlan).
  *  - Agree — persists the plan (the only evening_plans write) and hands off
  *    to the Plan checklist tab.
  *  - Not tonight — closes without persisting anything.
@@ -58,9 +62,14 @@ fun PlanCheckinStep(
     onRegenerate: (comment: String) -> Unit,
     onAgree: () -> Unit,
     onDiscard: () -> Unit,
+    onEditBlock: (Int, PlanBlock) -> Unit,
+    onRemoveBlock: (Int) -> Unit,
+    onAddBlock: (PlanBlock) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var comment by rememberSaveable { mutableStateOf("") }
+    var editingIndex by remember { mutableIntStateOf(-1) }
+    var adding by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -90,11 +99,22 @@ fun PlanCheckinStep(
                 color = LightPurple
             )
 
+
             Spacer(modifier = Modifier.height(4.dp))
 
-            plan.blocks.forEach { block ->
-                PlanBlockRow(block)
+            plan.blocks.forEachIndexed { index, block ->
+                PlanBlockRow(
+                    block = block,
+                    onEdit = { editingIndex = index }
+                )
                 HorizontalDivider(color = DividerGray)
+            }
+
+            OutlinedButton(
+                onClick = { adding = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Add block", color = AccentPurple)
             }
         }
 
@@ -163,10 +183,38 @@ fun PlanCheckinStep(
             }
         }
     }
+
+    val editIndex = editingIndex
+    if (plan != null && editIndex in plan.blocks.indices) {
+        PlanBlockEditorDialog(
+            initial = plan.blocks[editIndex],
+            onConfirm = {
+                onEditBlock(editIndex, it)
+                editingIndex = -1
+            },
+            onRemove = {
+                onRemoveBlock(editIndex)
+                editingIndex = -1
+            },
+            onDismiss = { editingIndex = -1 }
+        )
+    }
+
+    if (plan != null && adding) {
+        PlanBlockEditorDialog(
+            initial = null,
+            onConfirm = {
+                onAddBlock(it)
+                adding = false
+            },
+            onRemove = null,
+            onDismiss = { adding = false }
+        )
+    }
 }
 
 @Composable
-private fun PlanBlockRow(block: PlanBlock) {
+private fun PlanBlockRow(block: PlanBlock, onEdit: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -192,6 +240,9 @@ private fun PlanBlockRow(block: PlanBlock) {
                 style = MaterialTheme.typography.labelSmall,
                 color = LightPurple
             )
+        }
+        TextButton(onClick = onEdit) {
+            Text("Edit", color = AccentPurple)
         }
     }
 }

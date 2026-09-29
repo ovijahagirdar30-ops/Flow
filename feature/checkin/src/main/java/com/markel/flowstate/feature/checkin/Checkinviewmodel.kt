@@ -8,6 +8,7 @@ import com.markel.flowstate.core.domain.EveningPlan
 import com.markel.flowstate.core.domain.EveningPlanRepository
 import com.markel.flowstate.core.domain.EveningPlanner
 import com.markel.flowstate.core.domain.PlanFeedback
+import com.markel.flowstate.core.domain.PlanBlock
 import com.markel.flowstate.core.domain.checkin.CheckinMoodState
 import com.markel.flowstate.core.domain.checkin.UnexpectedPlan
 import com.markel.flowstate.core.domain.usecase.checkin.BuildCheckinSnapshotUseCase
@@ -159,5 +160,49 @@ class CheckinViewModel @Inject constructor(
      */
     suspend fun agreeToPlan() {
         _plan.value?.let { eveningPlanRepository.saveAgreedPlan(it) }
+    }
+
+    // ── Manual plan editing (pre-Agree, ephemeral) ────────────────────────
+    //
+    // These mutate the in-memory plan only — Agree persists whatever shape
+    // it has, discard loses the edits. No tick remapping: the check-in step
+    // has no checkboxes. Each edit still records a durable memory note so
+    // later evenings learn from it (same as a typed regenerate comment).
+
+    /** Replaces the block at [index] (time/details), re-sorted by time. */
+    fun editBlock(index: Int, newBlock: PlanBlock) {
+        val current = _plan.value ?: return
+        if (_isPlanning.value) return
+        val result = PlanBlockEdits.replace(current.blocks, emptySet(), index, newBlock)
+        if (result.blocks == current.blocks) return
+        _plan.value = current.copy(blocks = result.blocks)
+        recordEditNote(PlanBlockEdits.editNote(newBlock))
+    }
+
+    /** Removes the block at [index] from the plan being reviewed. */
+    fun removeBlock(index: Int) {
+        val current = _plan.value ?: return
+        if (_isPlanning.value) return
+        if (index !in current.blocks.indices) return
+        val result = PlanBlockEdits.remove(current.blocks, emptySet(), index)
+        _plan.value = current.copy(blocks = result.blocks)
+        recordEditNote(PlanBlockEdits.removeNote(current.blocks[index]))
+    }
+
+    /** Inserts [block] in time order into the plan being reviewed. */
+    fun addBlock(block: PlanBlock) {
+        val current = _plan.value ?: return
+        if (_isPlanning.value) return
+        val result = PlanBlockEdits.insert(current.blocks, emptySet(), block)
+        _plan.value = current.copy(blocks = result.blocks)
+        recordEditNote(PlanBlockEdits.addNote(block))
+    }
+
+    /** Durable AI memory — fire-and-forget; a DB hiccup never blocks editing. */
+    private fun recordEditNote(note: String) {
+        val date = _plan.value?.date ?: return
+        viewModelScope.launch {
+            runCatching { eveningPlanRepository.recordFeedback(date, note) }
+        }
     }
 }

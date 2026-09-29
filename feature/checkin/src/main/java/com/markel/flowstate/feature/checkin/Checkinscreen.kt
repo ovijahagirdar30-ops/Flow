@@ -89,7 +89,10 @@ fun CheckinScreen(
                         onOpenPlan()
                     }
                 },
-                onDiscard = onDismiss
+                onDiscard = onDismiss,
+                onEditBlock = viewModel::editBlock,
+                onRemoveBlock = viewModel::removeBlock,
+                onAddBlock = viewModel::addBlock
             )
         }
     }
