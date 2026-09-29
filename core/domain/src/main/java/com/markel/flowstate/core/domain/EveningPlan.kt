@@ -18,7 +18,15 @@ data class EveningPlan(
     /** One-line mood-aware summary shown as the screen header. */
     val headline: String,
     /** Time-ordered blocks making up the evening. */
-    val blocks: List<PlanBlock>
+    val blocks: List<PlanBlock>,
+    /**
+     * True when the plan came from the offline heuristic (LocalEveningPlanner)
+     * rather than the AI. Every network failure falls back silently — without
+     * this flag the screen shows an offline plan as if it honored the user's
+     * corrections, which is exactly how "dinner at 8pm" kept vanishing.
+     * Domain-only: not persisted (the check-in step warns while it matters).
+     */
+    val offline: Boolean = false
 )
 
 /**

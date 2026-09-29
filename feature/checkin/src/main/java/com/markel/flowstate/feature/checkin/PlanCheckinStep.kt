@@ -99,6 +99,17 @@ fun PlanCheckinStep(
                 color = LightPurple
             )
 
+            // Fallback honesty: every network failure silently swaps in the
+            // offline planner, which cannot honor the note the user just
+            // typed — say so instead of letting the plan pretend it was AI.
+            if (plan.offline) {
+                Text(
+                    text = "Couldn't reach the AI — this is the offline plan. " +
+                        "Tap Regenerate to try again.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFFFB74D)
+                )
+            }
 
             Spacer(modifier = Modifier.height(4.dp))
 

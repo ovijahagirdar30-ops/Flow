@@ -114,7 +114,10 @@ class LocalEveningPlanner @Inject constructor() : EveningPlanner {
             date = snapshot.date,
             generatedAtMillis = System.currentTimeMillis(),
             headline = headlineFor(energy, lowEnergy),
-            blocks = blocks
+            blocks = blocks,
+            // We are the FALLBACK: [feedback] was ignored above, so the screen
+            // must be able to say so instead of pretending the AI revised.
+            offline = true
         )
     }
 
