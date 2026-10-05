@@ -13,14 +13,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -49,6 +54,7 @@ import com.markel.flowstate.navigation.fromKey
 import com.markel.flowstate.navigation.rememberNavigationState
 import com.markel.flowstate.navigation.toKey
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -132,13 +138,14 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()        // Clear any cutoff alarm queued by older builds (the old arrival
         // fallback is gone), then arm tonight's9PM night-review page — its
         // receiver re-arms it after every fire.
         checkinAlarmScheduler.cancelFallbackCutoff()
         checkinAlarmScheduler.scheduleNightReview()
+        checkinAlarmScheduler.scheduleWeekendCheckin()
 
         // Debug-only on-demand triggers (no UI):
         //   --ez testCheckin true       arrival check-in pipeline in10s
@@ -172,9 +179,15 @@ class MainActivity : ComponentActivity() {
             val systemFont by mainViewModel.systemFont.collectAsStateWithLifecycle()
             val selectedAppColor by mainViewModel.selectedAppColor.collectAsStateWithLifecycle()
 
-            splashScreen.setKeepOnScreenCondition { !isReady }
+            // Keep the full-screen brand splash on screen for at least one
+            // second, even when the app data is already loaded.
+            var splashMinDurationDone by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) {
+                delay(1_000)
+                splashMinDurationDone = true
+            }
 
-            if (isReady) {
+            if (isReady && splashMinDurationDone) {
                 FlowStateTheme(
                     themeMode = themeMode,
                     dynamicColor = dynamicColor,
@@ -289,6 +302,16 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+            } else {
+                // Full-screen brand image shown while the app data loads.
+                Image(
+                    painter = painterResource(R.drawable.splash_logo),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black),
+                )
             }
         }
     }
@@ -299,7 +322,6 @@ val allBottomNavScreens: List<BottomNavScreen> = listOf(
     BottomNavScreen.Tasks,
     BottomNavScreen.Calendar,
     BottomNavScreen.Habits,
-    BottomNavScreen.Mood,
     BottomNavScreen.Plan,
     BottomNavScreen.Settings,
 )
