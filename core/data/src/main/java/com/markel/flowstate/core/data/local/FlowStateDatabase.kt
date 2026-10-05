@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class, CheckinEntity::class, EveningPlanEntity::class, PlanFeedbackEntity::class], // List of all tables
-    version = 27,
+    version = 29,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -394,6 +394,45 @@ abstract class FlowStateDatabase : RoomDatabase() {
                         `createdAtMillis` INTEGER NOT NULL
                     )
                 """.trimIndent())
+            }
+        }
+
+        /**
+         * v27 → v28: Adds per-habit mood logging — a user-facing on/off that
+         * decides whether completing a habit asks "how did it feel?". Opt-IN
+         * (default 0) so nobody starts getting prompts they never asked for;
+         * the same flag later gates what the AI planner is allowed to read.
+         * `DEFAULT 0` is required for NOT NULL on existing rows; the entity
+         * carries no @ColumnInfo(defaultValue), same as priorityRank and
+         * rolloverIfMissed from MIGRATION_19_20 — Room skips the comparison
+         * when the expected side declares none.
+         */
+        val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habits ADD COLUMN moodLoggingEnabled INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * v28 → v29: priorityRank becomes a POSITION — the 1-based index in
+         * the priority list, 1 = top = most important — kept as a unique 1..N
+         * so the drag list, the typed-position dialog and the edit sheet's
+         * slider all show the same number for a habit. Before this the drag
+         * mode wrote 0-indexed ranks while the slider wrote 1..10 importance
+         * scores, so the two controls inverted each other. Renumbers in place
+         * preserving the order the user sees today: old rank ascending, ties
+         * broken by position then id (the in-memory stable sort).
+         */
+        val MIGRATION_28_29 = object : Migration(28, 29) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val cursor = db.query("SELECT id FROM habits ORDER BY priorityRank ASC, position ASC, id ASC")
+                var position = 1
+                cursor.use {
+                    while (it.moveToNext()) {
+                        db.execSQL("UPDATE habits SET priorityRank = ? WHERE id = ?", arrayOf(position, it.getInt(0)))
+                        position++
+                    }
+                }
             }
         }
     }

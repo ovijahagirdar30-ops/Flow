@@ -12,6 +12,10 @@ import com.markel.flowstate.core.domain.checkin.Checkin
  *  - [tasks] — currently-incomplete tasks, i.e. what's left to plan tonight.
  *  - [habits] — every habit with today's completion status and streak, so the
  *    AI can see both what's already done and what remains.
+ *  - [habitMoods] — the last 7 days of 1-5 mood ratings per habit, but ONLY
+ *    for habits whose mood logging is switched on: that flag is the user's
+ *    consent, so a habit turned off contributes nothing here even if it has
+ *    older ratings in the database.
  *
  * Built by BuildCheckinSnapshotUseCase. Deliberately a plain immutable data
  * class with NO serialization annotations: how this crosses the process /
@@ -32,5 +36,19 @@ data class CheckinSnapshot(
     /** Incomplete tasks as of snapshot time — what's left to plan. */
     val tasks: List<Task>,
     /** All habits with completion status, streaks and today's numeric values. */
-    val habits: List<HabitWithStatus>
+    val habits: List<HabitWithStatus>,
+    /**
+     * Mood logging per habit id, oldest first — only habits that opted in.
+     * Empty when nothing has mood logging on (the default), which is exactly
+     * what should happen until the user turns it on for a habit.
+     */
+    val habitMoods: Map<Int, List<HabitMoodLog>> = emptyMap()
+)
+
+/** One day's mood rating (1-5) for a single habit. */
+data class HabitMoodLog(
+    /** ISO date (yyyy-MM-dd) the rating was captured on. */
+    val date: String,
+    /** The 1-5 emoji rating picked on the mood prompt. */
+    val mood: Int
 )

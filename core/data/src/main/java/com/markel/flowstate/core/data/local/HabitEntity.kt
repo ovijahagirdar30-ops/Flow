@@ -20,7 +20,8 @@ data class HabitEntity(
     val step: Float = 1f,
     val position: Int = 0,
     val priorityRank: Int = 5,
-    val rolloverIfMissed: Boolean = false
+    val rolloverIfMissed: Boolean = false,
+    val moodLoggingEnabled: Boolean = false
 )
 
 @Entity(
@@ -46,8 +47,6 @@ data class HabitEntryEntity(
 )
 
 data class HabitEntryFlatEntity(val habitId: Int, val epochDay: Long, val mood: Int? = null)
-
-data class MoodEntryWithHabitName(val habitName: String, val epochDay: Long, val mood: Int)
 
 @Entity(
     tableName = "habit_numeric_entries",

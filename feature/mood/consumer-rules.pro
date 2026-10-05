@@ -1,1 +1,0 @@
-# No extra consumer ProGuard rules needed for this module yet.

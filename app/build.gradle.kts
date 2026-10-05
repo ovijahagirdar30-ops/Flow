@@ -57,7 +57,6 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:notifications"))
     implementation(project(":core:widgets"))
-    implementation(project(":feature:mood"))
     implementation(project(":feature:checkin"))
 
     // Android Core & Lifecycle

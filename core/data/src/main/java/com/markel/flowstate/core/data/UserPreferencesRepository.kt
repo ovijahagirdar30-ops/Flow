@@ -43,10 +43,10 @@ class UserPreferencesRepository @Inject constructor(
 
     // ── Bottom navigation configuration ───────────────────────────────────
 
-    /** Ordered list of tab names (e.g. ["TASKS","CALENDAR","HABITS","MOOD","SETTINGS"]). */
+    /** Ordered list of tab names (e.g. ["TASKS","CALENDAR","HABITS","PLAN","SETTINGS"]). */
     private val BOTTOM_NAV_ORDER = stringPreferencesKey("bottom_nav_order")
 
-    /** Set of hidden (removed) tab names (e.g. ["MOOD"]). */
+    /** Set of hidden (removed) tab names (e.g. ["CALENDAR"]). */
     private val BOTTOM_NAV_HIDDEN = stringSetPreferencesKey("bottom_nav_hidden")
 
     /** Emits the current ordered list of tabs. Falls back to [MainTab.DEFAULT_ORDER]. */

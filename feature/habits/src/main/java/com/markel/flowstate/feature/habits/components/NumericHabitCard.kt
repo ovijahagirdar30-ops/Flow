@@ -45,6 +45,7 @@ fun NumericHabitCard(
     onDecrementToday: () -> Unit,
     onSetValue: (LocalDate, Float?) -> Unit,
     onDelete: () -> Unit,
+    habitCount: Int,
     onEdit: (name: String, icon: String, colorArgb: Int, unit: String?, targetValue: Float?, step: Float?, priorityRank: Int, rolloverIfMissed: Boolean, schedule: HabitSchedule) -> Unit,
     onNavigateToDetail: (() -> Unit)? = null
 ) {
@@ -143,9 +144,10 @@ fun NumericHabitCard(
             initialStep = habit.step,
             initialPriorityRank = habit.priorityRank,
             initialRolloverIfMissed = habit.rolloverIfMissed,
+            habitCount = habitCount,
             initialSchedule = habit.schedule,
             onDismiss = { showEditDialog = false },
-            onConfirm = { name, icon, colorArgb, _, unit, target, step, priorityRank, rolloverIfMissed, schedule ->
+            onConfirm = { name, icon, colorArgb, _, unit, target, step, priorityRank, rolloverIfMissed, _, schedule ->
                 onEdit(name, icon, colorArgb, unit, target, step, priorityRank, rolloverIfMissed, schedule)
                 showEditDialog = false
             }

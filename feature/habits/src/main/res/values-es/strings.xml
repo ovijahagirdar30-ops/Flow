@@ -23,6 +23,9 @@
     <string name="habit_target_label">Objetivo</string>
     <string name="habit_target_optional">Opcional</string>
     <string name="habit_target_preview">Objetivo: %1$s %2$s al día</string>
+    <string name="habit_schedule_daily">Diario</string>
+    <string name="habit_schedule_times_per_week">%1$d veces por semana</string>
+    <string name="habit_card_missed">No hecho</string>
     <string name="habit_target_error">El objetivo debe ser un número mayor a 0 o nulo</string>
     <string name="habit_step_label">Incremento</string>
     <string name="habit_step_explanation">Cantidad que se suma/resta con los botones +/-</string>
@@ -69,6 +72,7 @@
     <string name="habit_dist_no_data">No hay datos suficientes </string>
     <string name="habit_dist_recorded_amounts">Cantidades registradas %1$s</string>
     <string name="habit_dist_unit_prefix">en %1$s</string>
+    <string name="habit_dist_rate_caption">Tasa de cumplimiento</string>
     <string name="habit_monthly_goal">Objetivo mensual</string>
     <string name="habit_monthly_completed">Logrado</string>
     <string name="habit_monthly_label">Este mes (%1$s)</string>
@@ -94,4 +98,10 @@
         <item>Ya lo has hecho antes</item>
         <item>El progreso no se detiene</item>
     </string-array>
+
+    <string name="habit_detail_section_mood">Historial de ánimo</string>
+    <string name="habit_mood_empty">Aún no hay estados de ánimo — completa este hábito y elige cómo se sintió.</string>
+    <string name="habit_mood_average">Prom.</string>
+    <string name="habit_mood_checkins">Registros</string>
+    <string name="habit_mood_trend">Últimos 30 días</string>
 </resources>

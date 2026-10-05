@@ -98,7 +98,6 @@ class NavKeysTest {
         assertTrue(MainTab.TASKS.toKey() is TabKey.Tasks)
         assertTrue(MainTab.CALENDAR.toKey() is TabKey.Calendar)
         assertTrue(MainTab.HABITS.toKey() is TabKey.Habits)
-        assertTrue(MainTab.MOOD.toKey() is TabKey.Mood)
         assertTrue(MainTab.PLAN.toKey() is TabKey.Plan)
         assertTrue(MainTab.SETTINGS.toKey() is TabKey.Settings)
     }
@@ -118,7 +117,7 @@ class NavKeysTest {
     @Test
     fun mainTab_and_tabKey_haveSameCardinality() {
         val tabKeys = listOf(
-            TabKey.Tasks, TabKey.Calendar, TabKey.Habits, TabKey.Mood, TabKey.Plan, TabKey.Settings
+            TabKey.Tasks, TabKey.Calendar, TabKey.Habits, TabKey.Plan, TabKey.Settings
         )
         assertEquals(
             "MainTab and TabKey must have the same number of entries",

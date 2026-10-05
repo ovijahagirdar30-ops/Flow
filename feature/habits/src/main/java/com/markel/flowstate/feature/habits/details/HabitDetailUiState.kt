@@ -11,11 +11,12 @@ data class HabitDetailUiState(
     val habit: Habit? = null,
 
     // For the boolean habits
-    val allEntries: Set<Long> = emptySet(),  // boolean entries only
+    val allEntries: Set<Long> = emptySet(),  // completed days for both types (goal-met for numeric)
     val currentStreak: Int = 0,
     val bestStreak: Int = 0,
     val weeklyCompletions: List<Pair<LocalDate, Int>> = emptyList(),  // last 8 weeks
     val dayOfWeekCompletions: Map<Int, Float> = emptyMap(), // 1=Mon..7=Sun -> completion rate (0..1)
+    val moodHistory: List<MoodLogEntry> = emptyList(), // mood-tagged completions, newest first
 
     // For the numeric habits
     val numericEntries: Map<LocalDate, Float> = emptyMap(),
@@ -32,7 +33,13 @@ data class HabitDetailUiState(
     val selectedBarIndex: Int? = null  // null = last week by default
 ){
     val isNumeric: Boolean get() = habit?.habitType == HabitType.NUMERIC
+
+    /** Average of the logged moods; null while nothing is logged yet. */
+    val moodAverage: Double? get() = moodHistory.map { it.mood }.average().takeIf { moodHistory.isNotEmpty() }
 }
+
+/** One mood-tagged completion, shown on the habit's detail page. */
+data class MoodLogEntry(val date: LocalDate, val mood: Int)
 
 data class MonthlyProgress(
     val month: String,

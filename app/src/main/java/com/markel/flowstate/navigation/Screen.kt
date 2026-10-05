@@ -35,13 +35,6 @@ sealed class BottomNavScreen(
         iconRes = R.drawable.analytics_out_24px,
         iconSelectedRes = R.drawable.analytics_24px
     )
-    object Mood : BottomNavScreen(
-        key = TabKey.Mood,
-        labelRes = com.markel.flowstate.feature.tasks.R.string.mood,
-        iconRes = R.drawable.self_improvement_24px,
-        iconSelectedRes = R.drawable.self_improvement_24px
-    )
-
     object Plan : BottomNavScreen(
         key = TabKey.Plan,
         labelRes = com.markel.flowstate.feature.settings.R.string.tab_plan,

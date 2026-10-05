@@ -30,9 +30,13 @@ fun ValueDistributionCard(
     distribution: List<ValueRange>,
     habitColor: Color,
     unit: String?,
+    /** Overrides the default "Amounts recorded …" footer (e.g. completion rates). */
+    caption: String? = null,
     modifier: Modifier = Modifier
 ) {
-    val maxCount = distribution.maxOfOrNull { it.count } ?: 1f
+    // takeIf: every bar can be 0 (e.g. a habit with no completions yet) —
+    // 0/0 would feed NaN into the bar heights.
+    val maxCount = (distribution.maxOfOrNull { it.count } ?: 1f).takeIf { it > 0f } ?: 1f
 
     var animationTrigger by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -107,7 +111,7 @@ fun ValueDistributionCard(
                 stringResource(R.string.habit_dist_unit_prefix, it)
             } ?: ""
             Text(
-                text = stringResource(R.string.habit_dist_recorded_amounts, unitSuffix),
+                text = caption ?: stringResource(R.string.habit_dist_recorded_amounts, unitSuffix),
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

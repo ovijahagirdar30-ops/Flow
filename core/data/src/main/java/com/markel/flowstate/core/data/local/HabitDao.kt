@@ -84,15 +84,13 @@ interface HabitDao {
     @Query("SELECT * FROM habit_numeric_entries")
     suspend fun getAllNumericEntriesOnce(): List<HabitNumericEntryEntity>
 
-    // ── Mood history (for the Mood tab) ──────────────────────────────
+    // ── Per-habit mood history (habit detail page) ───────────────────────────
 
     @Query("""
-        SELECT habits.name as habitName, habit_entries.completedAt as epochDay, habit_entries.mood as mood
+        SELECT habitId, completedAt as epochDay, mood
         FROM habit_entries
-        INNER JOIN habits ON habits.id = habit_entries.habitId
-        WHERE habit_entries.mood IS NOT NULL
-        ORDER BY habit_entries.completedAt DESC
+        WHERE habitId = :habitId AND mood IS NOT NULL
+        ORDER BY completedAt DESC
     """)
-    fun getMoodHistory(): Flow<List<MoodEntryWithHabitName>>
-
+    fun getMoodsForHabit(habitId: Int): Flow<List<HabitEntryFlatEntity>>
 }

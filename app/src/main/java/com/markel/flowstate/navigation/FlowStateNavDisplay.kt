@@ -50,7 +50,6 @@ import com.markel.flowstate.feature.settings.BackupScreen
 import com.markel.flowstate.feature.settings.BottomNavConfigScreen
 import com.markel.flowstate.feature.settings.CategoriesScreen
 import com.markel.flowstate.feature.settings.SettingsScreen
-import com.markel.flowstate.feature.mood.MoodScreen
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FlowStateNavDisplay
@@ -143,10 +142,6 @@ fun FlowStateNavDisplay(
             )
         }
 
-
-        entry<TabKey.Mood>(metadata = fadeTransition()) {
-            MoodScreen()
-        }
 
         entry<TabKey.Plan>(metadata = fadeTransition()) {
             val planViewModel: PlanViewModel = hiltViewModel()

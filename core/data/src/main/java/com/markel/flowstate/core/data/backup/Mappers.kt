@@ -127,7 +127,8 @@ fun HabitEntity.toSchema() = HabitSchema(
     unit = unit,
     targetValue = targetValue,
     step = step,
-    position = position
+    position = position,
+    moodLoggingEnabled = moodLoggingEnabled
 )
 
 fun HabitSchema.toEntity() = HabitEntity(
@@ -141,7 +142,8 @@ fun HabitSchema.toEntity() = HabitEntity(
     unit = unit,
     targetValue = targetValue,
     step = step,
-    position = position
+    position = position,
+    moodLoggingEnabled = moodLoggingEnabled
 )
 
 fun HabitEntryEntity.toSchema() = HabitEntrySchema(

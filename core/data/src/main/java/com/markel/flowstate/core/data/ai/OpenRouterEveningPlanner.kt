@@ -286,6 +286,20 @@ class OpenRouterEveningPlanner @Inject constructor(
                     habitWithStatus.todayValue?.let { put("todayValue", it) }
                     put("priorityRank", habit.priorityRank)
                     put("rolloverIfMissed", habit.rolloverIfMissed)
+                    put("moodLoggingEnabled", habit.moodLoggingEnabled)
+                    // Present only when mood logging is on — the consent flag
+                    // gates what the model is allowed to see (see the system
+                    // prompt's input description).
+                    snapshot.habitMoods[habit.id]?.let { logs ->
+                        putJsonArray("recentMoods") {
+                            logs.forEach { log ->
+                                add(buildJsonObject {
+                                    put("date", log.date)
+                                    put("mood", log.mood)
+                                })
+                            }
+                        }
+                    }
                 })
             }
         }
@@ -372,9 +386,13 @@ class OpenRouterEveningPlanner @Inject constructor(
             sleepiness, stress, headache, motivation, a free-text comment on each, and
             any unexpected plans such as "dinner with family"); today's incomplete
             tasks (id, title, description, priority); and habits (id, name, type,
-            whether completed today, streak, today's value, priorityRank 1-10 where
-            higher matters more, rolloverIfMissed). A PAST CORRECTIONS section may
-            follow the snapshot: durable notes Ovi typed on earlier evenings.
+            whether completed today, streak, today's value, priorityRank (1-based
+            position in Ovi's priority list — 1 matters most), rolloverIfMissed,
+            moodLoggingEnabled, and — only
+            for habits with mood logging on — recentMoods: that habit's 1-5 mood
+            ratings for each of the last 7 days, oldest first). A PAST CORRECTIONS
+            section may follow the snapshot: durable notes Ovi typed on earlier
+            evenings.
 
             Output rules:
             - Output ONLY the JSON object: no code fences, no commentary before or after.
@@ -412,12 +430,18 @@ class OpenRouterEveningPlanner @Inject constructor(
               user's note as binding and revise that plan instead of re-rolling.
             - Adapt to mood: low energy or high stress -> fewer and easier tasks,
               more REST; high energy -> more tasks, hardest first.
+            - Adapt to per-habit ratings: recentMoods shows how each opted-in
+              habit actually landed over the last week. A run of low ratings ->
+              a shorter, easier slot or quietly leave it out; steady high
+              ratings -> it can hold a longer block. Never mention, quote or
+              judge the ratings in the plan itself.
             - Never induce guilt: never shame undone tasks or missed habits. If
               something doesn't fit, quietly leave it out.
             - Respect unexpected plans: give them a block (kind OTHER or MEAL) and
               schedule AROUND them; never overlap them.
-            - Include unfinished habits as HABIT blocks when they fit, favoring high
-              priorityRank; habits with rolloverIfMissed may be skipped freely.
+            - Include unfinished habits as HABIT blocks when they fit, favoring LOW
+              priorityRank (1 = top of the list); habits with rolloverIfMissed may be
+              skipped freely.
             - Use ONLY the ids provided; never invent tasks or habits.
             - Keep block titles practical ("Finish slides", "Read 20 pages"), not
               motivational posters.

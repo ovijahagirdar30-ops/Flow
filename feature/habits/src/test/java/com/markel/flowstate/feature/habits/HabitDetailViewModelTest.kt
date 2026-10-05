@@ -3,6 +3,7 @@ package com.markel.flowstate.feature.habits
 import app.cash.turbine.test
 import com.markel.flowstate.core.data.UserPreferencesRepository
 import com.markel.flowstate.core.domain.Habit
+import com.markel.flowstate.core.domain.HabitEntryFlat
 import com.markel.flowstate.core.domain.HabitNumericEntry
 import com.markel.flowstate.core.domain.HabitRepository
 import com.markel.flowstate.core.domain.HabitType
@@ -44,6 +45,8 @@ class HabitDetailViewModelTest {
     fun setup() {
         // Mock default user preferences to avoid the init block suspending indefinitely
         coEvery { userPreferences.calendarViewMode } returns flowOf(CalendarViewMode.ONE_MONTH.name)
+        // Default for the mood-history flow feeding the detail page's Mood section
+        coEvery { habitRepository.getMoodsForHabit(any()) } returns flowOf(emptyList())
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -112,6 +115,52 @@ class HabitDetailViewModelTest {
             assertEquals(habit, state.habit)
             assertTrue(today.toEpochDay() in state.allEntries)
             assertEquals(1, state.currentStreak)
+        }
+    }
+
+    @Test
+    fun init_withBooleanHabit_loadsMoodHistory_newestFirst_andDropsNullMoods() = runTest {
+        // GIVEN - Two mood-tagged completions plus one without a mood
+        val habit = habit(id = 1, type = HabitType.BOOLEAN)
+        val today = LocalDate.now()
+        coEvery { getHabitById(1) } returns habit
+        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(listOf(today))
+        coEvery { habitRepository.getMoodsForHabit(1) } returns flowOf(
+            listOf(
+                HabitEntryFlat(1, today.toEpochDay(), 4),
+                HabitEntryFlat(1, today.minusDays(2).toEpochDay(), 2),
+                HabitEntryFlat(1, today.minusDays(3).toEpochDay(), null)
+            )
+        )
+
+        // WHEN
+        viewModel = buildViewModel(habitId = 1)
+
+        // THEN - Null moods dropped, newest first, average over the rest
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertEquals(listOf(today, today.minusDays(2)), state.moodHistory.map { it.date })
+            assertEquals(listOf(4, 2), state.moodHistory.map { it.mood })
+            assertEquals(3.0, state.moodAverage!!, 0.001)
+        }
+    }
+
+    @Test
+    fun moodAverage_isNull_whileNothingLogged() = runTest {
+        // GIVEN - Boolean habit with no completions and no moods
+        val habit = habit(id = 1, type = HabitType.BOOLEAN)
+        coEvery { getHabitById(1) } returns habit
+        coEvery { habitRepository.getEntriesForHabit(1) } returns flowOf(emptyList())
+        // (the setup() default stubs getMoodsForHabit with an empty list)
+
+        // WHEN
+        viewModel = buildViewModel(habitId = 1)
+
+        // THEN - Section stays hidden: no history and logging is off
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertTrue(state.moodHistory.isEmpty())
+            assertNull(state.moodAverage)
         }
     }
 

@@ -19,6 +19,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -69,20 +70,39 @@ class HabitDetailViewModel @AssistedInject constructor(
     }
 
     private suspend fun loadBooleanHabitData() {
-        habitRepository.getEntriesForHabit(habitId).collect { entries ->
-            val epochDays = entries.map { it.toEpochDay() }.toSet()
-            _uiState.update { state ->
-                state.copy(
-                    allEntries = epochDays,
-                    currentStreak = state.habit?.schedule
-                        ?.let { HabitStreaks.current(it, epochDays, LocalDate.now()) } ?: 0,
-                    bestStreak = state.habit?.schedule
-                        ?.let { HabitStreaks.best(it, epochDays) } ?: 0,
-                    weeklyCompletions = calculateWeeklyCompletions(epochDays),
-                    dayOfWeekCompletions = calculateDayOfWeekCompletions(entries, state.habit?.createdAt, state.habit?.schedule)
-                )
+        combine(
+            habitRepository.getEntriesForHabit(habitId),
+            habitRepository.getMoodsForHabit(habitId)
+        ) { entries, moods -> entries to moods }
+            .collect { (entries, moods) ->
+                val epochDays = entries.map { it.toEpochDay() }.toSet()
+                _uiState.update { state ->
+                    // Every section the numeric page fills gets the equivalent
+                    // here (done = 1f, missed = 0f) so both detail pages render
+                    // the same section list.
+                    val dayOfWeekRates = calculateDayOfWeekCompletions(
+                        entries, state.habit?.createdAt, state.habit?.schedule
+                    )
+                    state.copy(
+                        allEntries = epochDays,
+                        currentStreak = state.habit?.schedule
+                            ?.let { HabitStreaks.current(it, epochDays, LocalDate.now()) } ?: 0,
+                        bestStreak = state.habit?.schedule
+                            ?.let { HabitStreaks.best(it, epochDays) } ?: 0,
+                        weeklyCompletions = calculateWeeklyCompletions(epochDays),
+                        dayOfWeekCompletions = dayOfWeekRates,
+                        dailyValues = calculateDailyValuesFromCompletions(epochDays),
+                        heatmapData = calculateHeatmapFromCompletions(epochDays),
+                        monthlyProgress = calculateMonthlyProgressFromCompletions(epochDays, state.habit),
+                        dayOfWeekAverages = completionRateDistribution(dayOfWeekRates),
+                        // Feeds the detail page's Mood section; the query
+                        // already returns newest-first and mood-not-null.
+                        moodHistory = moods.mapNotNull { e ->
+                            e.mood?.let { MoodLogEntry(LocalDate.ofEpochDay(e.epochDay), it) }
+                        }
+                    )
+                }
             }
-        }
     }
 
     private suspend fun loadNumericHabitData() {
@@ -90,18 +110,29 @@ class HabitDetailViewModel @AssistedInject constructor(
             val entriesMap = entries.associate { it.date to it.value }
 
             _uiState.update { state ->
+                val habit = state.habit
+                // "Completed" = target met (or any log when there is no
+                // target) — the same rule the streaks use. It feeds the
+                // shared calendar, weekly-bars and radar sections.
+                val completedDays = numericCompletedDays(entries, habit?.targetValue)
+                val completedDates = completedDays.map { LocalDate.ofEpochDay(it) }
                 state.copy(
                     numericEntries = entriesMap,
-                    dailyValues = calculateDailyValues(entries),
-                    monthlyProgress = calculateMonthlyProgress(entries, state.habit),
-                    heatmapData = calculateHeatmapData(entries),
-                    dayOfWeekAverages = calculateDayOfWeekAverages(entries, state.habit?.createdAt, state.habit?.schedule),
-                    currentStreak = state.habit?.let {
-                        HabitStreaks.current(it.schedule, numericCompletedDays(entries, it.targetValue), LocalDate.now())
+                    allEntries = completedDays,
+                    currentStreak = habit?.let {
+                        HabitStreaks.current(it.schedule, completedDays, LocalDate.now())
                     } ?: 0,
-                    bestStreak = state.habit?.let {
-                        HabitStreaks.best(it.schedule, numericCompletedDays(entries, it.targetValue))
-                    } ?: 0
+                    bestStreak = habit?.let {
+                        HabitStreaks.best(it.schedule, completedDays)
+                    } ?: 0,
+                    weeklyCompletions = calculateWeeklyCompletions(completedDays),
+                    dayOfWeekCompletions = calculateDayOfWeekCompletions(
+                        completedDates, habit?.createdAt, habit?.schedule
+                    ),
+                    dailyValues = calculateDailyValues(entries),
+                    monthlyProgress = calculateMonthlyProgress(entries, habit),
+                    heatmapData = calculateHeatmapData(entries),
+                    dayOfWeekAverages = calculateDayOfWeekAverages(entries, habit?.createdAt, habit?.schedule)
                 )
             }
         }
@@ -184,6 +215,68 @@ class HabitDetailViewModel @AssistedInject constructor(
     fun selectBar(index: Int) {
         _uiState.update { it.copy(selectedBarIndex = index) }
     }
+
+    // ── Sections shared by both habit types ────────────────────────────────────────────────
+
+    /** Last 10 days as 1f (done) / 0f (missed) — Evolution for boolean habits. */
+    private fun calculateDailyValuesFromCompletions(epochDays: Set<Long>): List<Pair<LocalDate, Float>> {
+        val today = LocalDate.now()
+        return (9 downTo 0).map { daysAgo ->
+            val date = today.minusDays(daysAgo.toLong())
+            date to if (date.toEpochDay() in epochDays) 1f else 0f
+        }
+    }
+
+    /** Last 18 weeks of completions — Heatmap for boolean habits (missed days stay absent). */
+    private fun calculateHeatmapFromCompletions(epochDays: Set<Long>): Map<LocalDate, Float> {
+        val today = LocalDate.now()
+        val startDate = today.with(DayOfWeek.MONDAY).minusWeeks(17)
+        return (0..ChronoUnit.DAYS.between(startDate, today))
+            .map { startDate.plusDays(it) }
+            .filter { it.toEpochDay() in epochDays }
+            .associateWith { 1f }
+    }
+
+    /** Monthly goal for boolean habits: days completed vs scheduled days this month. */
+    private fun calculateMonthlyProgressFromCompletions(epochDays: Set<Long>, habit: Habit?): MonthlyProgress? {
+        habit ?: return null
+        val now = LocalDate.now()
+        val yearMonth = YearMonth.from(now)
+        val monthStart = yearMonth.atDay(1)
+        val elapsedDays = (ChronoUnit.DAYS.between(monthStart, now) + 1).toInt()
+
+        val totalDays = (0 until yearMonth.lengthOfMonth()).count {
+            habit.schedule.isScheduledOn(monthStart.plusDays(it.toLong()))
+        }
+        val daysCompleted = (0 until elapsedDays).count {
+            monthStart.plusDays(it.toLong()).toEpochDay() in epochDays
+        }
+        val elapsedScheduled = (0 until elapsedDays).count {
+            habit.schedule.isScheduledOn(monthStart.plusDays(it.toLong()))
+        }
+
+        val monthName = now.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
+            .replaceFirstChar { it.uppercase() }
+
+        return MonthlyProgress(
+            month = monthName,
+            currentValue = daysCompleted.toFloat(),
+            targetValue = totalDays.toFloat(),
+            daysCompleted = daysCompleted,
+            totalDays = totalDays,
+            dailyAverage = if (elapsedScheduled > 0) daysCompleted.toFloat() / elapsedScheduled else 0f,
+            deficit = (totalDays - daysCompleted).toFloat().takeIf { it > 0 }
+        )
+    }
+
+    /** Weekday breakdown for the Average section from a 0..1 completion rate. */
+    private fun completionRateDistribution(rates: Map<Int, Float>): List<ValueRange> =
+        rates.map { (dow, rate) ->
+            val label = DayOfWeek.of(dow)
+                .getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                .replaceFirstChar { it.uppercase() }
+            ValueRange(label = label, count = rate, range = rate..rate)
+        }
 
     // ── Calculations for Boolean Habits ─────────────────────────────────────────────────────
 

@@ -30,6 +30,9 @@
     <string name="habit_target_label">Goal</string>
     <string name="habit_target_optional">Optional</string>
     <string name="habit_target_preview">Goal: %1$s %2$s per day</string>
+    <string name="habit_schedule_daily">Daily</string>
+    <string name="habit_schedule_times_per_week">%1$d× per week</string>
+    <string name="habit_card_missed">Missed</string>
     <string name="habit_target_error">The goal must be bigger than 0 or null</string>
     <string name="habit_step_label">Step</string>
     <string name="habit_step_explanation">Amount added/subtracted with the +/- buttons</string>
@@ -73,6 +76,7 @@
     <string name="habit_dist_no_data">Not enough data </string>
     <string name="habit_dist_recorded_amounts">Amounts recorded %1$s</string>
     <string name="habit_dist_unit_prefix">in %1$s</string>
+    <string name="habit_dist_rate_caption">Completion rate</string>
     <string name="habit_monthly_goal">Monthly goal</string>
     <string name="habit_monthly_completed">Done</string>
     <string name="habit_monthly_label">This month(%1$s)</string>
@@ -99,4 +103,10 @@
         <item>You\'ve done it before</item>
         <item>Progress never stops</item>
     </string-array>
+
+    <string name="habit_detail_section_mood">Mood history</string>
+    <string name="habit_mood_empty">No moods logged yet — complete this habit and pick how it felt.</string>
+    <string name="habit_mood_average">Avg</string>
+    <string name="habit_mood_checkins">Check-ins</string>
+    <string name="habit_mood_trend">Last 30 days</string>
 </resources>

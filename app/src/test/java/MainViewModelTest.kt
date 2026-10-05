@@ -128,7 +128,7 @@ class MainViewModelTest {
      * [MainViewModel.initialTab] must fall back to the first non-hidden tab
      * in [MainTab.DEFAULT_ORDER].
      *
-     * DEFAULT_ORDER = [TASKS, CALENDAR, HABITS, MOOD, PLAN, SETTINGS]
+     * DEFAULT_ORDER = [TASKS, CALENDAR, HABITS, PLAN, SETTINGS]
      * If HABITS is hidden, the first visible is TASKS.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -147,7 +147,7 @@ class MainViewModelTest {
      * Fallback #1 (variant): the first non-hidden tab is not always TASKS.
      * If TASKS is somehow hidden too, the next visible one must win.
      *
-     * DEFAULT_ORDER = [TASKS, CALENDAR, HABITS, MOOD, PLAN, SETTINGS]
+     * DEFAULT_ORDER = [TASKS, CALENDAR, HABITS, PLAN, SETTINGS]
      * Hiding TASKS leaves CALENDAR as the first visible. (TASKS has
      * `isRemovable = false` in practice, but the VM doesn't enforce that —
      * this test documents the contract for any future change.)
@@ -157,8 +157,8 @@ class MainViewModelTest {
     fun initialTab_fallsBackToNextVisible_whenFirstIsAlsoHidden() = runTest {
         val viewModel = buildViewModel()
 
-        lastTabFlow.emit(MainTab.MOOD)
-        hiddenTabsFlow.emit(setOf(MainTab.TASKS, MainTab.MOOD))
+        lastTabFlow.emit(MainTab.HABITS)
+        hiddenTabsFlow.emit(setOf(MainTab.TASKS, MainTab.HABITS))
         advanceUntilIdle()
 
         // First non-hidden in DEFAULT_ORDER is CALENDAR
@@ -217,7 +217,7 @@ class MainViewModelTest {
     fun saveBottomNavConfig_persistsOrderAndHiddenAtomically() = runTest {
         val viewModel = buildViewModel()
         val order = listOf(MainTab.CALENDAR, MainTab.TASKS, MainTab.HABITS)
-        val hidden = setOf(MainTab.MOOD)
+        val hidden = setOf(MainTab.CALENDAR)
 
         viewModel.saveBottomNavConfig(order, hidden)
         advanceUntilIdle()

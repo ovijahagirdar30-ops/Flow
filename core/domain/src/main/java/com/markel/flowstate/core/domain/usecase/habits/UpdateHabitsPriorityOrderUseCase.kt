@@ -4,7 +4,7 @@ import com.markel.flowstate.core.domain.HabitRepository
 import javax.inject.Inject
 
 /**
- * Persists a new priority ordering across habits — 0 is highest priority.
+ * Persists a new priority ordering across habits — 1 is the top of the list.
  * This is what the future AI scheduler will read to decide what gets
  * cut first when a day doesn't have room for everything.
  */

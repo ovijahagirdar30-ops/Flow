@@ -11,8 +11,6 @@ import com.markel.flowstate.core.domain.HabitNumericEntry
 import com.markel.flowstate.core.domain.HabitRepository
 import com.markel.flowstate.core.domain.HabitSchedule
 import com.markel.flowstate.core.domain.HabitType
-import com.markel.flowstate.core.domain.MoodEntry
-import com.markel.flowstate.core.domain.MoodSourceType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
@@ -51,16 +49,9 @@ class HabitRepositoryImpl @Inject constructor(
     override suspend fun setEntryMood(habitId: Int, date: LocalDate, mood: Int) =
         dao.setMood(habitId, date.toEpochDay(), mood)
 
-    override fun getMoodHistory(): Flow<List<MoodEntry>> =
-        dao.getMoodHistory().map { list ->
-            list.map {
-                MoodEntry(
-                    sourceType = MoodSourceType.HABIT,
-                    sourceLabel = it.habitName,
-                    date = LocalDate.ofEpochDay(it.epochDay),
-                    mood = it.mood
-                )
-            }
+    override fun getMoodsForHabit(habitId: Int): Flow<List<HabitEntryFlat>> =
+        dao.getMoodsForHabit(habitId).map { list ->
+            list.map { HabitEntryFlat(it.habitId, it.epochDay, it.mood) }
         }
 
     override fun getAllEntries(): Flow<List<HabitEntryFlat>> =  // boolean habits only
@@ -113,7 +104,8 @@ class HabitRepositoryImpl @Inject constructor(
         step = step,
         position = position,
         priorityRank = priorityRank,
-        rolloverIfMissed = rolloverIfMissed
+        rolloverIfMissed = rolloverIfMissed,
+        moodLoggingEnabled = moodLoggingEnabled
     )
 
     private fun Habit.toEntity() = HabitEntity(
@@ -129,7 +121,8 @@ class HabitRepositoryImpl @Inject constructor(
         step = step,
         position = position,
         priorityRank = priorityRank,
-        rolloverIfMissed = rolloverIfMissed
+        rolloverIfMissed = rolloverIfMissed,
+        moodLoggingEnabled = moodLoggingEnabled
     )
 
     private fun HabitNumericEntryEntity.toDomain() = HabitNumericEntry(

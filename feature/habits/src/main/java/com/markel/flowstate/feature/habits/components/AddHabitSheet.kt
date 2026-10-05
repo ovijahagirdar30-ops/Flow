@@ -95,8 +95,10 @@ fun AddHabitSheet(
         step: Float,
         priorityRank: Int,
         rolloverIfMissed: Boolean,
+        moodLoggingEnabled: Boolean,
         schedule: HabitSchedule
     ) -> Unit,
+    habitCount: Int,
     initialName: String = "",
     initialIcon: String = "none",
     initialColor: Color? = null,
@@ -106,9 +108,13 @@ fun AddHabitSheet(
     initialStep: Float = 1f,
     initialPriorityRank: Int = 5,
     initialRolloverIfMissed: Boolean = false,
+    initialMoodLoggingEnabled: Boolean = false,
     initialSchedule: HabitSchedule = HabitSchedule.DAILY
 ) {
     val isEditMode = initialName.isNotEmpty() || initialColor != null
+    // Priority is a position in the priority list: 1..N while editing one of
+    // the `habitCount` existing habits, 1..N+1 while adding a new one.
+    val maxPosition = (if (isEditMode) habitCount else habitCount + 1).coerceAtLeast(1)
     var name by remember { mutableStateOf(initialName) }
     var selectedIcon by remember { mutableStateOf(initialIcon) }
     var selectedColor by remember {
@@ -118,8 +124,16 @@ fun AddHabitSheet(
     var unit by remember { mutableStateOf(initialUnit ?: "") }
     var targetValueText by remember { mutableStateOf(initialTargetValue?.let { formatFloat(it) } ?: "") }
     var stepText by remember { mutableStateOf(formatFloat(initialStep)) }
-    var priorityRank by remember { mutableStateOf(initialPriorityRank) }
+    var priorityRank by remember {
+        // Editing clamps the stored position into range; adding defaults to
+        // mid-list — the same "middle priority" the old 5-of-10 default meant.
+        mutableStateOf(
+            if (isEditMode) initialPriorityRank.coerceIn(1, maxPosition)
+            else (maxPosition + 1) / 2
+        )
+    }
     var rolloverIfMissed by remember { mutableStateOf(initialRolloverIfMissed) }
+    var moodLoggingEnabled by remember { mutableStateOf(initialMoodLoggingEnabled) }
     var selectedDays by remember { mutableStateOf(initialSchedule.days) }
     var weeklyTargetEnabled by remember { mutableStateOf(initialSchedule.weeklyTarget != null) }
     var weeklyTarget by remember { mutableStateOf(initialSchedule.weeklyTarget ?: 3) }
@@ -370,19 +384,19 @@ fun AddHabitSheet(
             // ── Priority & rollover (used by the evening check-in's scheduler) ──
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Priority ($priorityRank/10)",
+                    text = "Priority ($priorityRank of $maxPosition)",
                     style = MaterialTheme.typography.labelLarge
                 )
                 Text(
-                    text = "Higher-priority habits are the last to get cut when today's plan doesn't have room for everything.",
+                    text = "1 is the top of your priority list — those habits are the last to get cut when today's plan doesn't have room for everything.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Slider(
                     value = priorityRank.toFloat(),
                     onValueChange = { priorityRank = it.toInt() },
-                    valueRange = 1f..10f,
-                    steps = 8 // 8 steps between the two endpoints = 10 total whole-number stops (1..10)
+                    valueRange = 1f..maxPosition.toFloat(),
+                    steps = (maxPosition - 2).coerceAtLeast(0) // endpoints + whole-number stops between them = 1..maxPosition
                 )
             }
 
@@ -406,6 +420,30 @@ fun AddHabitSheet(
                     checked = rolloverIfMissed,
                     onCheckedChange = { rolloverIfMissed = it }
                 )
+            }
+
+            if (habitType == HabitType.BOOLEAN) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Mood logging",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Text(
+                            text = "Ask how this felt when you tick it off. The ratings feed your Mood history and what the evening planner knows about your week.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = moodLoggingEnabled,
+                        onCheckedChange = { moodLoggingEnabled = it }
+                    )
+                }
             }
 
             // ── Actions (M3 Expressive press morph) ─
@@ -434,6 +472,7 @@ fun AddHabitSheet(
                             if (habitType == HabitType.NUMERIC && stepText.isNotBlank()) step else 1f,
                             priorityRank,
                             rolloverIfMissed,
+                            moodLoggingEnabled,
                             HabitSchedule(
                                 days = selectedDays,
                                 weeklyTarget = if (weeklyTargetEnabled) {
@@ -473,20 +512,24 @@ fun AddHabitSheet(
         colorArgb: Int,
         priorityRank: Int,
         rolloverIfMissed: Boolean,
+        moodLoggingEnabled: Boolean,
         schedule: HabitSchedule
     ) -> Unit,
+    habitCount: Int,
     initialName: String = "",
     initialIcon: String = "none",
     initialColor: Color? = null,
     initialPriorityRank: Int = 5,
     initialRolloverIfMissed: Boolean = false,
+    initialMoodLoggingEnabled: Boolean = false,
     initialSchedule: HabitSchedule = HabitSchedule.DAILY
 ) {
     AddHabitSheet(
         onDismiss = onDismiss,
-        onConfirm = { name, icon, colorArgb, _, _, _, _, priorityRank, rolloverIfMissed, schedule ->
-            onConfirm(name, icon, colorArgb, priorityRank, rolloverIfMissed, schedule)
+        onConfirm = { name, icon, colorArgb, _, _, _, _, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule ->
+            onConfirm(name, icon, colorArgb, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule)
         },
+        habitCount = habitCount,
         initialName = initialName,
         initialIcon = initialIcon,
         initialColor = initialColor,
@@ -496,6 +539,7 @@ fun AddHabitSheet(
         initialStep = 1f,
         initialPriorityRank = initialPriorityRank,
         initialRolloverIfMissed = initialRolloverIfMissed,
+        initialMoodLoggingEnabled = initialMoodLoggingEnabled,
         initialSchedule = initialSchedule
     )
 }

@@ -16,8 +16,15 @@ data class Habit(
     val targetValue: Float? = null,
     val step: Float = 1f,
     val position: Int = 0,
-    val priorityRank: Int = 5, // 1 (lowest) – 10 (highest) — what gets cut first when the evening plan doesn't have room for everything
-    val rolloverIfMissed: Boolean = false // if true, a missed day carries into tomorrow's plan instead of just being skipped
+    val priorityRank: Int = 5, // position in the priority list: 1 = top = most important, kept as a unique 1..N — what gets cut first when the evening plan doesn't have room for everything
+    val rolloverIfMissed: Boolean = false, // if true, a missed day carries into tomorrow's plan instead of just being skipped
+    /**
+     * Opt-in mood logging: when true, completing this habit asks "how did it
+     * feel?" and the 1-5 rating lands in the Mood tab plus the last-7-day
+     * history the AI planner reads. Off by default — asking every habit every
+     * day would defeat the "reduce decisions" goal.
+     */
+    val moodLoggingEnabled: Boolean = false
 )
 
 data class HabitWithStatus(
@@ -36,12 +43,3 @@ data class HabitWithStatus(
 data class HabitEntryFlat(val habitId: Int, val epochDay: Long, val mood: Int? = null)
 
 data class HabitNumericEntry(val habitId: Int, val date: LocalDate, val value: Float)
-
-enum class MoodSourceType { HABIT, TASK, CHECK_IN }
-
-data class MoodEntry(
-    val sourceType: MoodSourceType,
-    val sourceLabel: String, // the habit name today; a task title or "Evening check-in" later
-    val date: LocalDate,
-    val mood: Int
-)

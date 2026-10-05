@@ -12,7 +12,7 @@ interface HabitRepository {
     suspend fun deleteHabit(habit: Habit)
     suspend fun toggleEntry(habitId: Int, date: LocalDate, mood: Int? = null)
     suspend fun setEntryMood(habitId: Int, date: LocalDate, mood: Int)
-    fun getMoodHistory(): Flow<List<MoodEntry>>
+    fun getMoodsForHabit(habitId: Int): Flow<List<HabitEntryFlat>>
     fun getAllEntries(): Flow<List<HabitEntryFlat>>  // boolean entries only (from all the habits)
     fun getAllNumericEntries(): Flow<List<HabitNumericEntry>> // numeric entries (from all the habits)
     suspend fun getHabitById(id: Int): Habit?

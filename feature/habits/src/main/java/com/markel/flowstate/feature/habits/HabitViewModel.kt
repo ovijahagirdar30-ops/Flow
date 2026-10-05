@@ -108,10 +108,16 @@ class HabitViewModel @Inject constructor(
 
         viewModelScope.launch {
             toggleEntry(habitId, date)
+            // Mood logging is per-habit and OFF by default: only ask
+            // "how did it feel?" when the habit opted in. Un-ticking never
+            // prompts (asking on the way out makes no sense), and a habit
+            // switched off keeps its already-logged ratings.
             if (!wasAlreadyCompleted) {
-                val habitName = currentState.habits
-                    .firstOrNull { it.habit.id == habitId }?.habit?.name ?: ""
-                _pendingMoodPrompt.value = PendingMoodPrompt(habitId, date, habitName)
+                val habit = currentState.habits
+                    .firstOrNull { it.habit.id == habitId }?.habit
+                if (habit?.moodLoggingEnabled == true) {
+                    _pendingMoodPrompt.value = PendingMoodPrompt(habitId, date, habit.name)
+                }
             }
         }
     }
@@ -190,10 +196,15 @@ class HabitViewModel @Inject constructor(
         step: Float = 1f,
         priorityRank: Int = 5,
         rolloverIfMissed: Boolean = false,
+        moodLoggingEnabled: Boolean = false,
         schedule: HabitSchedule = HabitSchedule.DAILY)
     {
         if (name.isBlank()) return
         viewModelScope.launch {
+            // Make room at the chosen position first: bump everyone already
+            // sitting there or below it, so stored ranks stay ordered and the
+            // slider's number always matches the drag list.
+            val targetRank = makeRoomForNewHabit(priorityRank)
             insertHabit(
                 Habit(
                     name = name,
@@ -203,8 +214,9 @@ class HabitViewModel @Inject constructor(
                     unit = unit,
                     targetValue = targetValue,
                     step = step,
-                    priorityRank = priorityRank,
+                    priorityRank = targetRank,
                     rolloverIfMissed = rolloverIfMissed,
+                    moodLoggingEnabled = moodLoggingEnabled,
                     schedule = schedule
                 )
             )
@@ -225,6 +237,7 @@ class HabitViewModel @Inject constructor(
         newStep: Float? = null,
         newPriorityRank: Int? = null,
         newRolloverIfMissed: Boolean? = null,
+        newMoodLoggingEnabled: Boolean? = null,
         newSchedule: HabitSchedule? = null
     ) {
         if (newName.isBlank()) return
@@ -239,9 +252,17 @@ class HabitViewModel @Inject constructor(
                     step = newStep ?: habit.step,
                     priorityRank = newPriorityRank ?: habit.priorityRank,
                     rolloverIfMissed = newRolloverIfMissed ?: habit.rolloverIfMissed,
+                    moodLoggingEnabled = newMoodLoggingEnabled ?: habit.moodLoggingEnabled,
                     schedule = newSchedule ?: habit.schedule
                 )
             )
+            // The sheet's slider picks a POSITION in the priority list, so
+            // write it back through setPriorityRank: that renumbers every
+            // habit to a unique 1..N instead of letting two habits end up
+            // sharing the same number.
+            if (newPriorityRank != null && newPriorityRank != habit.priorityRank) {
+                setPriorityRank(habit.id, newPriorityRank)
+            }
         }
     }
 
@@ -282,7 +303,7 @@ class HabitViewModel @Inject constructor(
     }
 
     // ============================================
-    // PRIORITY REORDER MODE (0 = highest priority)
+    // PRIORITY REORDER MODE (1 = highest priority, top of the list)
     // ============================================
 
     fun togglePriorityReorderMode() {
@@ -292,7 +313,7 @@ class HabitViewModel @Inject constructor(
     /**
      * Shared move logic for both dragging and "jump to position" — both are
      * really the same operation (take the priority-ordered list, remove one
-     * item, reinsert it elsewhere, renumber everyone 0..N-1), just with the
+     * item, reinsert it elsewhere, renumber everyone 1..N), just with the
      * target index arriving a different way.
      */
     private fun movePriorityItem(fromIndex: Int, toIndex: Int) {
@@ -305,7 +326,7 @@ class HabitViewModel @Inject constructor(
         priorityOrdered.add(clampedTo, item)
 
         val updatedHabits = priorityOrdered.mapIndexed { index, habitWithStatus ->
-            habitWithStatus.copy(habit = habitWithStatus.habit.copy(priorityRank = index))
+            habitWithStatus.copy(habit = habitWithStatus.habit.copy(priorityRank = index + 1))
         }
 
         // Merge the new ranks back into the full list, which may be sorted
@@ -326,9 +347,9 @@ class HabitViewModel @Inject constructor(
     fun onPriorityReorder(fromIndex: Int, toIndex: Int) = movePriorityItem(fromIndex, toIndex)
 
     /**
-     * Called by the "type a number" input. `newRank` is 1-indexed for the
-     * person typing it (Priority #1 reads naturally); internally we still
-     * store and compare 0-indexed ranks, so we convert right here.
+     * Called by the slider and the "type a number" dialog. `newRank` IS the
+     * stored priorityRank: a 1-based position where 1 = top of the priority
+     * list. Convert to the 0-indexed list position right here.
      */
     fun setPriorityRank(habitId: Int, newRank: Int) {
         val currentState = _uiState.value as? HabitUiState.Success ?: return
@@ -336,5 +357,28 @@ class HabitViewModel @Inject constructor(
         val currentIndex = priorityOrdered.indexOfFirst { it.habit.id == habitId }
         if (currentIndex == -1) return
         movePriorityItem(currentIndex, newRank - 1)
+    }
+
+    /**
+     * Bumps every habit at or below [requestedRank] up one slot so a new habit
+     * can take that exact position, returning the clamped position to insert
+     * at. With no loaded state there is nothing to shift — the requested rank
+     * goes through untouched.
+     */
+    private suspend fun makeRoomForNewHabit(requestedRank: Int): Int {
+        val currentState = _uiState.value as? HabitUiState.Success ?: return requestedRank
+        if (currentState.habits.isEmpty()) return requestedRank
+        val targetRank = requestedRank.coerceIn(1, currentState.habits.size + 1)
+        val shifted = currentState.habits.map { withStatus ->
+            val habit = withStatus.habit
+            withStatus.copy(
+                habit = habit.copy(
+                    priorityRank = if (habit.priorityRank >= targetRank) habit.priorityRank + 1 else habit.priorityRank
+                )
+            )
+        }
+        _uiState.value = currentState.copy(habits = shifted)
+        updateHabitsPriorityOrder(shifted.map { it.habit.id to it.habit.priorityRank })
+        return targetRank
     }
 }

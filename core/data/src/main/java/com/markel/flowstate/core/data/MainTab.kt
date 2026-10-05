@@ -4,7 +4,6 @@ enum class MainTab(val isRemovable: Boolean = false) {
     TASKS(isRemovable = false),
     CALENDAR(isRemovable = true),
     HABITS(isRemovable = false),
-    MOOD(isRemovable = true),
     PLAN(isRemovable = false),
     SETTINGS(isRemovable = false);
 

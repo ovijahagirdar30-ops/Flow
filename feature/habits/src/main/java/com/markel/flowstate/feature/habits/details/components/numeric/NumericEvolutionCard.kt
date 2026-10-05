@@ -255,19 +255,25 @@ fun NumericEvolutionCard(
                     gradientPath.close()
                 }
 
-                val fillGradient = Brush.verticalGradient(
-                    colors = listOf(
-                        habitColor.copy(alpha = 0.35f * animationProgress),
-                        Color.Transparent
-                    ),
-                    startY = points.minOfOrNull { it.y } ?: 0f,
-                    endY = baseLineY
-                )
+                val lowestPointY = points.minOfOrNull { it.y } ?: 0f
+                // A flat line (every value 0, e.g. a boolean habit with no
+                // recent completions) would make startY == endY, which the
+                // gradient shader rejects — skip the fill, keep the line.
+                if (lowestPointY < baseLineY) {
+                    val fillGradient = Brush.verticalGradient(
+                        colors = listOf(
+                            habitColor.copy(alpha = 0.35f * animationProgress),
+                            Color.Transparent
+                        ),
+                        startY = lowestPointY,
+                        endY = baseLineY
+                    )
 
-                drawPath(
-                    path = gradientPath,
-                    brush = fillGradient
-                )
+                    drawPath(
+                        path = gradientPath,
+                        brush = fillGradient
+                    )
+                }
 
                 drawPath(
                     path = smoothPath,

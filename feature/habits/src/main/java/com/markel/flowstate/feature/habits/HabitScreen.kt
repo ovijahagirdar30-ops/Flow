@@ -156,6 +156,7 @@ fun HabitScreen(
                                         when (habitWithStatus.habit.habitType) {
                                             HabitType.BOOLEAN -> {
                                                 HabitCard(
+                                                    habitCount = state.habits.size,
                                                     habitWithStatus = habitWithStatus,
                                                     weekEntries = state.weekEntriesByHabit[habitWithStatus.habit.id]
                                                         ?: emptySet(),
@@ -170,7 +171,7 @@ fun HabitScreen(
                                                             habitWithStatus.habit
                                                         )
                                                     },
-                                                    onEdit = { name, icon, colorArgb, priorityRank, rolloverIfMissed, schedule ->
+                                                    onEdit = { name, icon, colorArgb, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule ->
                                                         viewModel.editHabit(
                                                             habit = habitWithStatus.habit,
                                                             newName = name,
@@ -178,6 +179,7 @@ fun HabitScreen(
                                                             newColorArgb = colorArgb,
                                                             newPriorityRank = priorityRank,
                                                             newRolloverIfMissed = rolloverIfMissed,
+                                                            newMoodLoggingEnabled = moodLoggingEnabled,
                                                             newSchedule = schedule
                                                         )
                                                     },
@@ -191,6 +193,7 @@ fun HabitScreen(
 
                                             HabitType.NUMERIC -> {
                                                 NumericHabitCard(
+                                                    habitCount = state.habits.size,
                                                     habitWithStatus = habitWithStatus,
                                                     allEntries = state.numericEntriesByHabit[habitWithStatus.habit.id]
                                                         ?: emptyList(),
@@ -260,10 +263,11 @@ fun HabitScreen(
 
                 if (state.showAddDialog) {
                     AddHabitSheet(
+                        habitCount = state.habits.size,
                         initialHabitType = addSheetType,
                         onDismiss = { viewModel.hideAddDialog() },
-                        onConfirm = { name, icon, color, habitType, unit, targetValue, step, priorityRank, rolloverIfMissed, schedule ->
-                            viewModel.addHabit(name, icon, color, habitType, unit, targetValue, step, priorityRank, rolloverIfMissed, schedule)
+                        onConfirm = { name, icon, color, habitType, unit, targetValue, step, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule ->
+                            viewModel.addHabit(name, icon, color, habitType, unit, targetValue, step, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule)
                         }
                     )
                 }

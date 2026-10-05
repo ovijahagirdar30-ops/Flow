@@ -105,7 +105,10 @@ data class HabitSchema(
     val unit: String? = null,
     val targetValue: Float? = null,
     val step: Float,
-    val position: Int
+    val position: Int,
+    // Defaulted so pre-existing backup JSON (which predates the flag) still
+    // restores — mood logging stays opt-in after a restore, as it is by default.
+    val moodLoggingEnabled: Boolean = false
 )
 
 @Serializable
