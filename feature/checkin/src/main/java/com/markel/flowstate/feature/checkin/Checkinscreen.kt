@@ -1,204 +1,207 @@
 package com.markel.flowstate.feature.checkin
 
-import androidx.compose.foundation.layout.Box
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.markel.flowstate.core.domain.CheckinItem
-import com.markel.flowstate.core.domain.CheckinItemType
+import com.markel.flowstate.core.domain.checkin.CheckinMoodState
 import kotlinx.coroutines.launch
 
+/**
+ * Evening check-in. The first seven steps are the redesigned flow — a fixed
+ * header (back + five progress segments), a fixed bottom pill button and the
+ * steps crossfading between them, exactly like the design. The final PLAN
+ * step is the "Planning to Plan" redesign: it owns its own chrome (planning
+ * loading screen, settled timeline, Agree pill) so the flow chrome fades out
+ * once the recap hands off to it.
+ */
 @Composable
 fun CheckinScreen(
     onDismiss: () -> Unit,
     onOpenPlan: () -> Unit,
+    startAtPlan: Boolean = false,
     viewModel: CheckinViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val endOfDayMinutes by viewModel.endOfDayMinutes.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
-    when (val state = uiState) {
+    // "Edit plan" start: read the agreed plan BEFORE the first frame renders,
+    // so the screen never flashes the greeting on its way to the plan step.
+    var planEditReady by remember { mutableStateOf(!startAtPlan) }
+    LaunchedEffect(startAtPlan) {
+        if (startAtPlan) {
+            viewModel.loadAgreedPlanForEditing()
+            planEditReady = true
+        }
+    }
+
+    when (val state = if (planEditReady) uiState else CheckinUiState.Loading) {
         is CheckinUiState.Loading -> Unit
 
-        is CheckinUiState.InProgress -> when (state.step) {
-            CheckinStep.MOOD -> MoodCheckinStep(
-                moodState = state.mood,
-                onEnergyChange = viewModel::updateEnergy,
-                onSleepinessChange = viewModel::updateSleepiness,
-                onStressChange = viewModel::updateStress,
-                onHeadacheChange = viewModel::updateHeadache,
-                onMotivationChange = viewModel::updateMotivation,
-                onEnergyCommentChange = viewModel::updateEnergyComment,
-                onSleepinessCommentChange = viewModel::updateSleepinessComment,
-                onStressCommentChange = viewModel::updateStressComment,
-                onHeadacheCommentChange = viewModel::updateHeadacheComment,
-                onMotivationCommentChange = viewModel::updateMotivationComment,
-                endOfDayMinutes = endOfDayMinutes,
-                onEndOfDayChange = viewModel::setEndOfDayMinutes,
-                onNext = viewModel::goToNextStep
-            )
+        is CheckinUiState.InProgress -> {
+            val step = state.step
+            val inFlow = step.isDesignedFlow
+            val density = LocalDensity.current.density
 
-            CheckinStep.UNEXPECTED_PLANS -> UnexpectedPlansStep(
-                plans = state.unexpectedPlans,
-                onAddPlan = viewModel::addUnexpectedPlan,
-                onRemovePlan = viewModel::removeUnexpectedPlan,
-                onNext = viewModel::goToNextStep
-            )
+            // Header back arrow mirrors the system back gesture on questions.
+            BackHandler(enabled = inFlow && step != CheckinStep.GREET) {
+                viewModel.goToPreviousStep()
+            }
 
-            CheckinStep.TASKS -> TasksCheckinStep(
-                items = state.items,
-                isPlanning = state.isPlanning,
-                onAddTask = viewModel::addTask,
-                onGeneratePlan = viewModel::generatePlan
+            // Chrome fades out on the greeting and away entirely once the
+            // plan step takes over (its own screens carry the chrome).
+            val chromeAlpha by animateFloatAsState(
+                targetValue = if (inFlow && step != CheckinStep.GREET) 1f else 0f,
+                animationSpec = tween(500),
+                label = "checkinChrome"
             )
+            // Which note fields are open — survives step hops within the flow.
+            var openNotes by remember { mutableStateOf(setOf<CheckinStep>()) }
 
-            CheckinStep.PLAN -> PlanCheckinStep(
-                plan = state.plan,
-                isPlanning = state.isPlanning,
-                onRegenerate = viewModel::regeneratePlan,
-                onAgree = {
-                    scope.launch {
-                        viewModel.agreeToPlan()
-                        onOpenPlan()
+            Column(modifier = Modifier.fillMaxSize()) {
+                AnimatedVisibility(visible = inFlow) {
+                    CheckinFlowHeader(
+                        currentStep = step,
+                        alpha = chromeAlpha,
+                        onBack = viewModel::goToPreviousStep
+                    )
+                }
+
+                AnimatedContent(
+                    targetState = step,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    // The design's motion: new content rises 14px while fading
+                    // in over 480ms; old content drifts 8px up and fades over
+                    // 260ms — same direction both ways, like the prototype.
+                    transitionSpec = {
+                        val enter = fadeIn(tween(480, easing = CubicBezierEasing(0.2f, 0.7f, 0.2f, 1f))) +
+                            slideInVertically(tween(480, easing = CubicBezierEasing(0.2f, 0.7f, 0.2f, 1f))) {
+                                (14 * density).toInt()
+                            }
+                        val exit = fadeOut(tween(260, easing = CubicBezierEasing(0.42f, 0f, 1f, 1f))) +
+                            slideOutVertically(tween(260, easing = CubicBezierEasing(0.42f, 0f, 1f, 1f))) {
+                                (-8 * density).toInt()
+                            }
+                        enter togetherWith exit
+                    },
+                    label = "checkinStep"
+                ) { current ->
+                    when (current) {
+                        CheckinStep.GREET -> CheckinGreetingStep(
+                            onBegin = viewModel::goToNextStep
+                        )
+
+                        CheckinStep.ENERGY,
+                        CheckinStep.SLEEP,
+                        CheckinStep.STRESS,
+                        CheckinStep.BODY,
+                        CheckinStep.MOTIVATION -> {
+                            val spec = questionSpecFor(current)
+                            MoodQuestionStep(
+                                spec = spec,
+                                value = state.mood.valueFor(current),
+                                comment = state.mood.commentFor(current),
+                                noteOpen = current in openNotes,
+                                onValueChange = { v -> viewModel.updateMoodValue(current, v) },
+                                onCommentChange = { c -> viewModel.updateMoodComment(current, c) },
+                                onToggleNote = {
+                                    openNotes = if (current in openNotes) {
+                                        openNotes - current
+                                    } else {
+                                        openNotes + current
+                                    }
+                                }
+                            )
+                        }
+
+                        CheckinStep.RECAP -> MoodRecapStep(
+                            rows = designedQuestionSteps.map { s ->
+                                RecapRow(
+                                    step = s,
+                                    label = questionSpecFor(s).eyebrow,
+                                    value = state.mood.valueFor(s),
+                                    hasNote = state.mood.commentFor(s).isNotBlank()
+                                )
+                            },
+                            onAmend = viewModel::goToQuestion
+                        )
+
+                        CheckinStep.PLAN -> PlanCheckinStep(
+                            plan = state.plan,
+                            isPlanning = state.isPlanning,
+                            onRegenerate = viewModel::regeneratePlan,
+                            onAgree = {
+                                scope.launch {
+                                    viewModel.agreeToPlan()
+                                    onOpenPlan()
+                                }
+                            },
+                            onDiscard = onDismiss,
+                            onEditBlock = viewModel::editBlock,
+                            onRemoveBlock = viewModel::removeBlock,
+                            onAddBlock = viewModel::addBlock
+                        )
                     }
-                },
-                onDiscard = onDismiss,
-                onEditBlock = viewModel::editBlock,
-                onRemoveBlock = viewModel::removeBlock,
-                onAddBlock = viewModel::addBlock
-            )
-        }
-    }
-}
-
-@Composable
-private fun TasksCheckinStep(
-    items: List<CheckinItem>,
-    isPlanning: Boolean,
-    onAddTask: (String) -> Unit,
-    onGeneratePlan: () -> Unit
-) {
-    var newTaskTitle by remember { mutableStateOf("") }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 16.dp)
-    ) {
-        Text(
-            text = "Today's tasks",
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color.White
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Quick-add: lands in the same tasks table the FlowState Tasks
-        // screen reads, so it appears there alongside manual tasks.
-        OutlinedTextField(
-            value = newTaskTitle,
-            onValueChange = { newTaskTitle = it },
-            placeholder = { Text("Add a task for tonight...", color = Color.Gray) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = Color(0xFF9C27B0),
-                unfocusedBorderColor = Color(0xFF616161),
-                cursorColor = Color(0xFF9C27B0)
-            )
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = {
-                if (newTaskTitle.isNotBlank()) {
-                    onAddTask(newTaskTitle)
-                    newTaskTitle = ""
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C27B0))
-        ) {
-            Text("Add task", color = Color.White)
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (items.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(vertical = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Nothing left for today \u2014 nice.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-            }
-        } else {
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(items) { item ->
-                    CheckinItemRow(item)
-                    HorizontalDivider(color = Color(0xFF424242))
+                AnimatedVisibility(visible = inFlow) {
+                    CheckinFlowBottomBar(
+                        label = when (step) {
+                            CheckinStep.MOTIVATION -> "Finish"
+                            CheckinStep.RECAP -> "Generate my evening"
+                            else -> "Next"
+                        },
+                        alpha = chromeAlpha,
+                        enabled = step != CheckinStep.GREET,
+                        onClick = viewModel::goToNextStep
+                    )
                 }
             }
         }
-
-        Button(
-            onClick = onGeneratePlan,
-            enabled = !isPlanning,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9C27B0))
-        ) {
-            Text(if (isPlanning) "Planning your evening..." else "Show my plan", color = Color.White)
-        }
     }
 }
 
-@Composable
-private fun CheckinItemRow(item: CheckinItem) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-    ) {
-        Text(text = item.title, style = MaterialTheme.typography.bodyLarge, color = Color.White)
-        Text(
-            text = if (item.type == CheckinItemType.TASK) "Task" else "Habit",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
-        )
+/** The mood value backing one question step. */
+private fun CheckinMoodState.valueFor(step: CheckinStep): Int =
+    when (step) {
+        CheckinStep.ENERGY -> energy
+        CheckinStep.SLEEP -> sleepiness
+        CheckinStep.STRESS -> stress
+        CheckinStep.BODY -> headache
+        CheckinStep.MOTIVATION -> motivation
+        else -> 0
     }
-}
+
+/** The optional note backing one question step. */
+private fun CheckinMoodState.commentFor(step: CheckinStep): String =
+    when (step) {
+        CheckinStep.ENERGY -> energyComment
+        CheckinStep.SLEEP -> sleepinessComment
+        CheckinStep.STRESS -> stressComment
+        CheckinStep.BODY -> headacheComment
+        CheckinStep.MOTIVATION -> motivationComment
+        else -> ""
+    }

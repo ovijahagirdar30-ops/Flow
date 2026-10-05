@@ -10,19 +10,32 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.markel.flowstate.core.data.AppColor
 import com.markel.flowstate.core.data.MainTab
+import com.markel.flowstate.core.data.ThemeMode
+import com.markel.flowstate.core.data.UserPreferencesRepository
+import com.markel.flowstate.core.designsystem.theme.FlowStateTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
- * Hosts the real 3-step evening check-in (CheckinScreen), replacing the
- * Stage 1 placeholder text now that mood/plans/tasks all exist.
- * Uses a black background with light status/navigation bars.
+ * Hosts the evening check-in (CheckinScreen): the designed greeting →
+ * five-question flow → recap, then the legacy plans/tasks/plan steps,
+ * plus the 9PM night review.
+ *
+ * Renders inside [FlowStateTheme] with the user's theme settings — same
+ * typography (FlowStateTypography), color scheme and motion as MainActivity,
+ * so the check-in is never a styled island in light mode / custom AppColor.
+ * The theme's SideEffect also flips the status/navigation bar icon tint.
  */
 @AndroidEntryPoint
 class CheckinActivity : ComponentActivity() {
+
+    @Inject lateinit var userPreferences: UserPreferencesRepository
 
     private var wakeLock: PowerManager.WakeLock? = null
 
@@ -45,18 +58,36 @@ class CheckinActivity : ComponentActivity() {
         // Two faces of the same wake-the-screen activity: the arrival
         // check-in (mood → plan) and the 9PM night review (day recap).
         val nightReview = intent.getStringExtra(EXTRA_MODE) == MODE_NIGHT_REVIEW
+        val startAtPlan = intent.getStringExtra(EXTRA_START_STEP) == START_STEP_PLAN
         setContent {
-            MaterialTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = androidx.compose.ui.graphics.Color.Black
-                ) {
+            // Same five settings MainActivity feeds the theme — defaults only
+            // cover the frame before DataStore's first emission.
+            val themeMode by userPreferences.themeMode.collectAsState(ThemeMode.SYSTEM)
+            val dynamicColor by userPreferences.dynamicColor.collectAsState(false)
+            val pureSurfaces by userPreferences.pureSurfaces.collectAsState(false)
+            val systemFont by userPreferences.systemFont.collectAsState(false)
+            val selectedAppColor by userPreferences.selectedAppColor.collectAsState(AppColor.GREEN)
+
+            FlowStateTheme(
+                themeMode = themeMode,
+                dynamicColor = dynamicColor,
+                pureSurfaces = pureSurfaces,
+                systemFont = systemFont,
+                selectedAppColor = selectedAppColor
+            ) {
+                // Default Surface color = colorScheme.background, so the screen
+                // follows the theme instead of a hardcoded black.
+                Surface(modifier = Modifier.fillMaxSize()) {
                     if (nightReview) {
                         NightReviewScreen(onDone = { finish() })
                     } else {
+                        // Arrival check-in — geofence trigger and the Plan tab's
+                        // manual "Start check-in" both land here, opening on the
+                        // design's greeting. "Edit plan" jumps straight to PLAN.
                         CheckinScreen(
                             onDismiss = { finish() },
-                            onOpenPlan = { openPlanTab() }
+                            onOpenPlan = { openPlanTab() },
+                            startAtPlan = startAtPlan
                         )
                     }
                 }
@@ -118,6 +149,16 @@ class CheckinActivity : ComponentActivity() {
 
         /** Value for [EXTRA_MODE]: the 9PM night review page. */
         const val MODE_NIGHT_REVIEW = "night_review"
+
+        /**
+         * Intent extra selecting which STEP the arrival check-in starts on.
+         * Absent/anything else = the mood step (the normal first step).
+         * Set by the Plan tab's "Edit plan" FAB item.
+         */
+        const val EXTRA_START_STEP = "com.markel.flowstate.extra.START_STEP"
+
+        /** Value for [EXTRA_START_STEP]: the final plan step. */
+        const val START_STEP_PLAN = "plan"
 
         private const val TAG = "CheckinActivity"
     }

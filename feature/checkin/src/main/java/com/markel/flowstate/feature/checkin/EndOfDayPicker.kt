@@ -11,7 +11,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,13 +19,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import java.util.Locale
-
-private val CheckinAccent = Color(0xFF9C27B0)
-private val CheckinDarkSurface = Color(0xFF212121)
 
 /**
  * "Day ends at <time>" row — the end-of-day option on the check-in's mood
@@ -36,8 +31,9 @@ private val CheckinDarkSurface = Color(0xFF212121)
  * 0 (midnight, the default) is expressed by the date gate alone — see the
  * expiry rule for why a literal 00:00 cutoff would hide the plan all day.
  *
- * Styled like the other check-in screens (black dialog, purple accent,
- * explicit colors everywhere — nothing here inherits LocalContentColor).
+ * Themed like the rest of the check-in (inside FlowStateTheme): the dialog
+ * and the dial use the app's color scheme, so they follow light/dark and
+ * the selected AppColor.
  */
 @Composable
 fun EndOfDayRow(
@@ -55,13 +51,12 @@ fun EndOfDayRow(
         Text(
             text = "Day ends at",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         TextButton(onClick = { showPicker = true }) {
             Text(
                 text = formatPlanTime(minutes.toHhMm()),
-                style = MaterialTheme.typography.bodyMedium,
-                color = CheckinAccent
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     }
@@ -94,55 +89,34 @@ private fun EndOfDayPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.Black,
-        titleContentColor = Color.White,
-        textContentColor = Color.White,
         title = {
-            Text("When does your day end?", color = Color.White)
+            Text("When does your day end?")
         },
         text = {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                TimePicker(
-                    state = timePickerState,
-                    colors = checkinTimePickerColors()
-                )
+                // Default TimePicker colors: derived from the theme, so the
+                // dial follows light/dark and the AppColor like every other
+                // picker in the app.
+                TimePicker(state = timePickerState)
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 onConfirm(timePickerState.hour * 60 + timePickerState.minute)
             }) {
-                Text("Save", color = CheckinAccent)
+                Text("Save")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Color.Gray)
+                Text("Cancel")
             }
         }
     )
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun checkinTimePickerColors() = TimePickerDefaults.colors(
-    clockDialColor = CheckinDarkSurface,
-    selectorColor = CheckinAccent,
-    clockDialSelectedContentColor = Color.White,
-    clockDialUnselectedContentColor = Color.Gray,
-    timeSelectorSelectedContainerColor = CheckinAccent,
-    timeSelectorSelectedContentColor = Color.White,
-    timeSelectorUnselectedContainerColor = CheckinDarkSurface,
-    timeSelectorUnselectedContentColor = Color.White,
-    periodSelectorSelectedContainerColor = CheckinAccent,
-    periodSelectorSelectedContentColor = Color.White,
-    periodSelectorUnselectedContainerColor = Color.Transparent,
-    periodSelectorUnselectedContentColor = Color.White,
-    periodSelectorBorderColor = Color(0xFF616161)
-)
 
 /** Minute-of-day → zero-padded 24h "HH:mm" for [formatPlanTime]'s 12-hour render. */
 private fun Int.toHhMm(): String = String.format(

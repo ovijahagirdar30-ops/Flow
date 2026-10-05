@@ -14,15 +14,25 @@ import javax.inject.Singleton
 private const val CHECKIN_RECEIVER_CLASS = "com.markel.flowstate.feature.checkin.CheckinAlarmReceiver"
 private const val CHECKIN_REQUEST_CODE = 9001
 private const val NIGHT_REVIEW_REQUEST_CODE = 9003
+private const val WEEKEND_CHECKIN_REQUEST_CODE = 9004
 
 /**
  * Intent extra marking an alarm as the nightly9PM night-review page rather
  * than the arrival check-in. Read by CheckinAlarmReceiver.
  */
-const val EXTRA_NIGHT_REVIEW = "com.markel.flowstate.extra.NIGHT_REVIEW"/**
+const val EXTRA_NIGHT_REVIEW = "com.markel.flowstate.extra.NIGHT_REVIEW"
+
+/**
+ * Intent extra marking an alarm as the weekend morning check-in (Sat/Sun
+ * 8AM). Read by CheckinAlarmReceiver — fires the regular arrival-style
+ * check-in, since a home-only weekend never trips the geofence.
+ */
+const val EXTRA_WEEKEND_CHECKIN = "com.markel.flowstate.extra.WEEKEND_CHECKIN"/**
  * Alarm plumbing for the check-in pipeline:
  *  - scheduleNightReview(): arms the nightly9PM day-review page for the
  *    next21:00 local (the receiver re-arms it after each fire);
+ *  - scheduleWeekendCheckin(): arms the Sat/Sun 8AM morning check-in for
+ *    the next weekend 08:00 local (same re-arm pattern);
  *  - cancelFallbackCutoff(): clears any cutoff alarm queued by an older
  *    build, so the removed arrival fallback can't fire one last time;
  *  - scheduleTest() / scheduleNightReviewInTest(): debug-only manual
@@ -97,22 +107,36 @@ class CheckinAlarmScheduler @Inject constructor(
      * still shows up (possibly a few minutes late).
      */
     fun scheduleNightReview() {
-        scheduleNightReviewAt(nextNightReviewMillis())
+        scheduleAt(nextNightReviewMillis(), nightReviewPendingIntent())
+    }
+
+    /**
+     * Arms the weekend morning check-in for the next Sat/Sun 08:00 local
+     * still ahead. On weekends the user is home all day, so the arrival
+     * geofence never fires — this time-based alarm substitutes for it and
+     * runs the regular (once-per-day debounced) check-in pipeline.
+     * Same re-arm pattern as the night review: CheckinAlarmReceiver re-arms
+     * after each fire and every app launch arms it again, so the chain
+     * survives week to week until reboot. Safe to call repeatedly — the
+     * same request code overwrites the pending alarm instead of stacking.
+     */
+    fun scheduleWeekendCheckin() {
+        scheduleAt(nextWeekendCheckinMillis(), weekendCheckinPendingIntent())
     }
 
     /** Schedules the night review [secondsFromNow] seconds out — for manual adb testing. */
     fun scheduleNightReviewInTest(secondsFromNow: Long) {
-        scheduleNightReviewAt(System.currentTimeMillis() + secondsFromNow * 1000)
+        scheduleAt(System.currentTimeMillis() + secondsFromNow * 1000, nightReviewPendingIntent())
     }
 
-    private fun scheduleNightReviewAt(triggerAtMillis: Long) {
+    private fun scheduleAt(triggerAtMillis: Long, pendingIntent: PendingIntent) {
         try {
             if (canScheduleExactAlarms()) {
                 alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP, triggerAtMillis, nightReviewPendingIntent()
+                    AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent
                 )
             } else {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, nightReviewPendingIntent())
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
             }
         } catch (e: SecurityException) {
             // Permission revoked between the check above and this call — fail quietly.
@@ -132,6 +156,41 @@ class CheckinAlarmScheduler @Inject constructor(
             next.add(Calendar.DAY_OF_YEAR, 1)
         }
         return next.timeInMillis
+    }
+
+    /**
+     * Next weekend (Sat/Sun) 08:00 local still in the future — scans up to
+     *7 days ahead, so on a Sunday afternoon it lands on next Saturday.
+     */
+    private fun nextWeekendCheckinMillis(): Long {
+        val now = Calendar.getInstance()
+        val probe = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 8)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        repeat(7) {
+            val weekend = probe.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY ||
+                probe.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY
+            if (weekend && probe.after(now)) return probe.timeInMillis
+            probe.add(Calendar.DAY_OF_YEAR, 1)
+        }
+        return probe.timeInMillis
+    }
+
+    /** Distinct request code + WEEKEND_CHECKIN extra, so it never collides with the check-in/test alarms. */
+    private fun weekendCheckinPendingIntent(): PendingIntent {
+        val intent = Intent().apply {
+            component = ComponentName(context.packageName, CHECKIN_RECEIVER_CLASS)
+            putExtra(EXTRA_WEEKEND_CHECKIN, true)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            WEEKEND_CHECKIN_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     /** Distinct request code + NIGHT_REVIEW extra, so it never collides with the check-in/test alarms. */

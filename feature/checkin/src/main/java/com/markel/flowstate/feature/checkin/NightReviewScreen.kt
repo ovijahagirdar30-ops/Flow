@@ -1,5 +1,10 @@
 package com.markel.flowstate.feature.checkin
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +20,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -24,7 +28,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -37,9 +40,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val AccentPurple = Color(0xFF9C27B0)
-private val DividerGray = Color(0xFF424242)
-
 private val reviewDateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d", Locale.getDefault())
 private val dueDateFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
 
@@ -50,8 +50,8 @@ private val dueDateFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDe
  * seam. Reached only from CheckinActivity in night-review mode (the 9PM
  * alarm, or the debug openNight hook); not a bottom-nav destination.
  *
- * Every Text carries an explicit color — nothing provides LocalContentColor
- * in this app, so the default would be black-on-black (the Mood-header bug).
+ * Runs inside FlowStateTheme like the rest of the app — text uses the
+ * theme's content colors, accents use colorScheme.primary.
  */
 @Composable
 fun NightReviewScreen(
@@ -66,7 +66,7 @@ fun NightReviewScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = AccentPurple)
+            CircularProgressIndicator()
         }
         return
     }
@@ -87,7 +87,7 @@ fun NightReviewScreen(
         Text(
             text = "Night check-in",
             style = MaterialTheme.typography.headlineSmall,
-            color = AccentPurple
+            color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -111,7 +111,7 @@ fun NightReviewScreen(
                 )
             }
         }
-        HorizontalDivider(color = DividerGray)
+        HorizontalDivider()
 
         // ── Still open ─────────────────────────────────────────────────────
         ReviewHeader(title = "Still open", count = review.pending.size)
@@ -124,42 +124,49 @@ fun NightReviewScreen(
         } else {
             review.pending.forEach { task -> PendingRow(task) }
         }
-        HorizontalDivider(color = DividerGray)
+        HorizontalDivider()
 
         // ── Pushed to tomorrow (hidden when there's nothing to push) ───────
         if (review.pushedToTomorrow.isNotEmpty()) {
             ReviewHeader(title = "Pushed to tomorrow", count = review.pushedToTomorrow.size)
             review.pushedToTomorrow.forEach { task -> PendingRow(task) }
-            HorizontalDivider(color = DividerGray)
+            HorizontalDivider()
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // ── Encouraging close ──────────────────────────────────────────────
-        val message = state.message
-        if (message == null) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                CircularProgressIndicator(
-                    color = AccentPurple,
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp
-                )
+        // Crossfade the thinking spinner into the finished message.
+        AnimatedContent(
+            targetState = state.message,
+            transitionSpec = {
+                fadeIn(tween(300, delayMillis = 120)) togetherWith fadeOut(tween(150))
+            },
+            label = "nightMessage"
+        ) { message ->
+            if (message == null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        text = "Thinking about your day…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
                 Text(
-                    text = "Thinking about your day…",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = message,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
-        } else {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.titleMedium,
-                color = AccentPurple,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -168,10 +175,9 @@ fun NightReviewScreen(
             onClick = onDone,
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding(),
-            colors = ButtonDefaults.buttonColors(containerColor = AccentPurple)
+                .navigationBarsPadding()
         ) {
-            Text("Done for today", color = Color.White)
+            Text("Done for today")
         }
     }
 }

@@ -5,7 +5,35 @@ import com.markel.flowstate.core.domain.EveningPlan
 import com.markel.flowstate.core.domain.checkin.CheckinMoodState
 import com.markel.flowstate.core.domain.checkin.UnexpectedPlan
 
-enum class CheckinStep { MOOD, UNEXPECTED_PLANS, TASKS, PLAN }
+/**
+ * Steps of the evening check-in. The first seven are the designed question
+ * flow (greeting → five mood questions → recap); PLAN is the "Planning to
+ * Plan" final stage — the planning loading screen and the settled plan
+ * list both live behind it.
+ */
+enum class CheckinStep {
+    GREET,
+    ENERGY,
+    SLEEP,
+    STRESS,
+    BODY,
+    MOTIVATION,
+    RECAP,
+    PLAN
+}
+
+/** True for the designed flow (greeting → recap) that owns the check-in chrome. */
+val CheckinStep.isDesignedFlow: Boolean
+    get() = ordinal <= CheckinStep.RECAP.ordinal
+
+/** The five mood question steps, in flow order. */
+val designedQuestionSteps = listOf(
+    CheckinStep.ENERGY,
+    CheckinStep.SLEEP,
+    CheckinStep.STRESS,
+    CheckinStep.BODY,
+    CheckinStep.MOTIVATION
+)
 
 sealed interface CheckinUiState {
     data object Loading : CheckinUiState
