@@ -66,21 +66,7 @@ class PlanViewModel @Inject constructor(
     val uiState: StateFlow<PlanUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            val plan = planRepository.latestAgreedPlan()
-            val checked = plan
-                ?.let { planRepository.checkedIndexes(it.date) }
-                .orEmpty()
-                .toSet()
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    plan = plan,
-                    checkedIndexes = checked,
-                    isExpired = isPlanExpired(plan?.date, it.endOfDayMinutes),
-                )
-            }
-        }
+        reload()
 
         // Cutoff preference: re-evaluate on every change (check-in saves it).
         viewModelScope.launch {
@@ -102,6 +88,30 @@ class PlanViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(isExpired = isPlanExpired(it.plan?.date, it.endOfDayMinutes))
                 }
+            }
+        }
+    }
+
+    /**
+     * Re-reads the agreed plan + ticks from Room. Called at init and on every
+     * tab resume — the Plan tab's FAB "Edit plan" persists through the
+     * check-in and hands back here, so the snapshot taken at process start
+     * must never win over what the database now holds.
+     */
+    fun reload() {
+        viewModelScope.launch {
+            val plan = planRepository.latestAgreedPlan()
+            val checked = plan
+                ?.let { planRepository.checkedIndexes(it.date) }
+                .orEmpty()
+                .toSet()
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    plan = plan,
+                    checkedIndexes = checked,
+                    isExpired = isPlanExpired(plan?.date, it.endOfDayMinutes),
+                )
             }
         }
     }
