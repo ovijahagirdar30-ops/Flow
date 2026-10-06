@@ -48,7 +48,15 @@ data class PlanBlock(
     val reason: String,
     val kind: PlanBlockKind,
     /** Task/habit id when the block maps to one, so approve/edit can sync back later; null for free blocks (meals, rest). */
-    val referenceId: Int? = null
+    val referenceId: Int? = null,
+    /**
+     * Set when the block covers a SINGLE subtask of the task in [referenceId]
+     * rather than the whole task: ticking it flips only that subtask, never
+     * the parent. Subtask ids are String UUIDs, hence a separate field —
+     * [referenceId] always stays the parent task's Int id so the existing
+     * task mapping keeps working. Null for whole-task and free blocks.
+     */
+    val subtaskId: String? = null
 )
 
 enum class PlanBlockKind { TASK, HABIT, MEAL, REST, REFLECTION, OTHER }

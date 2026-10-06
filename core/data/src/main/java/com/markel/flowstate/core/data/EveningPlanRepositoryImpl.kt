@@ -89,7 +89,8 @@ class EveningPlanRepositoryImpl @Inject constructor(
         title = title,
         reason = reason,
         kind = kind.name,
-        referenceId = referenceId
+        referenceId = referenceId,
+        subtaskId = subtaskId
     )
 
     private fun StoredBlock.toDomain() = PlanBlock(
@@ -98,7 +99,8 @@ class EveningPlanRepositoryImpl @Inject constructor(
         title = title,
         reason = reason,
         kind = PlanBlockKind.valueOf(kind),
-        referenceId = referenceId
+        referenceId = referenceId,
+        subtaskId = subtaskId
     )
 
     @Serializable
@@ -108,6 +110,9 @@ class EveningPlanRepositoryImpl @Inject constructor(
         val title: String,
         val reason: String,
         val kind: String,
-        val referenceId: Int? = null
+        val referenceId: Int? = null,
+        // Absent in blocks stored before subtask allotment landed — the
+        // default keeps old evening_plans JSON decoding without a migration.
+        val subtaskId: String? = null
     )
 }

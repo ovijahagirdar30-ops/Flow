@@ -37,10 +37,10 @@ import java.util.Locale
  * dialog), duration in minutes, and the reason/details line.
  *
  * - `initial == null` → add mode (Save creates a new block).
- * - `initial != null` → edit mode; the block's [PlanBlock.kind] and
- *   [PlanBlock.referenceId] are PRESERVED so a TASK block keeps pointing at
- *   its real task (the tick→task sync depends on it), and a Remove button
- *   appears.
+ * - `initial != null` → edit mode; the block's [PlanBlock.kind],
+ *   [PlanBlock.referenceId] and [PlanBlock.subtaskId] are PRESERVED so a TASK
+ *   block keeps pointing at its real task/subtask (the tick→task sync
+ *   depends on it), and a Remove button appears.
  *
  * Theme-aware via MaterialTheme: dialogs render in their own window, so one
  * styled dialog reads correctly over both the light/dark Plan tab and the
@@ -153,6 +153,7 @@ fun PlanBlockEditorDialog(
                             reason = reason.trim(),
                             kind = old?.kind ?: PlanBlockKind.TASK,
                             referenceId = old?.referenceId,
+                            subtaskId = old?.subtaskId,
                         )
                     )
                 }

@@ -43,9 +43,11 @@ data class PlanUiState(
  *
  * Ticking a TASK block mirrors onto the real task it maps to
  * ([PlanBlock.referenceId] → [ToggleTaskUseCase]), including the reminder
- * cancellation the Calendar/Flow screens do on completion. HABIT and free
- * blocks (meals, rest, …) are visual-only ticks: their referenceId never
- * reaches a task write.
+ * cancellation the Calendar/Flow screens do on completion. A block with a
+ * [PlanBlock.subtaskId] maps to ONE subtask of that task instead — ticking it
+ * flips only the subtask (and cancels its reminder), never the parent.
+ * HABIT and free blocks (meals, rest, …) are visual-only ticks: their
+ * referenceId never reaches a task write.
  *
  * Expiry: the plan blanks out once [isPlanExpired] says so — the user's
  * end-of-day cutoff from DataStore, or the calendar-date rollover (midnight
@@ -142,9 +144,30 @@ class PlanViewModel @Inject constructor(
             val block = plan.blocks[index]
             val referenceId = block.referenceId
             if (block.kind == PlanBlockKind.TASK && referenceId != null) {
-                val task = taskRepository.getTaskById(referenceId) ?: return@launch
                 val shouldBeDone = index in checked
-                if (task.isDone != shouldBeDone) {
+                val task = taskRepository.getTaskById(referenceId) ?: return@launch
+
+                val subtaskId = block.subtaskId
+                if (subtaskId != null) {
+                    // Subtask block: flip ONLY that subtask. Allowing the
+                    // whole-task toggle here would mark a task done because
+                    // one slice of it was finished. The subtask may have been
+                    // deleted since planning — then the tick stays visual.
+                    val subTask = task.subTasks.firstOrNull { it.id == subtaskId } ?: return@launch
+                    if (subTask.isDone != shouldBeDone) {
+                        val updatedSubTask = subTask.copy(
+                            isDone = shouldBeDone,
+                            completedAt = if (shouldBeDone) System.currentTimeMillis() else null,
+                            reminderTime = if (shouldBeDone) null else subTask.reminderTime
+                        )
+                        taskRepository.upsertTask(
+                            task.copy(subTasks = task.subTasks.map {
+                                if (it.id == subtaskId) updatedSubTask else it
+                            })
+                        )
+                        if (shouldBeDone) reminderScheduler.cancelSubTask(subtaskId)
+                    }
+                } else if (task.isDone != shouldBeDone) {
                     toggleTaskUseCase(task)
                     if (shouldBeDone) {
                         reminderScheduler.cancel(task.id)

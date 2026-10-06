@@ -222,6 +222,7 @@ class OpenRouterEveningPlanner @Inject constructor(
                     put("reason", block.reason)
                     put("kind", block.kind.name)
                     block.referenceId?.let { put("referenceId", it) }
+                    block.subtaskId?.let { put("subtaskId", it) }
                 })
             }
         }
@@ -270,6 +271,22 @@ class OpenRouterEveningPlanner @Inject constructor(
                     put("description", task.description)
                     put("priority", task.priority.name)
                     task.dueDate?.let { put("dueDate", it) }
+                    // Pending subtasks, in the task's own order — this is what
+                    // lets the model allot PART of a task instead of only the
+                    // whole thing. Done subtasks are omitted: they are not
+                    // plannable and would only add noise.
+                    val pending = task.subTasks.filter { !it.isDone }.sortedBy { it.position }
+                    if (pending.isNotEmpty()) {
+                        putJsonArray("subtasks") {
+                            pending.forEach { subTask ->
+                                add(buildJsonObject {
+                                    put("id", subTask.id)
+                                    put("title", subTask.title)
+                                    put("priority", subTask.priority.name)
+                                })
+                            }
+                        }
+                    }
                 })
             }
         }
@@ -333,7 +350,8 @@ class OpenRouterEveningPlanner @Inject constructor(
                 kind = runCatching {
                     PlanBlockKind.valueOf(obj["kind"]!!.jsonPrimitive.content)
                 }.getOrDefault(PlanBlockKind.OTHER),
-                referenceId = obj["referenceId"]?.jsonPrimitive?.intOrNull
+                referenceId = obj["referenceId"]?.jsonPrimitive?.intOrNull,
+                subtaskId = obj["subtaskId"]?.jsonPrimitive?.contentOrNull
             )
         }.sortedBy { it.startTime }
 
@@ -385,7 +403,9 @@ class OpenRouterEveningPlanner @Inject constructor(
             the check-in just finished); today's check-in (0-10 scores for energy,
             sleepiness, stress, headache, motivation, a free-text comment on each, and
             any unexpected plans such as "dinner with family"); today's incomplete
-            tasks (id, title, description, priority); and habits (id, name, type,
+            tasks (id, title, description, priority; each task may list its
+            pending subtasks — id, title, priority, in the task's order); and
+            habits (id, name, type,
             whether completed today, streak, today's value, priorityRank (1-based
             position in Ovi's priority list — 1 matters most), rolloverIfMissed,
             moodLoggingEnabled, and — only
@@ -403,7 +423,18 @@ class OpenRouterEveningPlanner @Inject constructor(
               zero-padded 24-hour "HH:mm" (e.g. "21:05"), durationMinutes, title
               (short), reason (max ~120 chars, warm and matter-of-fact), kind
               (TASK, HABIT, MEAL, REST, REFLECTION or OTHER), referenceId (the
-              task/habit id for TASK/HABIT blocks; omit it otherwise).
+              task/habit id for TASK/HABIT blocks; omit it otherwise), and
+              subtaskId — ONLY for a TASK block that covers a single subtask:
+              set it to that subtask's id and referenceId to its PARENT task's
+              id, with the title being the subtask's own short action.
+            - A TASK block may cover a whole task OR just one of its subtasks.
+              When a task is too big for tonight, allot specific subtasks
+              instead of skipping the task entirely — partial progress on a
+              big task beats nothing, and several different subtasks of the
+              same task may become separate blocks. Never schedule a parent
+              task AS A WHOLE alongside any of its own subtasks (that would
+              double-count the same work): pick the whole task or particular
+              subtasks, not both.
             - REST durations are YOUR call from the mood scores — never a fixed
               length. Make the FIRST block a decompress REST right after the
               check-in: heavily drained (high sleepiness, low energy or high
@@ -414,8 +445,9 @@ class OpenRouterEveningPlanner @Inject constructor(
               blocks instead of forcing the clock.
             - Run the plan until about 23:35: the last block must END near
               23:35 — never stop scheduling hours early.
-            - One block per task/habit: never repeat a title or schedule the
-              same id twice.
+            - One block per task/habit: never repeat a title, never schedule
+              the same whole task twice, and never schedule the same
+              subtaskId twice.
             - One MEAL block around 19:00, unless the check-in is already past
               dinner time or unexpected plans dictate otherwise.
 
@@ -442,7 +474,7 @@ class OpenRouterEveningPlanner @Inject constructor(
             - Include unfinished habits as HABIT blocks when they fit, favoring LOW
               priorityRank (1 = top of the list); habits with rolloverIfMissed may be
               skipped freely.
-            - Use ONLY the ids provided; never invent tasks or habits.
+            - Use ONLY the ids provided; never invent tasks, subtasks or habits.
             - Keep block titles practical ("Finish slides", "Read 20 pages"), not
               motivational posters.
         """.trimIndent()
