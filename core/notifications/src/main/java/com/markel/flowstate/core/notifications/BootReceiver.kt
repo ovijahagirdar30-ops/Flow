@@ -29,6 +29,7 @@ class BootReceiver : BroadcastReceiver() {
     @Inject lateinit var taskRepository: TaskRepository
     @Inject lateinit var reminderScheduler: ReminderScheduler
     @Inject lateinit var notificationHelper: NotificationHelper
+    @Inject lateinit var habitReminderScheduler: HabitReminderScheduler
 
     // A dedicated scope that outlives onReceive (goAsync result is kept alive).
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -63,6 +64,12 @@ class BootReceiver : BroadcastReceiver() {
                         taskRepository.clearTaskReminder(item.requestCode)
                     }
                 }
+
+                // Habit reminders are one-alarm-at-a-time and recomputed from
+                // scratch, so there is no "expired" handling — just re-book
+                // the next occurrence for every habit that still wants one.
+                // (A stale alarm for a deleted habit self-heals in the receiver.)
+                habitReminderScheduler.rescheduleAll(now)
 
             } finally {
                 pendingResult.finish()

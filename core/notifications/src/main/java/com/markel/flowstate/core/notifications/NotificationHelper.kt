@@ -20,6 +20,12 @@ class NotificationHelper @Inject constructor(
         const val CHANNEL_ID = "task_reminders"
         private const val CHANNEL_NAME = "Task Reminders"
         private const val CHANNEL_DESCRIPTION = "Notifications for scheduled task reminders"
+
+        // Habit reminders get their own channel so the user can silence one
+        // without losing the other in system settings.
+        const val HABIT_CHANNEL_ID = "habit_reminders"
+        private const val HABIT_CHANNEL_NAME = "Habit Reminders"
+        private const val HABIT_CHANNEL_DESCRIPTION = "Notifications for habits you asked to be reminded about"
     }
 
     private val notificationManager =
@@ -39,6 +45,16 @@ class NotificationHelper @Inject constructor(
             enableVibration(true)
         }
         notificationManager.createNotificationChannel(channel)
+
+        val habitChannel = NotificationChannel(
+            HABIT_CHANNEL_ID,
+            HABIT_CHANNEL_NAME,
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = HABIT_CHANNEL_DESCRIPTION
+            enableVibration(true)
+        }
+        notificationManager.createNotificationChannel(habitChannel)
     }
 
     /**
@@ -87,5 +103,38 @@ class NotificationHelper @Inject constructor(
         )
 
         notificationManager.notify(notificationId, builder.build())
+    }
+
+    /**
+     * Shows a habit reminder — no "Complete" action, because a habit has no
+     * single tap-to-done (numeric habits log a value, booleans tick from the
+     * card), so tapping just opens the app. [notificationId] is the habit's
+     * alarm requestCode, giving each habit its own notification slot.
+     */
+    fun showHabitReminder(notificationId: Int, habitName: String) {
+        val tapIntent = context.packageManager
+            .getLaunchIntentForPackage(context.packageName)
+            ?.apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK }
+
+        val tapPendingIntent = tapIntent?.let {
+            PendingIntent.getActivity(
+                context,
+                notificationId,
+                it,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+
+        val notification = NotificationCompat.Builder(context, HABIT_CHANNEL_ID)
+            .setSmallIcon(R.drawable.new_ic_launcher_foreground_white)
+            .setContentTitle(habitName)
+            .setContentText(context.getString(R.string.habit_reminder_body))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.habit_reminder_body)))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(tapPendingIntent)
+            .build()
+
+        notificationManager.notify(notificationId, notification)
     }
 }

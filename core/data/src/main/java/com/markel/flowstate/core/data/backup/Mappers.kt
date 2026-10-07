@@ -128,7 +128,9 @@ fun HabitEntity.toSchema() = HabitSchema(
     targetValue = targetValue,
     step = step,
     position = position,
-    moodLoggingEnabled = moodLoggingEnabled
+    moodLoggingEnabled = moodLoggingEnabled,
+    reminderEnabled = reminderEnabled,
+    reminderMinuteOfDay = reminderMinuteOfDay
 )
 
 fun HabitSchema.toEntity() = HabitEntity(
@@ -143,7 +145,9 @@ fun HabitSchema.toEntity() = HabitEntity(
     targetValue = targetValue,
     step = step,
     position = position,
-    moodLoggingEnabled = moodLoggingEnabled
+    moodLoggingEnabled = moodLoggingEnabled,
+    reminderEnabled = reminderEnabled,
+    reminderMinuteOfDay = reminderMinuteOfDay
 )
 
 fun HabitEntryEntity.toSchema() = HabitEntrySchema(

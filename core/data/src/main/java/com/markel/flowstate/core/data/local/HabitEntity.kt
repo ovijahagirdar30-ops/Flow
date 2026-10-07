@@ -21,7 +21,9 @@ data class HabitEntity(
     val position: Int = 0,
     val priorityRank: Int = 5,
     val rolloverIfMissed: Boolean = false,
-    val moodLoggingEnabled: Boolean = false
+    val moodLoggingEnabled: Boolean = false,
+    val reminderEnabled: Boolean = false,
+    val reminderMinuteOfDay: Int? = null
 )
 
 @Entity(

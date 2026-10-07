@@ -16,6 +16,7 @@ import com.markel.flowstate.core.domain.TaskRepository
 import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
 import com.markel.flowstate.core.notifications.ReminderScheduler
 import com.markel.flowstate.core.notifications.buildAlarmItems
+import com.markel.flowstate.core.notifications.HabitReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -53,6 +54,7 @@ class FlowViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val reminderScheduler: ReminderScheduler,
+    private val habitReminderScheduler: HabitReminderScheduler,
     private val deleteTaskUseCase: DeleteTaskUseCase,
     private val applicationScope: CoroutineScope
 
@@ -318,6 +320,12 @@ class FlowViewModel @Inject constructor(
                 reminderScheduler.rescheduleAll(items)
 
             }
+        }
+        // Habit reminders self-heal on every foreground: one alarm per habit,
+        // recomputed from today's completions — cheap, and it also picks up
+        // habits enabled while the exact-alarm permission was missing.
+        viewModelScope.launch {
+            habitReminderScheduler.rescheduleAll()
         }
         refreshBanner()
     }

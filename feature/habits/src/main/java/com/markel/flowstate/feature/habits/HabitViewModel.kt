@@ -20,6 +20,7 @@ import com.markel.flowstate.core.domain.usecase.habits.ToggleHabitEntryUseCase
 import com.markel.flowstate.core.domain.usecase.habits.UpdateHabitUseCase
 import com.markel.flowstate.core.domain.usecase.habits.UpdateHabitsOrderUseCase
 import com.markel.flowstate.core.domain.usecase.habits.UpdateHabitsPriorityOrderUseCase
+import com.markel.flowstate.core.notifications.HabitReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,7 +47,8 @@ class HabitViewModel @Inject constructor(
     private val decrementNumericValue: DecrementNumericValueUseCase,
     private val deleteNumericEntry: DeleteNumericEntryUseCase,
     private val updateHabitsOrder: UpdateHabitsOrderUseCase,
-    private val updateHabitsPriorityOrder: UpdateHabitsPriorityOrderUseCase
+    private val updateHabitsPriorityOrder: UpdateHabitsPriorityOrderUseCase,
+    private val habitReminderScheduler: HabitReminderScheduler
 ) : ViewModel() {
 
     private val _showAddDialog = MutableStateFlow(false)
@@ -108,6 +110,10 @@ class HabitViewModel @Inject constructor(
 
         viewModelScope.launch {
             toggleEntry(habitId, date)
+            // Completing (or un-completing) can cross the weekly target, so
+            // today's reminder slot must be re-evaluated: booked out when the
+            // habit is done for the day/week, restored when it isn't.
+            habitReminderScheduler.reschedule(habitId)
             // Mood logging is per-habit and OFF by default: only ask
             // "how did it feel?" when the habit opted in. Un-ticking never
             // prompts (asking on the way out makes no sense), and a habit
@@ -151,6 +157,7 @@ class HabitViewModel @Inject constructor(
     fun incrementNumericHabit(habitId: Int, date: LocalDate, currentValue: Float?, step: Float) {
         viewModelScope.launch {
             incrementNumericValue(habitId, date, currentValue, step)
+            habitReminderScheduler.reschedule(habitId)
         }
     }
 
@@ -160,6 +167,7 @@ class HabitViewModel @Inject constructor(
     fun decrementNumericHabit(habitId: Int, date: LocalDate, currentValue: Float?, step: Float) {
         viewModelScope.launch {
             decrementNumericValue(habitId, date, currentValue, step)
+            habitReminderScheduler.reschedule(habitId)
         }
     }
 
@@ -169,6 +177,7 @@ class HabitViewModel @Inject constructor(
     fun setNumericValue(habitId: Int, date: LocalDate, value: Float) {
         viewModelScope.launch {
             logNumericEntry(habitId, date, value)
+            habitReminderScheduler.reschedule(habitId)
         }
     }
 
@@ -178,6 +187,7 @@ class HabitViewModel @Inject constructor(
     fun deleteNumericEntry(habitId: Int, date: LocalDate) {
         viewModelScope.launch {
             deleteNumericEntry.invoke(habitId, date)
+            habitReminderScheduler.reschedule(habitId)
         }
     }
 
@@ -197,7 +207,9 @@ class HabitViewModel @Inject constructor(
         priorityRank: Int = 5,
         rolloverIfMissed: Boolean = false,
         moodLoggingEnabled: Boolean = false,
-        schedule: HabitSchedule = HabitSchedule.DAILY)
+        schedule: HabitSchedule = HabitSchedule.DAILY,
+        reminderEnabled: Boolean = false,
+        reminderMinuteOfDay: Int? = null)
     {
         if (name.isBlank()) return
         viewModelScope.launch {
@@ -217,9 +229,14 @@ class HabitViewModel @Inject constructor(
                     priorityRank = targetRank,
                     rolloverIfMissed = rolloverIfMissed,
                     moodLoggingEnabled = moodLoggingEnabled,
-                    schedule = schedule
+                    schedule = schedule,
+                    reminderEnabled = reminderEnabled,
+                    reminderMinuteOfDay = reminderMinuteOfDay
                 )
             )
+            // The insert happens before the id exists, so re-book from the
+            // full list — includes this brand-new habit's first alarm.
+            habitReminderScheduler.rescheduleAll()
             _showAddDialog.value = false
         }
     }
@@ -238,10 +255,13 @@ class HabitViewModel @Inject constructor(
         newPriorityRank: Int? = null,
         newRolloverIfMissed: Boolean? = null,
         newMoodLoggingEnabled: Boolean? = null,
-        newSchedule: HabitSchedule? = null
+        newSchedule: HabitSchedule? = null,
+        newReminderEnabled: Boolean? = null,
+        newReminderMinuteOfDay: Int? = null
     ) {
         if (newName.isBlank()) return
         viewModelScope.launch {
+            val reminderEnabled = newReminderEnabled ?: habit.reminderEnabled
             updateHabit(
                 habit.copy(
                     name = newName,
@@ -253,9 +273,16 @@ class HabitViewModel @Inject constructor(
                     priorityRank = newPriorityRank ?: habit.priorityRank,
                     rolloverIfMissed = newRolloverIfMissed ?: habit.rolloverIfMissed,
                     moodLoggingEnabled = newMoodLoggingEnabled ?: habit.moodLoggingEnabled,
-                    schedule = newSchedule ?: habit.schedule
+                    schedule = newSchedule ?: habit.schedule,
+                    reminderEnabled = reminderEnabled,
+                    // Keep the configured time even while the switch is off —
+                    // flipping it back on restores the last chosen hour.
+                    reminderMinuteOfDay = newReminderMinuteOfDay ?: habit.reminderMinuteOfDay
                 )
             )
+            // A schedule/time/switch change (or a target that this edit
+            // crosses) rewrites the single pending alarm for this habit.
+            habitReminderScheduler.reschedule(habit.id)
             // The sheet's slider picks a POSITION in the priority list, so
             // write it back through setPriorityRank: that renumbers every
             // habit to a unique 1..N instead of letting two habits end up
@@ -270,7 +297,10 @@ class HabitViewModel @Inject constructor(
      * Deletes a habit (works for both boolean and numeric types)
      */
     fun deleteHabit(habit: Habit) {
-        viewModelScope.launch { deleteHabit.invoke(habit) }
+        viewModelScope.launch {
+            deleteHabit.invoke(habit)
+            habitReminderScheduler.cancel(habit.id)
+        }
     }
 
     // ============================================

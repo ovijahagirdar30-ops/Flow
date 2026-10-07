@@ -1,5 +1,10 @@
 package com.markel.flowstate.feature.habits.components
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.text.format.DateFormat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -28,6 +33,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
@@ -39,6 +45,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
@@ -58,12 +67,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.markel.flowstate.core.domain.HabitSchedule
 import com.markel.flowstate.core.domain.HabitType
 import com.markel.flowstate.feature.habits.R
 import com.markel.flowstate.feature.habits.util.formatFloat
 import java.time.DayOfWeek
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import com.markel.flowstate.core.designsystem.R as DesignR
 
 private val habitColors = listOf(
@@ -96,7 +110,9 @@ fun AddHabitSheet(
         priorityRank: Int,
         rolloverIfMissed: Boolean,
         moodLoggingEnabled: Boolean,
-        schedule: HabitSchedule
+        schedule: HabitSchedule,
+        reminderEnabled: Boolean,
+        reminderMinuteOfDay: Int?
     ) -> Unit,
     habitCount: Int,
     initialName: String = "",
@@ -109,7 +125,9 @@ fun AddHabitSheet(
     initialPriorityRank: Int = 5,
     initialRolloverIfMissed: Boolean = false,
     initialMoodLoggingEnabled: Boolean = false,
-    initialSchedule: HabitSchedule = HabitSchedule.DAILY
+    initialSchedule: HabitSchedule = HabitSchedule.DAILY,
+    initialReminderEnabled: Boolean = false,
+    initialReminderMinuteOfDay: Int? = null
 ) {
     val isEditMode = initialName.isNotEmpty() || initialColor != null
     // Priority is a position in the priority list: 1..N while editing one of
@@ -137,6 +155,48 @@ fun AddHabitSheet(
     var selectedDays by remember { mutableStateOf(initialSchedule.days) }
     var weeklyTargetEnabled by remember { mutableStateOf(initialSchedule.weeklyTarget != null) }
     var weeklyTarget by remember { mutableStateOf(initialSchedule.weeklyTarget ?: 3) }
+
+    // ── Reminder: optional switch + time-of-day slot ──────────────────────
+    val context = LocalContext.current
+    var reminderEnabled by remember { mutableStateOf(initialReminderEnabled) }
+    var reminderMinuteOfDay by remember {
+        mutableStateOf(initialReminderMinuteOfDay ?: DEFAULT_REMINDER_MINUTE)
+    }
+    var showReminderTimePicker by remember { mutableStateOf(false) }
+    var waitingForReminderPermission by remember { mutableStateOf(false) }
+
+    // Asking for POST_NOTIFICATIONS only matters on 13+; below that install
+    // time grants it. Same flow ReminderSelector uses for tasks.
+    val reminderPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) {
+        if (waitingForReminderPermission) {
+            reminderEnabled = true
+            waitingForReminderPermission = false
+        }
+    }
+
+    fun enableReminders() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            waitingForReminderPermission = true
+            reminderPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        reminderEnabled = true
+    }
+
+    // Re-seeded every time the picker opens so backing out of a pick cannot
+    // leak the abandoned hour back into the row (PlanBlockEditorDialog's rule).
+    val reminderPickerState = remember(showReminderTimePicker) {
+        TimePickerState(
+            reminderMinuteOfDay / 60,
+            reminderMinuteOfDay % 60,
+            DateFormat.is24HourFormat(context)
+        )
+    }
 
     val parsedTarget = targetValueText.toFloatOrNull()
     val parsedStep = stepText.toFloatOrNull()
@@ -446,6 +506,85 @@ fun AddHabitSheet(
                 }
             }
 
+            // ── Reminder (optional): switch, then the time it fires at ─────
+            if (showReminderTimePicker) {
+                AlertDialog(
+                    onDismissRequest = { showReminderTimePicker = false },
+                    title = { Text("Remind me at") },
+                    text = {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
+                            TimePicker(state = reminderPickerState)
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            reminderMinuteOfDay = reminderPickerState.hour * 60 + reminderPickerState.minute
+                            showReminderTimePicker = false
+                        }) { Text("OK", color = MaterialTheme.colorScheme.primary) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showReminderTimePicker = false }) {
+                            Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Enable reminders",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Text(
+                        text = "A notification when this habit is due — off unless you turn it on.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = reminderEnabled,
+                    onCheckedChange = { checked ->
+                        if (checked) enableReminders() else reminderEnabled = false
+                    }
+                )
+            }
+
+            if (reminderEnabled) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Time",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Text(
+                            text = if (weeklyTargetEnabled) {
+                                "Every scheduled day until your weekly goal is met, then it rests until next week."
+                            } else {
+                                "Reminds you on the days picked above."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    TextButton(onClick = { showReminderTimePicker = true }) {
+                        Text(
+                            text = formatReminderTime(reminderMinuteOfDay),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
             // ── Actions (M3 Expressive press morph) ─
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -480,7 +619,9 @@ fun AddHabitSheet(
                                 } else {
                                     null
                                 }
-                            )
+                            ),
+                            reminderEnabled,
+                            reminderMinuteOfDay
                         )
                         onDismiss()
                     },
@@ -513,7 +654,9 @@ fun AddHabitSheet(
         priorityRank: Int,
         rolloverIfMissed: Boolean,
         moodLoggingEnabled: Boolean,
-        schedule: HabitSchedule
+        schedule: HabitSchedule,
+        reminderEnabled: Boolean,
+        reminderMinuteOfDay: Int?
     ) -> Unit,
     habitCount: Int,
     initialName: String = "",
@@ -522,12 +665,14 @@ fun AddHabitSheet(
     initialPriorityRank: Int = 5,
     initialRolloverIfMissed: Boolean = false,
     initialMoodLoggingEnabled: Boolean = false,
-    initialSchedule: HabitSchedule = HabitSchedule.DAILY
+    initialSchedule: HabitSchedule = HabitSchedule.DAILY,
+    initialReminderEnabled: Boolean = false,
+    initialReminderMinuteOfDay: Int? = null
 ) {
     AddHabitSheet(
         onDismiss = onDismiss,
-        onConfirm = { name, icon, colorArgb, _, _, _, _, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule ->
-            onConfirm(name, icon, colorArgb, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule)
+        onConfirm = { name, icon, colorArgb, _, _, _, _, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule, reminderEnabled, reminderMinuteOfDay ->
+            onConfirm(name, icon, colorArgb, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule, reminderEnabled, reminderMinuteOfDay)
         },
         habitCount = habitCount,
         initialName = initialName,
@@ -540,9 +685,19 @@ fun AddHabitSheet(
         initialPriorityRank = initialPriorityRank,
         initialRolloverIfMissed = initialRolloverIfMissed,
         initialMoodLoggingEnabled = initialMoodLoggingEnabled,
-        initialSchedule = initialSchedule
+        initialSchedule = initialSchedule,
+        initialReminderEnabled = initialReminderEnabled,
+        initialReminderMinuteOfDay = initialReminderMinuteOfDay
     )
 }
+
+/** "480" → "8:00 AM" in the device's locale/12-24h preference. */
+private fun formatReminderTime(minuteOfDay: Int): String =
+    LocalTime.of(minuteOfDay / 60, minuteOfDay % 60)
+        .format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+
+/** 8:00 — the first slot the switch lands on when no time was picked yet. */
+private const val DEFAULT_REMINDER_MINUTE = 8 * 60
 
 /** Weekday toggle: two-letter chip that fills with the accent when scheduled. */
 @Composable

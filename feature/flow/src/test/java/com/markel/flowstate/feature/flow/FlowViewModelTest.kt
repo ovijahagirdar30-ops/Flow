@@ -13,6 +13,7 @@ import com.markel.flowstate.core.domain.SubTask
 import com.markel.flowstate.core.domain.TaskRepository
 import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
 import com.markel.flowstate.core.notifications.ReminderScheduler
+import com.markel.flowstate.core.notifications.HabitReminderScheduler
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -42,6 +43,7 @@ class FlowViewModelTest {
     private val categoryRepository: CategoryRepository = mockk(relaxed = true)
     private val userPreferencesRepository: UserPreferencesRepository = mockk(relaxed = true)
     private val reminderScheduler: ReminderScheduler = mockk(relaxed = true)
+    private val habitReminderScheduler: HabitReminderScheduler = mockk(relaxed = true)
     private val deleteTaskUseCase: DeleteTaskUseCase = mockk(relaxed = true)
 
     private lateinit var viewModel: FlowViewModel
@@ -71,7 +73,7 @@ class FlowViewModelTest {
         coEvery { userPreferencesRepository.lastCategoryId } returns flowOf(null)
         return FlowViewModel(
             taskRepository, ideaRepository, checkListRepository, categoryRepository,
-            userPreferencesRepository, reminderScheduler, deleteTaskUseCase,
+            userPreferencesRepository, reminderScheduler, habitReminderScheduler, deleteTaskUseCase,
             applicationScope
         )
     }
@@ -673,7 +675,7 @@ class FlowViewModelTest {
 
         viewModel = FlowViewModel(
             taskRepository, ideaRepository, checkListRepository, categoryRepository,
-            userPreferencesRepository, reminderScheduler, deleteTaskUseCase,
+            userPreferencesRepository, reminderScheduler, habitReminderScheduler, deleteTaskUseCase,
             defaultTestApplicationScope
         )
 
@@ -703,7 +705,7 @@ class FlowViewModelTest {
 
         viewModel = FlowViewModel(
             taskRepository, ideaRepository, checkListRepository, categoryRepository,
-            userPreferencesRepository, reminderScheduler, deleteTaskUseCase,
+            userPreferencesRepository, reminderScheduler, habitReminderScheduler, deleteTaskUseCase,
             defaultTestApplicationScope
         )
 

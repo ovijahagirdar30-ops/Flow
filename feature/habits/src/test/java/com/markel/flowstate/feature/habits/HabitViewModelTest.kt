@@ -19,6 +19,7 @@ import com.markel.flowstate.core.domain.usecase.habits.ToggleHabitEntryUseCase
 import com.markel.flowstate.core.domain.usecase.habits.UpdateHabitUseCase
 import com.markel.flowstate.core.domain.usecase.habits.UpdateHabitsOrderUseCase
 import com.markel.flowstate.core.domain.usecase.habits.UpdateHabitsPriorityOrderUseCase
+import com.markel.flowstate.core.notifications.HabitReminderScheduler
 import com.markel.flowstate.core.testing.util.MainDispatcherRule
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -54,6 +55,7 @@ class HabitViewModelTest {
     private val updateHabitsOrder: UpdateHabitsOrderUseCase = mockk(relaxed = true)
     private val setHabitMood: SetHabitMoodUseCase = mockk(relaxed = true)
     private val updateHabitsPriorityOrder: UpdateHabitsPriorityOrderUseCase = mockk(relaxed = true)
+    private val habitReminderScheduler: HabitReminderScheduler = mockk(relaxed = true)
 
     private lateinit var viewModel: HabitViewModel
 
@@ -92,7 +94,8 @@ class HabitViewModelTest {
         deleteNumericEntry = deleteNumericEntry,
         updateHabitsOrder = updateHabitsOrder,
         setHabitMood = setHabitMood,
-        updateHabitsPriorityOrder = updateHabitsPriorityOrder
+        updateHabitsPriorityOrder = updateHabitsPriorityOrder,
+        habitReminderScheduler = habitReminderScheduler
     )
 
     // ── uiState ───────────────────────────────────────────────────────────────

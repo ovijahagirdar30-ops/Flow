@@ -27,6 +27,8 @@ class ReminderReceiver : BroadcastReceiver() {
         const val EXTRA_TASK_DESCRIPTION = "extra_task_description"
         const val EXTRA_IS_SUBTASK = "extra_is_subtask"
         const val EXTRA_SUBTASK_ID = "extra_subtask_id"
+        const val EXTRA_IS_HABIT = "extra_is_habit"
+        const val EXTRA_HABIT_ID = "extra_habit_id"
 
     }
 
@@ -36,9 +38,33 @@ class ReminderReceiver : BroadcastReceiver() {
     @Inject
     lateinit var taskRepository: TaskRepository
 
+    @Inject
+    lateinit var habitReminderScheduler: HabitReminderScheduler
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onReceive(context: Context, intent: Intent) {
+        // ── Habit reminder ──────────────────────────────────────────────
+        // Habit alarms carry their own extras and their own consume path:
+        // show it only if the habit is still due (weekly target rule), and
+        // always book the next occurrence so the chain survives.
+        if (intent.getBooleanExtra(EXTRA_IS_HABIT, false)) {
+            val habitId = intent.getIntExtra(EXTRA_HABIT_ID, -1)
+            if (habitId == -1) return
+
+            val habitPendingResult = goAsync()
+            scope.launch {
+                try {
+                    habitReminderScheduler.consumeAlarm(habitId)?.let { notice ->
+                        notificationHelper.showHabitReminder(notice.notificationId, notice.title)
+                    }
+                } finally {
+                    habitPendingResult.finish()
+                }
+            }
+            return
+        }
+
         val taskId = intent.getIntExtra(EXTRA_TASK_ID, -1)
         val taskTitle = intent.getStringExtra(EXTRA_TASK_TITLE) ?: return
         val taskDescription = intent.getStringExtra(EXTRA_TASK_DESCRIPTION)

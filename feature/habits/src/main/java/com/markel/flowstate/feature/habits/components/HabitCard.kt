@@ -40,7 +40,7 @@ fun HabitCard(
     onToggleDay: (LocalDate) -> Unit,
     onDelete: () -> Unit,
     habitCount: Int,
-    onEdit: (name: String, icon: String, colorArgb: Int, priorityRank: Int, rolloverIfMissed: Boolean, moodLoggingEnabled: Boolean, schedule: HabitSchedule) -> Unit,
+    onEdit: (name: String, icon: String, colorArgb: Int, priorityRank: Int, rolloverIfMissed: Boolean, moodLoggingEnabled: Boolean, schedule: HabitSchedule, reminderEnabled: Boolean, reminderMinuteOfDay: Int?) -> Unit,
     onNavigateToDetail: (() -> Unit)? = null
 ) {
     val habit = habitWithStatus.habit
@@ -126,10 +126,12 @@ fun HabitCard(
             initialRolloverIfMissed = habit.rolloverIfMissed,
             initialMoodLoggingEnabled = habit.moodLoggingEnabled,
             initialSchedule = habit.schedule,
+            initialReminderEnabled = habit.reminderEnabled,
+            initialReminderMinuteOfDay = habit.reminderMinuteOfDay,
             habitCount = habitCount,
             onDismiss = { showEditDialog = false },
-            onConfirm = { name, icon, colorArgb, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule ->
-                onEdit(name, icon, colorArgb, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule)
+            onConfirm = { name, icon, colorArgb, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule, reminderEnabled, reminderMinuteOfDay ->
+                onEdit(name, icon, colorArgb, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule, reminderEnabled, reminderMinuteOfDay)
                 showEditDialog = false
             }
         )

@@ -24,7 +24,20 @@ data class Habit(
      * history the AI planner reads. Off by default — asking every habit every
      * day would defeat the "reduce decisions" goal.
      */
-    val moodLoggingEnabled: Boolean = false
+    val moodLoggingEnabled: Boolean = false,
+    /**
+     * Opt-in daily reminder: when true, a notification fires on the days the
+     * schedule says this habit is due, at [reminderMinuteOfDay]. Off by
+     * default — same "nobody gets prompts they never asked for" rule as mood
+     * logging.
+     */
+    val reminderEnabled: Boolean = false,
+    /**
+     * Minutes since midnight (0..1439) the reminder fires at — only
+     * meaningful while [reminderEnabled]. Nullable so a habit can carry the
+     * time it was configured with even while the switch is off.
+     */
+    val reminderMinuteOfDay: Int? = null
 )
 
 data class HabitWithStatus(

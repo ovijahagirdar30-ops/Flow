@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class, CheckinEntity::class, EveningPlanEntity::class, PlanFeedbackEntity::class], // List of all tables
-    version = 29,
+    version = 30,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -433,6 +433,22 @@ abstract class FlowStateDatabase : RoomDatabase() {
                         position++
                     }
                 }
+            }
+        }
+
+        /**
+         * v29 → v30: Opt-in habit reminders — an on/off switch plus the time
+         * of day (minutes since midnight) the notification fires at. Same
+         * recipe as MIGRATION_27_28: `DEFAULT 0` makes the NOT NULL column
+         * legal on existing rows (opt-OUT default), and the entity carries no
+         * @ColumnInfo(defaultValue) so Room skips the default comparison.
+         * The time is nullable with no SQL default — the bare-column lesson
+         * from MIGRATION_24_25 — and stays NULL until the user picks one.
+         */
+        val MIGRATION_29_30 = object : Migration(29, 30) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habits ADD COLUMN reminderEnabled INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE habits ADD COLUMN reminderMinuteOfDay INTEGER")
             }
         }
     }

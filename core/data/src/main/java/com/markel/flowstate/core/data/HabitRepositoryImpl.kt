@@ -105,7 +105,9 @@ class HabitRepositoryImpl @Inject constructor(
         position = position,
         priorityRank = priorityRank,
         rolloverIfMissed = rolloverIfMissed,
-        moodLoggingEnabled = moodLoggingEnabled
+        moodLoggingEnabled = moodLoggingEnabled,
+        reminderEnabled = reminderEnabled,
+        reminderMinuteOfDay = reminderMinuteOfDay
     )
 
     private fun Habit.toEntity() = HabitEntity(
@@ -122,7 +124,9 @@ class HabitRepositoryImpl @Inject constructor(
         position = position,
         priorityRank = priorityRank,
         rolloverIfMissed = rolloverIfMissed,
-        moodLoggingEnabled = moodLoggingEnabled
+        moodLoggingEnabled = moodLoggingEnabled,
+        reminderEnabled = reminderEnabled,
+        reminderMinuteOfDay = reminderMinuteOfDay
     )
 
     private fun HabitNumericEntryEntity.toDomain() = HabitNumericEntry(

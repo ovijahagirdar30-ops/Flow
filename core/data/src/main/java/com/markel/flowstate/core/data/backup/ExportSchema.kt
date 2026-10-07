@@ -108,7 +108,12 @@ data class HabitSchema(
     val position: Int,
     // Defaulted so pre-existing backup JSON (which predates the flag) still
     // restores — mood logging stays opt-in after a restore, as it is by default.
-    val moodLoggingEnabled: Boolean = false
+    val moodLoggingEnabled: Boolean = false,
+    // Same story for habit reminders: old backup files restore with reminders
+    // off (and no time), never surprising the user with notifications they
+    // didn't have before the restore.
+    val reminderEnabled: Boolean = false,
+    val reminderMinuteOfDay: Int? = null
 )
 
 @Serializable

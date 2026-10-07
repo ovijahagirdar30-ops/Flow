@@ -67,6 +67,30 @@ class ReminderScheduler @Inject constructor(
         cancelAlarm(requestCode = subTaskId.hashCode())
     }
 
+    // ── Habits ─────────────────────────────────────────────────────────────
+
+    /**
+     * Habit reminders book exactly ONE alarm per habit: the next date the
+     * schedule (plus this week's completion count) says the habit is still
+     * wanted. The receiver re-arms the following one after it fires, so the
+     * weekly-target rule — notify every scheduled day until the target is
+     * met, then rest until next week — is re-evaluated against fresh
+     * completions each time.
+     */
+    fun scheduleHabit(habitId: Int, habitName: String, triggerAtMillis: Long) {
+        if (!canScheduleExactAlarms()) return
+        setAlarm(
+            requestCode = habitRequestCode(habitId),
+            title = habitName,
+            triggerAtMillis = triggerAtMillis,
+            habitId = habitId
+        )
+    }
+
+    fun cancelHabit(habitId: Int) {
+        cancelAlarm(requestCode = habitRequestCode(habitId))
+    }
+
     // ── Bulk reschedule (called from FlowViewModel.onResume) ──────────────────
 
     /**
@@ -110,9 +134,10 @@ class ReminderScheduler @Inject constructor(
         description: String? = null,
         triggerAtMillis: Long,
         isSubtask: Boolean = false,
-        subTaskId: String? = null
+        subTaskId: String? = null,
+        habitId: Int? = null
     ) {
-        pendingIntent(requestCode, title, description, PendingIntent.FLAG_UPDATE_CURRENT, isSubtask, subTaskId)?.let { pi ->
+        pendingIntent(requestCode, title, description, PendingIntent.FLAG_UPDATE_CURRENT, isSubtask, subTaskId, habitId)?.let { pi ->
             alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 triggerAtMillis,
@@ -133,7 +158,8 @@ class ReminderScheduler @Inject constructor(
         description: String?,
         flags: Int,
         isSubtask: Boolean = false,
-        subTaskId: String? = null
+        subTaskId: String? = null,
+        habitId: Int? = null
     ): PendingIntent? =
         PendingIntent.getBroadcast(
             context,
@@ -143,7 +169,23 @@ class ReminderScheduler @Inject constructor(
                 putExtra(ReminderReceiver.EXTRA_TASK_TITLE, title)
                 putExtra(ReminderReceiver.EXTRA_IS_SUBTASK, isSubtask)
                 subTaskId?.let { putExtra(ReminderReceiver.EXTRA_SUBTASK_ID, it) }
+                habitId?.let {
+                    putExtra(ReminderReceiver.EXTRA_IS_HABIT, true)
+                    putExtra(ReminderReceiver.EXTRA_HABIT_ID, it)
+                }
             },
             flags or PendingIntent.FLAG_IMMUTABLE
         )
+
+    companion object {
+        /**
+         * Habit alarms live in their own requestCode band. Task ids are small
+         * autoincrement ints, so offsetting habits by 2^24 keeps them clear;
+         * subtask codes are UUID hashCodes across the full Int range, which
+         * is the same negligible-collision risk that path already accepts.
+         */
+        private const val HABIT_CODE_OFFSET = 1 shl 24
+
+        fun habitRequestCode(habitId: Int): Int = HABIT_CODE_OFFSET + habitId
+    }
 }
