@@ -313,6 +313,9 @@ fun FlowStateTheme(
     systemFont: Boolean = false,
     // Preset app color (green is default; other options override the primary palette)
     selectedAppColor: AppColor = AppColor.GREEN,
+    // Seed colour chosen on the colour wheel; only used when [selectedAppColor]
+    // is [AppColor.CUSTOM]. Null falls back to [AppColor.CUSTOM]'s own argb.
+    customThemeColor: Int? = null,
     content: @Composable() () -> Unit
 ) {
     val darkTheme = when (themeMode) {
@@ -327,8 +330,8 @@ fun FlowStateTheme(
           if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
       }
 
-      darkTheme -> selectedAppColor.toDarkColorScheme()
-      else -> selectedAppColor.toLightColorScheme()
+      darkTheme -> selectedAppColor.toDarkColorScheme(customThemeColor)
+      else -> selectedAppColor.toLightColorScheme(customThemeColor)
     }.let { if (pureSurfaces) it.pureSurfaces(darkTheme) else it }
     val priorityColorScheme = if (darkTheme) darkPriorityScheme else lightPriorityScheme
     val view = LocalView.current
@@ -388,9 +391,13 @@ val MaterialTheme.priority: PriorityColorScheme
 
 // ── Derive full Material 3 color schemes from an [AppColor] seed ────────────
 
-private fun AppColor.toLightColorScheme(): ColorScheme {
+private fun AppColor.toLightColorScheme(customSeedArgb: Int? = null): ColorScheme {
     if (this == AppColor.GREEN) return lightScheme
-    val seed = Color(lightArgb)
+    val seed = if (this == AppColor.CUSTOM && customSeedArgb != null) {
+        Color(customSeedArgb)
+    } else {
+        Color(lightArgb)
+    }
     return lightColorScheme(
         primary              = seed,
         onPrimary            = Color.White,
@@ -430,9 +437,13 @@ private fun AppColor.toLightColorScheme(): ColorScheme {
     )
 }
 
-private fun AppColor.toDarkColorScheme(): ColorScheme {
+private fun AppColor.toDarkColorScheme(customSeedArgb: Int? = null): ColorScheme {
     if (this == AppColor.GREEN) return darkScheme
-    val seed = Color(darkArgb)
+    val seed = if (this == AppColor.CUSTOM && customSeedArgb != null) {
+        Color(customSeedArgb)
+    } else {
+        Color(darkArgb)
+    }
     return darkColorScheme(
         primary              = seed,
         onPrimary            = seed.tone(20),

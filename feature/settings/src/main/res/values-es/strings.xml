@@ -56,6 +56,8 @@
     <string name="settings_dynamic_color">Color dinámico</string>
     <string name="settings_dynamic_color_desc">Adaptar colores al fondo de pantalla (Android 12+)</string>
     <string name="settings_dynamic_color_unavailable">Requiere Android 12 o superior</string>
+    <string name="settings_custom_color_title">Elige un color de tema</string>
+    <string name="settings_custom_color">Color personalizado</string>
 
 
     <!-- Integrations -->

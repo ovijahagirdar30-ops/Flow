@@ -67,13 +67,15 @@ class CheckinActivity : ComponentActivity() {
             val pureSurfaces by userPreferences.pureSurfaces.collectAsState(false)
             val systemFont by userPreferences.systemFont.collectAsState(false)
             val selectedAppColor by userPreferences.selectedAppColor.collectAsState(AppColor.GREEN)
+            val customThemeColor by userPreferences.customThemeColor.collectAsState(AppColor.GREEN.darkArgb)
 
             FlowStateTheme(
                 themeMode = themeMode,
                 dynamicColor = dynamicColor,
                 pureSurfaces = pureSurfaces,
                 systemFont = systemFont,
-                selectedAppColor = selectedAppColor
+                selectedAppColor = selectedAppColor,
+                customThemeColor = customThemeColor
             ) {
                 // Default Surface color = colorScheme.background, so the screen
                 // follows the theme instead of a hardcoded black.

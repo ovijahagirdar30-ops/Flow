@@ -1,4 +1,5 @@
 import com.markel.flowstate.MainViewModel
+import com.markel.flowstate.core.data.AppColor
 import com.markel.flowstate.core.data.MainTab
 import com.markel.flowstate.core.data.ThemeMode
 import com.markel.flowstate.core.data.UserPreferencesRepository
@@ -269,5 +270,24 @@ class MainViewModelTest {
 
         coVerify(exactly = 1) { userPreferencesRepository.savePureSurfaces(true) }
         coVerify(exactly = 1) { userPreferencesRepository.saveSystemFont(true) }
+    }
+
+    /**
+     * `saveCustomThemeColor` persists the wheel-picked seed and
+     * `saveSelectedAppColor(CUSTOM)` activates it — both must round-trip so
+     * the custom theme survives process death and reaches [FlowStateTheme].
+     * Called by AppearanceScreen's colour-wheel dialog on Apply.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun saveCustomThemeColor_and_saveSelectedAppColor_persistViaRepository() = runTest {
+        val viewModel = buildViewModel()
+
+        viewModel.saveCustomThemeColor(0xFF8BC34A.toInt())
+        viewModel.saveSelectedAppColor(AppColor.CUSTOM)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { userPreferencesRepository.saveCustomThemeColor(0xFF8BC34A.toInt()) }
+        coVerify(exactly = 1) { userPreferencesRepository.saveSelectedAppColor(AppColor.CUSTOM) }
     }
 }

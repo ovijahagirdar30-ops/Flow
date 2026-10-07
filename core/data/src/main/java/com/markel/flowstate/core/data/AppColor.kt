@@ -51,4 +51,15 @@ enum class AppColor(
         lightArgb = 0xFFD7CCC8.toInt(),
         darkArgb = 0xFFEFEBE9.toInt(),
     ),
+    /**
+     * User-picked seed chosen on the colour wheel in Appearance settings.
+     * The actual value lives in DataStore ([UserPreferencesRepository.customThemeColor]);
+     * the argb fields here are only the fallback used before DataStore emits.
+     * Must stay last so existing stored ordinals keep matching their preset.
+     */
+    CUSTOM(
+        displayName = "Custom",
+        lightArgb = 0xFF81C784.toInt(),
+        darkArgb = 0xFF81C784.toInt(),
+    ),
 }

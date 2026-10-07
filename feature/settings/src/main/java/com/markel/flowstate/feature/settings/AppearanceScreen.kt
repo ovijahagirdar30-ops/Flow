@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
@@ -22,14 +25,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -39,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.markel.flowstate.core.data.AppColor
 import com.markel.flowstate.core.data.ThemeMode
+import com.markel.flowstate.feature.settings.components.ColorWheel
 import com.markel.flowstate.feature.settings.components.settingsItemShape
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
@@ -49,15 +59,21 @@ fun AppearanceScreen(
     currentPureSurfaces: Boolean,
     currentSystemFont: Boolean,
     selectedAppColor: AppColor,
+    customThemeColor: Int,
     onThemeModeChange: (ThemeMode) -> Unit,
     onDynamicColorChange: (Boolean) -> Unit,
     onPureSurfacesChange: (Boolean) -> Unit,
     onSystemFontChange: (Boolean) -> Unit,
     onAppColorChange: (AppColor) -> Unit,
+    onCustomThemeColorChange: (Int) -> Unit,
     onBack: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val supportsDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    // Colour-wheel dialog state; the seed is refreshed every time the swatch
+    // is tapped so re-editing starts from the currently applied colour.
+    var colorWheelOpen by remember { mutableStateOf(false) }
+    var wheelColor by remember { mutableStateOf(customThemeColor) }
     val groupContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
     val totalItems = if (supportsDynamicColor) 5 else 4
 
@@ -142,7 +158,10 @@ fun AppearanceScreen(
                     Icon(
                         imageVector = ImageVector.vectorResource(R.drawable.palette_24px),
                         contentDescription = null,
-                        tint = Color(selectedAppColor.lightArgb)
+                        tint = if (selectedAppColor == AppColor.CUSTOM)
+                            Color(customThemeColor)
+                        else
+                            Color(selectedAppColor.lightArgb)
                     )
                 },
                 headlineContent = {
@@ -151,7 +170,12 @@ fun AppearanceScreen(
                 supportingContent = {
                     ColorPaletteRow(
                         selectedColor = selectedAppColor,
+                        customColor = customThemeColor,
                         onColorSelected = onAppColorChange,
+                        onCustomColorClick = {
+                            wheelColor = customThemeColor
+                            colorWheelOpen = true
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 8.dp, bottom = 4.dp)
@@ -252,19 +276,56 @@ fun AppearanceScreen(
             )
         }
     }
+
+    // Colour-wheel dialog for the custom theme seed.
+    if (colorWheelOpen) {
+        AlertDialog(
+            onDismissRequest = { colorWheelOpen = false },
+            title = { Text(stringResource(R.string.settings_custom_color_title)) },
+            text = {
+                ColorWheel(
+                    selectedColor = wheelColor,
+                    onColorChange = { wheelColor = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onCustomThemeColorChange(wheelColor)
+                    onAppColorChange(AppColor.CUSTOM)
+                    colorWheelOpen = false
+                }) {
+                    Text(stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { colorWheelOpen = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
 private fun ColorPaletteRow(
     selectedColor: AppColor,
+    customColor: Int,
     onColorSelected: (AppColor) -> Unit,
+    onCustomColorClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
     ) {
-        AppColor.entries.forEach { appColor ->
+        AppColor.entries
+            .filter { it != AppColor.CUSTOM }
+            .forEach { appColor ->
             val isSelected = appColor == selectedColor
             val seedColor = Color(appColor.lightArgb)
 
@@ -297,5 +358,54 @@ private fun ColorPaletteRow(
                 }
             }
         }
+
+        // Custom swatch — opens the colour wheel. The rainbow ring marks it as
+        // "pick your own"; once selected it wears the same ring + dot as the
+        // presets so the row reads uniformly.
+        val isCustomSelected = selectedColor == AppColor.CUSTOM
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(Color(customColor))
+                .then(
+                    if (isCustomSelected) {
+                        Modifier.border(
+                            width = 3.dp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            shape = CircleShape
+                        )
+                    } else {
+                        Modifier.border(
+                            width = 2.dp,
+                            brush = RainbowSweep,
+                            shape = CircleShape
+                        )
+                    }
+                )
+                .clickable { onCustomColorClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            if (isCustomSelected) {
+                Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurface)
+                )
+            }
+        }
     }
 }
+
+/** Rainbow ring identifying the custom-colour entry in the palette row. */
+private val RainbowSweep: Brush = Brush.sweepGradient(
+    listOf(
+        Color(0xFFE53935),
+        Color(0xFFFFB300),
+        Color(0xFF43A047),
+        Color(0xFF1E88E5),
+        Color(0xFF8E24AA),
+        Color(0xFFE53935),
+    )
+)

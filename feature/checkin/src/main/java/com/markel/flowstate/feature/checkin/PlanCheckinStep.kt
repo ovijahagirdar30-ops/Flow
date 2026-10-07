@@ -31,6 +31,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,7 +44,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -233,7 +233,7 @@ private fun SettledPlan(
                             fontSize = 13.sp,
                             lineHeight = 18.sp,
                             fontFamily = fonts,
-                            color = Color(0xFFF2B8B5)
+                            color = MaterialTheme.colorScheme.error
                         )
                     )
                 }
@@ -297,8 +297,8 @@ private fun SettledPlan(
                             focusedBorderColor = CheckinFlowColors.NoteBorder,
                             unfocusedBorderColor = CheckinFlowColors.NoteBorder,
                             cursorColor = CheckinFlowColors.Accent,
-                            focusedContainerColor = Color(0xFF141019),
-                            unfocusedContainerColor = Color(0xFF141019)
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer
                         ),
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 2
@@ -531,17 +531,18 @@ private fun PlanTimelineRow(
                 contentAlignment = Alignment.Center
             ) {
                 // Remove cross — no material-icons dependency in this flow.
+                val colors = CheckinFlowColors
                 Canvas(modifier = Modifier.size(14.dp)) {
                     val stroke = 1.6.dp.toPx()
                     drawLine(
-                        color = CheckinFlowColors.Accent,
+                        color = colors.Accent,
                         start = androidx.compose.ui.geometry.Offset(0f, 0f),
                         end = androidx.compose.ui.geometry.Offset(size.width, size.height),
                         strokeWidth = stroke,
                         cap = StrokeCap.Round
                     )
                     drawLine(
-                        color = CheckinFlowColors.Accent,
+                        color = colors.Accent,
                         start = androidx.compose.ui.geometry.Offset(size.width, 0f),
                         end = androidx.compose.ui.geometry.Offset(0f, size.height),
                         strokeWidth = stroke,
@@ -568,19 +569,19 @@ private fun AddSomethingRow(onClick: () -> Unit, fonts: FontFamily) {
             modifier = Modifier
                 .size(22.dp)
                 .border(1.5.dp, CheckinFlowColors.NoteBorder, RoundedCornerShape(11.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Canvas(modifier = Modifier.size(11.dp)) {
+            contentAlignment = Alignment.Center            ) {
+                val colors = CheckinFlowColors
+                Canvas(modifier = Modifier.size(11.dp)) {
                 val stroke = 1.4.dp.toPx()
                 drawLine(
-                    color = CheckinFlowColors.Accent,
+                    color = colors.Accent,
                     start = androidx.compose.ui.geometry.Offset(size.width / 2f, 0f),
                     end = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height),
                     strokeWidth = stroke,
                     cap = StrokeCap.Round
                 )
                 drawLine(
-                    color = CheckinFlowColors.Accent,
+                    color = colors.Accent,
                     start = androidx.compose.ui.geometry.Offset(0f, size.height / 2f),
                     end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2f),
                     strokeWidth = stroke,

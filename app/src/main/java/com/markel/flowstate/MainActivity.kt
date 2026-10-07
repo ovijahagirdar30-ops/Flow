@@ -178,6 +178,7 @@ class MainActivity : ComponentActivity() {
             val pureSurfaces by mainViewModel.pureSurfaces.collectAsStateWithLifecycle()
             val systemFont by mainViewModel.systemFont.collectAsStateWithLifecycle()
             val selectedAppColor by mainViewModel.selectedAppColor.collectAsStateWithLifecycle()
+            val customThemeColor by mainViewModel.customThemeColor.collectAsStateWithLifecycle()
 
             // Keep the full-screen brand splash on screen for at least one
             // second, even when the app data is already loaded.
@@ -193,7 +194,8 @@ class MainActivity : ComponentActivity() {
                     dynamicColor = dynamicColor,
                     pureSurfaces = pureSurfaces,
                     systemFont = systemFont,
-                    selectedAppColor = selectedAppColor
+                    selectedAppColor = selectedAppColor,
+                    customThemeColor = customThemeColor
                 ) {
                     // Check Orientation
                     val configuration = LocalConfiguration.current
@@ -284,11 +286,13 @@ class MainActivity : ComponentActivity() {
                                 pureSurfaces = pureSurfaces,
                                 systemFont = systemFont,
                                 selectedAppColor = selectedAppColor,
+                                customThemeColor = customThemeColor,
                                 onThemeModeChange = mainViewModel::saveThemeMode,
                                 onDynamicColorChange = mainViewModel::saveDynamicColor,
                                 onPureSurfacesChange = mainViewModel::savePureSurfaces,
                                 onSystemFontChange = mainViewModel::saveSystemFont,
                                 onAppColorChange = mainViewModel::saveSelectedAppColor,
+                                onCustomThemeColorChange = mainViewModel::saveCustomThemeColor,
                                 sharedTransitionScope = this,
                                 bottomBar = {
                                     FlowBottomBar(

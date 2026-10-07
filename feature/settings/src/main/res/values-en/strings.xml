@@ -56,6 +56,8 @@
     <string name="settings_dynamic_color">Dynamic color</string>
     <string name="settings_dynamic_color_desc">Adapt app colors to your wallpaper (Android 12+)</string>
     <string name="settings_dynamic_color_unavailable">Requires Android 12 or above</string>
+    <string name="settings_custom_color_title">Pick a theme colour</string>
+    <string name="settings_custom_color">Custom colour</string>
 
 
     <!-- Integrations -->

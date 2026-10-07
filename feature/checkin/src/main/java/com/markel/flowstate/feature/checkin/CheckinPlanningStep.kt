@@ -55,6 +55,8 @@ internal fun CheckinAurora(
     modifier: Modifier = Modifier,
     strength: Float = 1f
 ) {
+    // Hoisted for the Canvas — draw scopes are not composable.
+    val colors = CheckinFlowColors
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
@@ -74,7 +76,7 @@ internal fun CheckinAurora(
         layers.forEach { (widthFrac, alphaFrac) ->
             drawPath(
                 path = ribbon,
-                color = CheckinFlowColors.Aurora.copy(alpha = alphaFrac * strength),
+                color = colors.Aurora.copy(alpha = alphaFrac * strength),
                 style = androidx.compose.ui.graphics.drawscope.Stroke(
                     width = w * widthFrac,
                     cap = StrokeCap.Round
@@ -85,7 +87,7 @@ internal fun CheckinAurora(
         drawOval(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    CheckinFlowColors.Aurora.copy(alpha = 0.30f * strength),
+                    colors.Aurora.copy(alpha = 0.30f * strength),
                     Color.Transparent
                 ),
                 center = Offset(w * 0.5f, h * 0.06f),

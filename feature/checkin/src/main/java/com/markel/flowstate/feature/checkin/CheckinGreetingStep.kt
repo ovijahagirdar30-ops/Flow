@@ -53,6 +53,8 @@ internal fun CheckinGreetingStep(
     modifier: Modifier = Modifier
 ) {
     val fonts = rememberCheckinFonts()
+    // Hoisted for the arrow Canvas below — draw scopes are not composable.
+    val colors = CheckinFlowColors
     var stage by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
         listOf(500L, 1500L, 2800L).forEachIndexed { i, at ->
@@ -139,8 +141,8 @@ internal fun CheckinGreetingStep(
                         lineTo(size.width * 13f / 24f, size.height * 18f / 24f)
                     }
                     val strokeStyle = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                    drawPath(line, CheckinFlowColors.Accent, style = strokeStyle)
-                    drawPath(head, CheckinFlowColors.Accent, style = strokeStyle)
+                    drawPath(line, colors.Accent, style = strokeStyle)
+                    drawPath(head, colors.Accent, style = strokeStyle)
                 }
             }
             Spacer(modifier = Modifier.height(18.dp))

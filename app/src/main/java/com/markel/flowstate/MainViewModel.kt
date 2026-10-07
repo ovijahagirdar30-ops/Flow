@@ -77,6 +77,14 @@ class MainViewModel @Inject constructor(
             initialValue = AppColor.GREEN
         )
 
+    /** Custom seed colour picked on the colour wheel (used when the selection is CUSTOM). */
+    val customThemeColor: StateFlow<Int> = userPreferencesRepository.customThemeColor
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = AppColor.GREEN.darkArgb
+        )
+
     init {
         viewModelScope.launch {
             // Combine last tab with hidden tabs to ensure startDestination is always visible
@@ -136,6 +144,12 @@ class MainViewModel @Inject constructor(
     fun saveSelectedAppColor(color: AppColor) {
         viewModelScope.launch {
             userPreferencesRepository.saveSelectedAppColor(color)
+        }
+    }
+
+    fun saveCustomThemeColor(argb: Int) {
+        viewModelScope.launch {
+            userPreferencesRepository.saveCustomThemeColor(argb)
         }
     }
 

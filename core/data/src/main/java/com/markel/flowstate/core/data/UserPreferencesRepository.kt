@@ -117,6 +117,25 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    private val CUSTOM_THEME_COLOR_KEY = intPreferencesKey("custom_theme_color")
+
+    /**
+     * Seed colour (ARGB) picked on the colour wheel in Appearance settings.
+     * Only consulted when [selectedAppColor] is [AppColor.CUSTOM]; defaults to
+     * the green seed so the theme never falls back to something invisible
+     * before the user has picked a colour.
+     */
+    val customThemeColor: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[CUSTOM_THEME_COLOR_KEY] ?: AppColor.GREEN.darkArgb
+    }
+
+    /** Persists the custom theme seed colour. */
+    suspend fun saveCustomThemeColor(argb: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[CUSTOM_THEME_COLOR_KEY] = argb
+        }
+    }
+
     // ── Theme configuration ───────────────────────────────────
 
     private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")

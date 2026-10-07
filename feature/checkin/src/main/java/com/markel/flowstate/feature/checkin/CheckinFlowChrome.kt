@@ -57,6 +57,8 @@ internal fun CheckinFlowHeader(
 ) {
     // Ordinal doubles as the design's stage index: GREET = 0 … RECAP = 6.
     val index = currentStep.ordinal
+    // Hoisted for the back-chevron Canvas below — draw scopes are not composable.
+    val colors = CheckinFlowColors
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -89,7 +91,7 @@ internal fun CheckinFlowHeader(
                 }
                 drawPath(
                     path = path,
-                    color = CheckinFlowColors.Accent,
+                    color = colors.Accent,
                     style = Stroke(width = stroke, cap = StrokeCap.Round, join = StrokeJoin.Round)
                 )
             }

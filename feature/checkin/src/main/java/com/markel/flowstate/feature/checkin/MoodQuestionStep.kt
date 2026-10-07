@@ -276,6 +276,8 @@ internal fun MoodValueSlider(
         animationSpec = tween(140),
         label = "moodSliderValue"
     )
+    // Hoisted for the track Canvas below — draw scopes are not composable.
+    val colors = CheckinFlowColors
 
     Box(
         modifier = modifier
@@ -326,7 +328,7 @@ internal fun MoodValueSlider(
                         )
                     )
                 }
-                drawPath(path, CheckinFlowColors.Accent)
+                drawPath(path, colors.Accent)
             }
 
             // Track: muted remainder after the thumb.
@@ -344,7 +346,7 @@ internal fun MoodValueSlider(
                         )
                     )
                 }
-                drawPath(path, CheckinFlowColors.Track)
+                drawPath(path, colors.Track)
             }
 
             // Eleven dots: dim behind the value, accent ahead, hidden under the thumb.
@@ -352,7 +354,7 @@ internal fun MoodValueSlider(
             val dotCenterY = trackTop + trackHeight / 2f
             for (i in 0..10) {
                 val cx = inset + step * i
-                val color = if (i < animated) CheckinFlowColors.DotDim else CheckinFlowColors.Accent
+                val color = if (i < animated) colors.DotDim else colors.Accent
                 val alpha = if (abs(i - animated) < 0.5f) 0f else 1f
                 if (alpha > 0f) {
                     drawCircle(color, radius = dotRadius, center = Offset(cx, dotCenterY), alpha = alpha)
@@ -362,7 +364,7 @@ internal fun MoodValueSlider(
             // Thumb: 4dp vertical bar over the value position.
             val thumbHalf = 2.dp.toPx()
             drawRoundRect(
-                color = CheckinFlowColors.Accent,
+                color = colors.Accent,
                 topLeft = Offset(x - thumbHalf, 0f),
                 size = Size(thumbHalf * 2f, size.height),
                 cornerRadius = CornerRadius(2.dp.toPx())
