@@ -457,6 +457,93 @@ class HabitViewModelTest {
     }
 
     @Test
+    fun incrementNumericHabit_whenCrossingTarget_withMoodLoggingOn_queuesMoodPrompt() = runTest {
+        // GIVEN - a numeric habit that opted in and hasn't hit its goal yet
+        coEvery { getHabitsWithStatus() } returns flowOf(
+            listOf(
+                habitWithStatus(
+                    habit(id = 3).copy(
+                        habitType = HabitType.NUMERIC,
+                        targetValue = 5f,
+                        moodLoggingEnabled = true
+                    )
+                )
+            )
+        )
+        coEvery { getAllBooleanEntries() } returns flowOf(emptyList())
+        viewModel = buildViewModel()
+
+        // WHEN - one more step lands exactly on the target
+        viewModel.incrementNumericHabit(habitId = 3, date = LocalDate.now(), currentValue = 4f, step = 1f)
+
+        // THEN - the same "how did it feel?" sheet the boolean flow shows
+        viewModel.uiState.test {
+            val state = awaitItem().let {
+                if (it is HabitUiState.Loading) awaitItem() else it
+            } as HabitUiState.Success
+            assertEquals(3, state.pendingMoodPrompt?.habitId)
+        }
+    }
+
+    @Test
+    fun incrementNumericHabit_whenStillBelowTarget_doesNotQueueMoodPrompt() = runTest {
+        // GIVEN - opted in, but this step stays short of the 5-unit goal
+        coEvery { getHabitsWithStatus() } returns flowOf(
+            listOf(
+                habitWithStatus(
+                    habit(id = 3).copy(
+                        habitType = HabitType.NUMERIC,
+                        targetValue = 5f,
+                        moodLoggingEnabled = true
+                    )
+                )
+            )
+        )
+        coEvery { getAllBooleanEntries() } returns flowOf(emptyList())
+        viewModel = buildViewModel()
+
+        // WHEN
+        viewModel.incrementNumericHabit(habitId = 3, date = LocalDate.now(), currentValue = 1f, step = 1f)
+
+        // THEN - no goal crossed, no prompt
+        viewModel.uiState.test {
+            val state = awaitItem().let {
+                if (it is HabitUiState.Loading) awaitItem() else it
+            } as HabitUiState.Success
+            assertNull(state.pendingMoodPrompt)
+        }
+    }
+
+    @Test
+    fun incrementNumericHabit_withMoodLoggingOff_doesNotQueueMoodPrompt() = runTest {
+        // GIVEN - same crossing, but the habit never opted in (old habits' default)
+        coEvery { getHabitsWithStatus() } returns flowOf(
+            listOf(
+                habitWithStatus(
+                    habit(id = 3).copy(
+                        habitType = HabitType.NUMERIC,
+                        targetValue = 5f,
+                        moodLoggingEnabled = false
+                    )
+                )
+            )
+        )
+        coEvery { getAllBooleanEntries() } returns flowOf(emptyList())
+        viewModel = buildViewModel()
+
+        // WHEN
+        viewModel.incrementNumericHabit(habitId = 3, date = LocalDate.now(), currentValue = 4f, step = 1f)
+
+        // THEN
+        viewModel.uiState.test {
+            val state = awaitItem().let {
+                if (it is HabitUiState.Loading) awaitItem() else it
+            } as HabitUiState.Success
+            assertNull(state.pendingMoodPrompt)
+        }
+    }
+
+    @Test
     fun decrementNumericHabit_callsDecrementNumericValueUseCase() = runTest {
         // GIVEN
         coEvery { getHabitsWithStatus() } returns flowOf(emptyList())

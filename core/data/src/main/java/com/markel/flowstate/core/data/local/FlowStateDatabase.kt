@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  */
 @Database(
     entities = [TaskEntity::class, SubTaskEntity::class, IdeaEntity::class, CheckListEntity::class, CheckListItemEntity::class, HabitEntity::class, HabitEntryEntity::class, HabitNumericEntryEntity::class, CategoryEntity::class, CheckinEntity::class, EveningPlanEntity::class, PlanFeedbackEntity::class], // List of all tables
-    version = 30,
+    version = 31,
     exportSchema = true
 )
 abstract class FlowStateDatabase : RoomDatabase() {
@@ -449,6 +449,19 @@ abstract class FlowStateDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE habits ADD COLUMN reminderEnabled INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE habits ADD COLUMN reminderMinuteOfDay INTEGER")
+            }
+        }
+
+        /**
+         * v30 → v31: mood ratings for NUMERIC habits. Boolean habits keep
+         * theirs on habit_entries.mood, but numeric days live in
+         * habit_numeric_entries, which had nowhere to store a rating —
+         * SetHabitMoodUseCase's UPDATE silently matched zero rows. Bare
+         * nullable column, no SQL default (the v24 → v25 lesson).
+         */
+        val MIGRATION_30_31 = object : Migration(30, 31) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habit_numeric_entries ADD COLUMN mood INTEGER")
             }
         }
     }

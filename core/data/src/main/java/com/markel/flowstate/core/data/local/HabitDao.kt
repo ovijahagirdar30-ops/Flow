@@ -51,6 +51,12 @@ interface HabitDao {
     @Query("UPDATE habit_entries SET mood = :mood WHERE habitId = :habitId AND completedAt = :epochDay")
     suspend fun setMood(habitId: Int, epochDay: Long, mood: Int?)
 
+    @Query("UPDATE habit_numeric_entries SET mood = :mood WHERE habitId = :habitId AND epochDay = :epochDay")
+    suspend fun setNumericMood(habitId: Int, epochDay: Long, mood: Int?)
+
+    @Query("SELECT * FROM habit_numeric_entries WHERE habitId = :habitId AND epochDay = :epochDay")
+    suspend fun getNumericEntryOnce(habitId: Int, epochDay: Long): HabitNumericEntryEntity?
+
     @Query("SELECT habitId, completedAt as epochDay, mood FROM habit_entries")
     fun getAllEntries(): Flow<List<HabitEntryFlatEntity>>  // only the entries of boolean habits
 
@@ -93,4 +99,12 @@ interface HabitDao {
         ORDER BY completedAt DESC
     """)
     fun getMoodsForHabit(habitId: Int): Flow<List<HabitEntryFlatEntity>>
+
+    @Query("""
+        SELECT habitId, epochDay, mood
+        FROM habit_numeric_entries
+        WHERE habitId = :habitId AND mood IS NOT NULL
+        ORDER BY epochDay DESC
+    """)
+    fun getNumericMoodsForHabit(habitId: Int): Flow<List<HabitEntryFlatEntity>>
 }

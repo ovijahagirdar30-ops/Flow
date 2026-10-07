@@ -64,5 +64,7 @@ data class HabitEntryFlatEntity(val habitId: Int, val epochDay: Long, val mood: 
 data class HabitNumericEntryEntity(
     val habitId: Int,
     val epochDay: Long,
-    val value: Float
+    val value: Float,
+    /** 1–5 rating for the day; only set when the habit opted into mood logging. */
+    val mood: Int? = null
 )

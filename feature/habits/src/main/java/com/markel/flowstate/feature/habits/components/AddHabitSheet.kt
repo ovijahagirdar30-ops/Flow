@@ -482,28 +482,30 @@ fun AddHabitSheet(
                 )
             }
 
-            if (habitType == HabitType.BOOLEAN) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Mood logging",
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                        Text(
-                            text = "Ask how this felt when you tick it off. The ratings feed your Mood history and what the evening planner knows about your week.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = moodLoggingEnabled,
-                        onCheckedChange = { moodLoggingEnabled = it }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Mood logging",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                    Text(
+                        text = if (habitType == HabitType.BOOLEAN) {
+                            "Ask how this felt when you tick it off. The ratings feed your Mood history and what the evening planner knows about your week."
+                        } else {
+                            "Ask how this felt when you hit your target. The ratings feed your Mood history and what the evening planner knows about your week."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                Switch(
+                    checked = moodLoggingEnabled,
+                    onCheckedChange = { moodLoggingEnabled = it }
+                )
             }
 
             // ── Reminder (optional): switch, then the time it fires at ─────

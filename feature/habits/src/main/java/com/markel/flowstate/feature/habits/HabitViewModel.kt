@@ -147,6 +147,41 @@ class HabitViewModel @Inject constructor(
         _pendingMoodPrompt.value = null
     }
 
+    /**
+     * Numeric twin of the boolean mood prompt: ask "how did that feel?" the
+     * first time today's value crosses the habit's goal (its target, or any
+     * value for a goal-less habit) — only when it crosses INTO complete,
+     * never on the way back out, and only for habits that opted in.
+     */
+    private fun maybeQueueNumericMoodPrompt(
+        habitId: Int,
+        date: LocalDate,
+        previousValue: Float?,
+        newValue: Float
+    ) {
+        val currentState = _uiState.value as? HabitUiState.Success ?: return
+        val habit = currentState.habits.firstOrNull { it.habit.id == habitId }?.habit ?: return
+        if (!habit.moodLoggingEnabled) return
+        // Same goal rule GetHabitsWithStatusUseCase uses for isCompletedToday.
+        val target = habit.targetValue
+        fun metGoal(value: Float?): Boolean = when {
+            value == null -> false
+            target != null -> value >= target
+            else -> value > 0f
+        }
+        if (!metGoal(previousValue) && metGoal(newValue)) {
+            _pendingMoodPrompt.value = PendingMoodPrompt(habitId, date, habit.name)
+        }
+    }
+
+    /** Today's (or [date]'s) stored value for a numeric habit, null if none. */
+    private fun numericValueOn(habitId: Int, date: LocalDate): Float? =
+        (_uiState.value as? HabitUiState.Success)
+            ?.numericEntriesByHabit
+            ?.get(habitId)
+            ?.firstOrNull { it.date == date }
+            ?.value
+
     // ==================================
     // OPERATIONS FOR NUMERIC HABITS
     // ==================================
@@ -158,6 +193,9 @@ class HabitViewModel @Inject constructor(
         viewModelScope.launch {
             incrementNumericValue(habitId, date, currentValue, step)
             habitReminderScheduler.reschedule(habitId)
+            // Crossing the goal is this habit's "ticked off" moment — the
+            // same place the boolean flow asks for a mood rating.
+            maybeQueueNumericMoodPrompt(habitId, date, currentValue, (currentValue ?: 0f) + step)
         }
     }
 
@@ -176,8 +214,10 @@ class HabitViewModel @Inject constructor(
      */
     fun setNumericValue(habitId: Int, date: LocalDate, value: Float) {
         viewModelScope.launch {
+            val previousValue = numericValueOn(habitId, date)
             logNumericEntry(habitId, date, value)
             habitReminderScheduler.reschedule(habitId)
+            maybeQueueNumericMoodPrompt(habitId, date, previousValue, value)
         }
     }
 

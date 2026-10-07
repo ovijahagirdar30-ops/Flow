@@ -46,7 +46,7 @@ fun NumericHabitCard(
     onSetValue: (LocalDate, Float?) -> Unit,
     onDelete: () -> Unit,
     habitCount: Int,
-    onEdit: (name: String, icon: String, colorArgb: Int, unit: String?, targetValue: Float?, step: Float?, priorityRank: Int, rolloverIfMissed: Boolean, schedule: HabitSchedule, reminderEnabled: Boolean, reminderMinuteOfDay: Int?) -> Unit,
+    onEdit: (name: String, icon: String, colorArgb: Int, unit: String?, targetValue: Float?, step: Float?, priorityRank: Int, rolloverIfMissed: Boolean, moodLoggingEnabled: Boolean, schedule: HabitSchedule, reminderEnabled: Boolean, reminderMinuteOfDay: Int?) -> Unit,
     onNavigateToDetail: (() -> Unit)? = null
 ) {
     val habit = habitWithStatus.habit
@@ -144,13 +144,14 @@ fun NumericHabitCard(
             initialStep = habit.step,
             initialPriorityRank = habit.priorityRank,
             initialRolloverIfMissed = habit.rolloverIfMissed,
+            initialMoodLoggingEnabled = habit.moodLoggingEnabled,
             initialReminderEnabled = habit.reminderEnabled,
             initialReminderMinuteOfDay = habit.reminderMinuteOfDay,
             habitCount = habitCount,
             initialSchedule = habit.schedule,
             onDismiss = { showEditDialog = false },
-            onConfirm = { name, icon, colorArgb, _, unit, target, step, priorityRank, rolloverIfMissed, _, schedule, reminderEnabled, reminderMinuteOfDay ->
-                onEdit(name, icon, colorArgb, unit, target, step, priorityRank, rolloverIfMissed, schedule, reminderEnabled, reminderMinuteOfDay)
+            onConfirm = { name, icon, colorArgb, _, unit, target, step, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule, reminderEnabled, reminderMinuteOfDay ->
+                onEdit(name, icon, colorArgb, unit, target, step, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule, reminderEnabled, reminderMinuteOfDay)
                 showEditDialog = false
             }
         )

@@ -234,7 +234,7 @@ fun HabitScreen(
                                                             habitWithStatus.habit
                                                         )
                                                     },
-                                                    onEdit = { name, icon, colorArgb, unit, targetValue, step, priorityRank, rolloverIfMissed, schedule, reminderEnabled, reminderMinuteOfDay ->
+                                                    onEdit = { name, icon, colorArgb, unit, targetValue, step, priorityRank, rolloverIfMissed, moodLoggingEnabled, schedule, reminderEnabled, reminderMinuteOfDay ->
                                                         viewModel.editHabit(
                                                             habit = habitWithStatus.habit,
                                                             newName = name,
@@ -245,6 +245,7 @@ fun HabitScreen(
                                                             newStep = step,
                                                             newPriorityRank = priorityRank,
                                                             newRolloverIfMissed = rolloverIfMissed,
+                                                            newMoodLoggingEnabled = moodLoggingEnabled,
                                                             newSchedule = schedule,
                                                             newReminderEnabled = reminderEnabled,
                                                             newReminderMinuteOfDay = reminderMinuteOfDay

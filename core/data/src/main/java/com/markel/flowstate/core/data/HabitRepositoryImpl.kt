@@ -12,6 +12,7 @@ import com.markel.flowstate.core.domain.HabitRepository
 import com.markel.flowstate.core.domain.HabitSchedule
 import com.markel.flowstate.core.domain.HabitType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import javax.inject.Inject
@@ -46,12 +47,20 @@ class HabitRepositoryImpl @Inject constructor(
     override suspend fun toggleEntry(habitId: Int, date: LocalDate, mood: Int?) =
         dao.toggleEntry(habitId, date.toEpochDay(), mood)
 
-    override suspend fun setEntryMood(habitId: Int, date: LocalDate, mood: Int) =
-        dao.setMood(habitId, date.toEpochDay(), mood)
+    override suspend fun setEntryMood(habitId: Int, date: LocalDate, mood: Int) {
+        // Both day tables are written: whichever holds the day's row (boolean
+        // → habit_entries, numeric → habit_numeric_entries) takes the rating,
+        // the other UPDATE matches nothing — no habit-type lookup needed.
+        val epochDay = date.toEpochDay()
+        dao.setMood(habitId, epochDay, mood)
+        dao.setNumericMood(habitId, epochDay, mood)
+    }
 
     override fun getMoodsForHabit(habitId: Int): Flow<List<HabitEntryFlat>> =
-        dao.getMoodsForHabit(habitId).map { list ->
-            list.map { HabitEntryFlat(it.habitId, it.epochDay, it.mood) }
+        combine(dao.getMoodsForHabit(habitId), dao.getNumericMoodsForHabit(habitId)) { boolean, numeric ->
+            (boolean + numeric)
+                .map { HabitEntryFlat(it.habitId, it.epochDay, it.mood) }
+                .sortedByDescending { it.epochDay }
         }
 
     override fun getAllEntries(): Flow<List<HabitEntryFlat>> =  // boolean habits only
@@ -69,14 +78,20 @@ class HabitRepositoryImpl @Inject constructor(
             entries.map { it.toDomain() }
         }
 
-    override suspend fun logNumericEntry(habitId: Int, date: LocalDate, value: Float) =
+    override suspend fun logNumericEntry(habitId: Int, date: LocalDate, value: Float) {
+        // upsertNumericEntry REPLACEs the whole row, so today's rating would
+        // be wiped by every increment/edit — carry it across.
+        val epochDay = date.toEpochDay()
+        val existing = dao.getNumericEntryOnce(habitId, epochDay)
         dao.upsertNumericEntry(
             HabitNumericEntryEntity(
                 habitId = habitId,
-                epochDay = date.toEpochDay(),
-                value = value
+                epochDay = epochDay,
+                value = value,
+                mood = existing?.mood
             )
         )
+    }
 
     override suspend fun deleteNumericEntry(habitId: Int, date: LocalDate) =
         dao.deleteNumericEntry(habitId, date.toEpochDay())
