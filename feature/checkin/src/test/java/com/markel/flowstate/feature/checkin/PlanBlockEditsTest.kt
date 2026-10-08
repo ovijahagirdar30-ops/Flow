@@ -4,14 +4,19 @@ import com.markel.flowstate.core.domain.PlanBlock
 import com.markel.flowstate.core.domain.PlanBlockKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlanBlockEditsTest {
 
-    private fun block(time: String, title: String = "Block at $time") = PlanBlock(
+    private fun block(
+        time: String,
+        title: String = "Block at $time",
+        duration: Int = 30,
+    ) = PlanBlock(
         startTime = time,
-        durationMinutes = 30,
+        durationMinutes = duration,
         title = title,
         reason = "because",
         kind = PlanBlockKind.OTHER,
@@ -168,5 +173,158 @@ class PlanBlockEditsTest {
         ops.forEach { r ->
             assertTrue(r.checkedIndexes.all { it in r.blocks.indices })
         }
+    }
+
+    // ── findOverlap ────────────────────────────────────────────────────
+
+    @Test
+    fun `findOverlap returns null when ranges only touch back-to-back`() {
+        // 20:00–20:30 then 20:30 — adjacent is fine, only real
+        // intersections are conflicts.
+        val blocks = listOf(block("20:00", duration = 30))
+        assertNull(PlanBlockEdits.findOverlap(block("20:30", duration = 10), blocks))
+    }
+
+    @Test
+    fun `findOverlap detects a partial intersection`() {
+        val blocks = listOf(block("20:00", duration = 30)) // 20:00–20:30
+        val hit = PlanBlockEdits.findOverlap(block("20:15", duration = 30), blocks) // 20:15–20:45
+        assertEquals("20:00", hit?.startTime)
+    }
+
+    @Test
+    fun `findOverlap detects an identical range and a contained one`() {
+        val blocks = listOf(block("20:00", duration = 30))
+        assertEquals(
+            "20:00",
+            PlanBlockEdits.findOverlap(block("20:00", duration = 30), blocks)?.startTime
+        )
+        assertEquals(
+            "20:00",
+            PlanBlockEdits.findOverlap(block("20:10", duration = 5), blocks)?.startTime
+        )
+    }
+
+    @Test
+    fun `findOverlap excludes the block being edited`() {
+        // Re-saving a block at its own time must never conflict with itself.
+        val blocks = listOf(block("20:00", duration = 30))
+        assertNull(
+            PlanBlockEdits.findOverlap(block("20:00", duration = 30), blocks, excludeIndex = 0)
+        )
+    }
+
+    @Test
+    fun `findOverlap still reports other blocks when one is excluded`() {
+        val blocks = listOf(block("19:00", duration = 30), block("21:00", duration = 30))
+        val hit = PlanBlockEdits.findOverlap(
+            block("21:15", duration = 30),
+            blocks,
+            excludeIndex = 0,
+        )
+        assertEquals("21:00", hit?.startTime)
+    }
+
+    @Test
+    fun `findOverlap never false-positives on unparseable times`() {
+        assertNull(PlanBlockEdits.findOverlap(block("banana"), listOf(block("20:00"))))
+        assertNull(PlanBlockEdits.findOverlap(block("20:15"), listOf(block("banana"))))
+    }
+
+    @Test
+    fun `findOverlap clamps at midnight so a late block cannot spill into tomorrow`() {
+        // 23:30 + 60 min is treated as ending at midnight — no collision
+        // with the early-morning block (documented clamp).
+        val blocks = listOf(block("00:15", duration = 30))
+        assertNull(PlanBlockEdits.findOverlap(block("23:30", duration = 60), blocks))
+    }
+
+    // ── isDue ──────────────────────────────────────────────────────────
+
+    private val today = "2026-09-25"
+
+    /** Epoch millis for a device-local wall time, same rule as PlanExpiryTest. */
+    private fun millisAt(date: String, hour: Int, minute: Int): Long =
+        java.time.LocalDateTime.parse("${date}T${java.time.LocalTime.of(hour, minute)}")
+            .atZone(java.time.ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+
+    @Test
+    fun `isDue is false during the block and true once its duration has elapsed`() {
+        val block = block("20:00", duration = 30) // 20:00–20:30
+        assertFalse(PlanBlockEdits.isDue(today, block, millisAt(today, 20, 0)))
+        assertFalse(PlanBlockEdits.isDue(today, block, millisAt(today, 20, 29)))
+        assertTrue(PlanBlockEdits.isDue(today, block, millisAt(today, 20, 30)))
+        assertTrue(PlanBlockEdits.isDue(today, block, millisAt(today, 22, 0)))
+        // Earlier the same day is also not due.
+        assertFalse(PlanBlockEdits.isDue(today, block, millisAt(today, 19, 59)))
+    }
+
+    @Test
+    fun `isDue is permissive when the time or date cannot be parsed`() {
+        // A malformed block must never trap its checkbox forever.
+        assertTrue(PlanBlockEdits.isDue(today, block("banana"), millisAt(today, 12, 0)))
+        assertTrue(PlanBlockEdits.isDue("not-a-date", block("23:00"), millisAt(today, 12, 0)))
+    }
+
+    // ── endTimeHhMm ────────────────────────────────────────────────────
+
+    @Test
+    fun `endTimeHhMm returns the plain end and wraps past midnight`() {
+        assertEquals("20:30", PlanBlockEdits.endTimeHhMm(block("20:00", duration = 30)))
+        assertEquals("01:00", PlanBlockEdits.endTimeHhMm(block("23:00", duration = 120)))
+        assertNull(PlanBlockEdits.endTimeHhMm(block("banana")))
+    }
+
+    // ── move (drag-reorder) ────────────────────────────────────────────────
+
+    @Test
+    fun `move down swaps slots keeping time order and carries the tick`() {
+        val blocks = listOf(block("19:00", "A"), block("19:30", "B"), block("20:00", "C"))
+        // Drag A below C: identities move, the sorted slot TIMES stay put.
+        val result = PlanBlockEdits.move(blocks, setOf(0), from = 0, to = 2)
+
+        assertEquals(listOf("19:00", "19:30", "20:00"), result.blocks.map { it.startTime })
+        assertEquals(listOf("B", "C", "A"), result.blocks.map { it.title })
+        // A's tick followed A to the end.
+        assertEquals(setOf(2), result.checkedIndexes)
+    }
+
+    @Test
+    fun `move up shifts the blocks in between and their ticks`() {
+        val blocks = listOf(block("19:00", "A"), block("19:30", "B"), block("20:00", "C"))
+        // Drag C to the top; B and C were ticked.
+        val result = PlanBlockEdits.move(blocks, setOf(1, 2), from = 2, to = 0)
+
+        assertEquals(listOf("19:00", "19:30", "20:00"), result.blocks.map { it.startTime })
+        assertEquals(listOf("C", "A", "B"), result.blocks.map { it.title })
+        // C lands first, B slides to last — both stay ticked; A never was.
+        assertEquals(setOf(0, 2), result.checkedIndexes)
+    }
+
+    @Test
+    fun `move rejects a longer block landing in a shorter slot`() {
+        // A runs 60 min; B's slot only has 30 before C starts.
+        val blocks = listOf(
+            block("19:00", "A", duration = 60),
+            block("20:00", "B", duration = 30),
+            block("20:30", "C", duration = 30),
+        )
+        // A into B's slot → 20:00–21:00 would swallow C at 20:30.
+        val result = PlanBlockEdits.move(blocks, emptySet(), from = 0, to = 1)
+
+        // Rejected: the very same list instance comes back.
+        assertTrue(result.blocks === blocks)
+        assertEquals(setOf<Int>(), result.checkedIndexes)
+    }
+
+    @Test
+    fun `move with equal or out-of-range indexes is a no-op`() {
+        val blocks = listOf(block("19:00", "A"), block("19:30", "B"))
+
+        assertTrue(PlanBlockEdits.move(blocks, setOf(0), from = 1, to = 1).blocks === blocks)
+        assertTrue(PlanBlockEdits.move(blocks, setOf(0), from = 0, to = 5).blocks === blocks)
+        assertTrue(PlanBlockEdits.move(blocks, setOf(0), from = -1, to = 0).blocks === blocks)
     }
 }

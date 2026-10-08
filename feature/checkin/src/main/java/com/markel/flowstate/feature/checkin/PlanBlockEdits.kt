@@ -1,6 +1,9 @@
 package com.markel.flowstate.feature.checkin
 
 import com.markel.flowstate.core.domain.PlanBlock
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 
 /**
  * Result of a plan edit: the re-sorted block list plus the user's ticked
@@ -35,6 +38,81 @@ data class PlanEditResult(
  */
 internal object PlanBlockEdits {
 
+    /** The disappearing warning shown when a save would double-book a time. */
+    const val OVERLAP_MESSAGE = "Another task is scheduled during that time"
+
+    /**
+     * The block whose time range ([start, start + duration)) intersects
+     * [candidate]'s, or null when the candidate fits in free time.
+     *
+     * [excludeIndex] lets an edit ignore the block being replaced — a block
+     * never overlaps itself, so re-saving one at its own time is never a
+     * conflict. Returns null (never a false positive) when either time is
+     * unparseable, and clamps ranges at midnight: an evening block may not
+     * run into the next day for overlap purposes, so 23:30 + 60min does NOT
+     * collide with a 00:15 block.
+     */
+    fun findOverlap(
+        candidate: PlanBlock,
+        blocks: List<PlanBlock>,
+        excludeIndex: Int = -1,
+    ): PlanBlock? {
+        val candidateStart = parseMinute(candidate.startTime) ?: return null
+        val candidateEnd = endMinute(candidateStart, candidate.durationMinutes)
+        blocks.forEachIndexed { index, other ->
+            if (index == excludeIndex) return@forEachIndexed
+            val otherStart = parseMinute(other.startTime) ?: return@forEachIndexed
+            val otherEnd = endMinute(otherStart, other.durationMinutes)
+            // Half-open ranges: a block ending at 20:30 may be followed by
+            // one starting at 20:30 — back-to-back is fine, only a real
+            // intersection is rejected.
+            if (candidateStart < otherEnd && otherStart < candidateEnd) return other
+        }
+        return null
+    }
+
+    /**
+     * True once [block]'s scheduled window (start + duration) has fully
+     * elapsed on [planDate] at [nowMillis] — the Plan tab's tick gate: a
+     * checkbox only unlocks after the block's own time budget is spent.
+     *
+     * Deliberately permissive on bad data: an unparseable time or date counts
+     * as due, so a malformed block can never trap its checkbox forever.
+     */
+    fun isDue(planDate: String, block: PlanBlock, nowMillis: Long): Boolean {
+        val start = parseMinute(block.startTime) ?: return true
+        val date = runCatching { LocalDate.parse(planDate) }.getOrNull() ?: return true
+        val endMillis = date.atStartOfDay()
+            .plusMinutes((start + block.durationMinutes.coerceAtLeast(1)).toLong())
+            .atZone(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+        return nowMillis >= endMillis
+    }
+
+    /**
+     * The block's end time as zero-padded 24h "HH:mm" (may wrap past
+     * midnight — 23:00 + 120 min → "01:00"), or null when its time is
+     * unparseable. Display input for [formatPlanTime].
+     */
+    fun endTimeHhMm(block: PlanBlock): String? {
+        val start = parseMinute(block.startTime) ?: return null
+        val end = start + block.durationMinutes.coerceAtLeast(1)
+        return String.format(java.util.Locale.ROOT, "%02d:%02d", (end / 60) % 24, end % 60)
+    }
+
+    /** "21:05" → minute-of-day, null on malformed input. */
+    private fun parseMinute(hhMm: String): Int? = runCatching {
+        val time = LocalTime.parse(hhMm.trim())
+        time.hour * 60 + time.minute
+    }.getOrNull()
+
+    /** End minute-of-day, clamped to midnight so an evening block can't spill over. */
+    private fun endMinute(start: Int, durationMinutes: Int): Int =
+        (start + durationMinutes.coerceAtLeast(1)).coerceAtMost(MINUTES_PER_DAY)
+
+    private const val MINUTES_PER_DAY = 24 * 60
+
     /** Replaces the block at [index] with [newBlock], re-sorting and remapping ticks. */
     fun replace(
         blocks: List<PlanBlock>,
@@ -67,6 +145,48 @@ internal object PlanBlockEdits {
         // Tag -1 can never be in `checked`, so the inserted block is never ticked.
         val tagged = blocks.mapIndexed { i, block -> block to i } + (newBlock to -1)
         return tagged.toResult(checked)
+    }
+
+    /**
+     * Drag-reorder: moves the block at [from] to position [to]. The time
+     * SLOTS stay where they are — the sorted startTime list is re-applied
+     * positionally while block identities shift between them — so dragging
+     * "Dinner" below "Skincare" swaps their times instead of breaking the
+     * timeline's time order. Ticks follow their block (invariant 2).
+     *
+     * Returns the input unchanged (the SAME list instance) when either index
+     * is out of range, when from == to, or when the shuffle would double-book
+     * a time — a longer block landing in a shorter slot leaves no room for
+     * its neighbour. Callers surface [OVERLAP_MESSAGE] for that last case.
+     */
+    fun move(
+        blocks: List<PlanBlock>,
+        checked: Set<Int>,
+        from: Int,
+        to: Int,
+    ): PlanEditResult {
+        if (from == to || from !in blocks.indices || to !in blocks.indices) {
+            return PlanEditResult(blocks, checked)
+        }
+        val slots = blocks.map { it.startTime }
+        val reordered = blocks.toMutableList().also { it.add(to, it.removeAt(from)) }
+        val shuffled = reordered.mapIndexed { slot, block -> block.copy(startTime = slots[slot]) }
+        shuffled.forEachIndexed { i, block ->
+            if (findOverlap(block, shuffled, excludeIndex = i) != null) {
+                return PlanEditResult(blocks, checked)
+            }
+        }
+        // Identity remap: the moved block lands at `to`; everything between
+        // from and to shifts one slot toward the hole it left.
+        fun remap(original: Int): Int = when {
+            original == from -> to
+            original < from -> if (original >= to) original + 1 else original
+            else -> (original - 1).let { shifted -> if (shifted >= to) shifted + 1 else shifted }
+        }
+        return PlanEditResult(
+            blocks = shuffled,
+            checkedIndexes = checked.map(::remap).toSet(),
+        )
     }
 
     /** Stable sort by startTime, then rebuild the tick set from original tags. */

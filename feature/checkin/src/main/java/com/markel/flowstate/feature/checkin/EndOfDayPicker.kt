@@ -1,13 +1,17 @@
 package com.markel.flowstate.feature.checkin
 
 import android.text.format.DateFormat
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -20,20 +24,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.util.Locale
 
 /**
- * "Day ends at <time>" row — the end-of-day option on the check-in's mood
- * step. Opens a Material3 time picker and hands the choice back as a
+ * "Day ends at <time>" row closing the recap — the design's frame-8 row:
+ * a hairline divider, then a muted 17px label left and the lavender value
+ * right. Opens a Material3 time picker and hands the choice back as a
  * minute-of-day (0..1439); [CheckinViewModel] persists it in DataStore and
  * [isPlanExpired] uses it to blank the Plan tab once the chosen time passes.
  * 0 (midnight, the default) is expressed by the date gate alone — see the
  * expiry rule for why a literal 00:00 cutoff would hide the plan all day.
  *
- * Themed like the rest of the check-in (inside FlowStateTheme): the dialog
- * and the dial use the app's color scheme, so they follow light/dark and
- * the selected AppColor.
+ * Styled through the check-in design seam ([CheckinFlowColors] /
+ * [rememberCheckinFonts]) rather than MaterialTheme text styles, so it sits
+ * natively among the recap rows; the picker dialog itself stays themed by
+ * the app's color scheme like every other picker.
  */
 @Composable
 fun EndOfDayRow(
@@ -41,23 +49,46 @@ fun EndOfDayRow(
     onMinutesChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val fonts = rememberCheckinFonts()
     var showPicker by remember { mutableStateOf(false) }
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 14.dp)
     ) {
-        Text(
-            text = "Day ends at",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        TextButton(onClick = { showPicker = true }) {
+        HorizontalDivider(color = CheckinFlowColors.NoteBorder, thickness = 1.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = formatPlanTime(minutes.toHhMm()),
-                style = MaterialTheme.typography.bodyMedium
+                text = "Day ends at",
+                style = TextStyle(
+                    fontSize = 17.sp,
+                    fontFamily = fonts,
+                    color = CheckinFlowColors.Muted
+                )
             )
+            Row(
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { showPicker = true },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = formatPlanTime(minutes.toHhMm()),
+                    style = TextStyle(
+                        fontSize = 17.sp,
+                        fontFamily = fonts,
+                        color = CheckinFlowColors.Accent
+                    )
+                )
+            }
         }
     }
 

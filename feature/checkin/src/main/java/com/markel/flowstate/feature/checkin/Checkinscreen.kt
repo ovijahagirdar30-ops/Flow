@@ -31,10 +31,11 @@ import kotlinx.coroutines.launch
 /**
  * Evening check-in. The first seven steps are the redesigned flow — a fixed
  * header (back + five progress segments), a fixed bottom pill button and the
- * steps crossfading between them, exactly like the design. The final PLAN
- * step is the "Planning to Plan" redesign: it owns its own chrome (planning
- * loading screen, settled timeline, Agree pill) so the flow chrome fades out
- * once the recap hands off to it.
+ * steps crossfading between them, exactly like the design. After the recap,
+ * two steps own their own chrome: TASKS ("Tasks for tonight" — add/remove
+ * what tonight should fit in) and the final PLAN step ("Planning to Plan":
+ * planning loading screen, settled timeline, Agree pill), so the flow chrome
+ * fades out once the recap hands off.
  */
 @Composable
 fun CheckinScreen(
@@ -44,6 +45,7 @@ fun CheckinScreen(
     viewModel: CheckinViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val endOfDayMinutes by viewModel.endOfDayMinutes.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     // "Edit plan" start: read the agreed plan BEFORE the first frame renders,
@@ -64,8 +66,11 @@ fun CheckinScreen(
             val inFlow = step.isDesignedFlow
             val density = LocalDensity.current.density
 
-            // Header back arrow mirrors the system back gesture on questions.
-            BackHandler(enabled = inFlow && step != CheckinStep.GREET) {
+            // Header back arrow mirrors the system back gesture on questions;
+            // the tasks step has no header, so system back alone steps back.
+            BackHandler(
+                enabled = (inFlow && step != CheckinStep.GREET) || step == CheckinStep.TASKS
+            ) {
                 viewModel.goToPreviousStep()
             }
 
@@ -146,7 +151,16 @@ fun CheckinScreen(
                                     hasNote = state.mood.commentFor(s).isNotBlank()
                                 )
                             },
+                            endOfDayMinutes = endOfDayMinutes,
+                            onEndOfDayChange = viewModel::setEndOfDayMinutes,
                             onAmend = viewModel::goToQuestion
+                        )
+
+                        CheckinStep.TASKS -> TasksForTonightStep(
+                            items = state.items,
+                            onAddTask = viewModel::addTask,
+                            onRemoveTask = viewModel::removeTask,
+                            onShowPlan = viewModel::goToNextStep
                         )
 
                         CheckinStep.PLAN -> PlanCheckinStep(

@@ -7,9 +7,11 @@ import com.markel.flowstate.core.domain.checkin.UnexpectedPlan
 
 /**
  * Steps of the evening check-in. The first seven are the designed question
- * flow (greeting → five mood questions → recap); PLAN is the "Planning to
- * Plan" final stage — the planning loading screen and the settled plan
- * list both live behind it.
+ * flow (greeting → five mood questions → recap); TASKS is the "Tasks for
+ * tonight" hand-off step (add/remove what the plan should fit in) and PLAN
+ * is the "Planning to Plan" final stage — the planning loading screen and
+ * the settled plan list both live behind it. TASKS and PLAN each own their
+ * own chrome, so the designed header/footer stops at RECAP.
  */
 enum class CheckinStep {
     GREET,
@@ -19,6 +21,7 @@ enum class CheckinStep {
     BODY,
     MOTIVATION,
     RECAP,
+    TASKS,
     PLAN
 }
 

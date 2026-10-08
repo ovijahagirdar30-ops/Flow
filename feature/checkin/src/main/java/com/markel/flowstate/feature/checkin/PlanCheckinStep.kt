@@ -84,9 +84,10 @@ fun PlanCheckinStep(
     onRegenerate: (comment: String) -> Unit,
     onAgree: () -> Unit,
     onDiscard: () -> Unit,
-    onEditBlock: (Int, PlanBlock) -> Unit,
+    // false = rejected (overlap) → the dialog stays open with the warning.
+    onEditBlock: (Int, PlanBlock) -> Boolean,
     onRemoveBlock: (Int) -> Unit,
-    onAddBlock: (PlanBlock) -> Unit,
+    onAddBlock: (PlanBlock) -> Boolean,
     modifier: Modifier = Modifier
 ) {
     val p = plan
@@ -118,9 +119,9 @@ private fun SettledPlan(
     onRegenerate: (comment: String) -> Unit,
     onAgree: () -> Unit,
     onDiscard: () -> Unit,
-    onEditBlock: (Int, PlanBlock) -> Unit,
+    onEditBlock: (Int, PlanBlock) -> Boolean,
     onRemoveBlock: (Int) -> Unit,
-    onAddBlock: (PlanBlock) -> Unit,
+    onAddBlock: (PlanBlock) -> Boolean,
     modifier: Modifier = Modifier
 ) {
     val fonts = rememberCheckinFonts()
@@ -128,6 +129,15 @@ private fun SettledPlan(
     var editing by remember { mutableStateOf(false) }
     var editingIndex by remember { mutableIntStateOf(-1) }
     var adding by remember { mutableStateOf(false) }
+    // Overlap rejection: the dialog stays open with a red line inside it
+    // (errorMessage), which hides by itself after a couple of seconds.
+    var dialogError by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(dialogError) {
+        if (dialogError != null) {
+            delay(DIALOG_ERROR_MILLIS)
+            dialogError = null
+        }
+    }
 
     // Progressive reveal (frames 5a→6): rows arrive one at a time, keyed on
     // the generation identity so later edits don't restart the sequence.
@@ -388,14 +398,25 @@ private fun SettledPlan(
         PlanBlockEditorDialog(
             initial = plan.blocks[editIndex],
             onConfirm = {
-                onEditBlock(editIndex, it)
-                editingIndex = -1
+                // false = overlap rejected: keep the dialog open with the
+                // warning inside; true = applied, close it.
+                if (onEditBlock(editIndex, it)) {
+                    dialogError = null
+                    editingIndex = -1
+                } else {
+                    dialogError = PlanBlockEdits.OVERLAP_MESSAGE
+                }
             },
             onRemove = {
                 onRemoveBlock(editIndex)
+                dialogError = null
                 editingIndex = -1
             },
-            onDismiss = { editingIndex = -1 }
+            onDismiss = {
+                dialogError = null
+                editingIndex = -1
+            },
+            errorMessage = dialogError
         )
     }
 
@@ -403,11 +424,19 @@ private fun SettledPlan(
         PlanBlockEditorDialog(
             initial = null,
             onConfirm = {
-                onAddBlock(it)
-                adding = false
+                if (onAddBlock(it)) {
+                    dialogError = null
+                    adding = false
+                } else {
+                    dialogError = PlanBlockEdits.OVERLAP_MESSAGE
+                }
             },
             onRemove = null,
-            onDismiss = { adding = false }
+            onDismiss = {
+                dialogError = null
+                adding = false
+            },
+            errorMessage = dialogError
         )
     }
 }
@@ -605,6 +634,9 @@ private fun AddSomethingRow(onClick: () -> Unit, fonts: FontFamily) {
 private fun planDateLabel(iso: String): String = runCatching {
     LocalDate.parse(iso).format(DATE_LABEL)
 }.getOrDefault(iso)
+
+/** How long the in-dialog overlap warning stays visible before hiding itself. */
+private const val DIALOG_ERROR_MILLIS = 2_500L
 
 private val DATE_LABEL: DateTimeFormatter =
     DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())

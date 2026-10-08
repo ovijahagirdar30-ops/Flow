@@ -9,11 +9,14 @@ import com.markel.flowstate.core.domain.EveningPlanRepository
 import com.markel.flowstate.core.domain.EveningPlanner
 import com.markel.flowstate.core.domain.PlanFeedback
 import com.markel.flowstate.core.domain.PlanBlock
+import com.markel.flowstate.core.domain.TaskRepository
 import com.markel.flowstate.core.domain.checkin.CheckinMoodState
 import com.markel.flowstate.core.domain.checkin.UnexpectedPlan
 import com.markel.flowstate.core.domain.usecase.checkin.BuildCheckinSnapshotUseCase
 import com.markel.flowstate.core.domain.usecase.checkin.GetCheckinItemsUseCase
 import com.markel.flowstate.core.domain.usecase.tasks.AddTaskUseCase
+import com.markel.flowstate.core.domain.usecase.tasks.DeleteTaskUseCase
+import com.markel.flowstate.core.notifications.ReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +32,9 @@ class CheckinViewModel @Inject constructor(
     private val getCheckinItems: GetCheckinItemsUseCase,
     private val checkinRepository: CheckinRepository,
     private val addTaskUseCase: AddTaskUseCase,
+    private val taskRepository: TaskRepository,
+    private val deleteTaskUseCase: DeleteTaskUseCase,
+    private val reminderScheduler: ReminderScheduler,
     private val buildCheckinSnapshot: BuildCheckinSnapshotUseCase,
     private val eveningPlanner: EveningPlanner,
     private val eveningPlanRepository: EveningPlanRepository,
@@ -157,10 +163,14 @@ class CheckinViewModel @Inject constructor(
                 CheckinStep.STRESS -> CheckinStep.BODY
                 CheckinStep.BODY -> CheckinStep.MOTIVATION
                 CheckinStep.MOTIVATION -> CheckinStep.RECAP
-                // "Generate my evening": straight to the plan stage, which
-                // opens on the planning screen while the planner runs — the
-                // design goes recap → planning → settled with no tasks step.
-                CheckinStep.RECAP -> CheckinStep.PLAN
+                // "Generate my evening": the plan starts generating while the
+                // new "Tasks for tonight" step is open — it owns its own chrome
+                // (heading + add-row + sections + "Show my plan" pill) and is
+                // NOT part of the designed header/footer run.
+                CheckinStep.RECAP -> CheckinStep.TASKS
+                // "Show my plan": hand off to the plan stage, which opens on
+                // the planning screen if the planner is still running.
+                CheckinStep.TASKS -> CheckinStep.PLAN
                 CheckinStep.PLAN -> CheckinStep.PLAN
             }
         }
@@ -177,6 +187,7 @@ class CheckinViewModel @Inject constructor(
                 CheckinStep.BODY -> CheckinStep.STRESS
                 CheckinStep.MOTIVATION -> CheckinStep.BODY
                 CheckinStep.RECAP -> CheckinStep.MOTIVATION
+                CheckinStep.TASKS -> CheckinStep.RECAP
                 else -> current
             }
         }
@@ -195,11 +206,26 @@ class CheckinViewModel @Inject constructor(
     }
 
     /**
-     * Recap → final plan step: persists today's check-in FIRST (so the
-     * snapshot includes it), then builds the snapshot and runs the planner.
-     * The flag flips synchronously so the PLAN step opens on the planning
-     * screen on its first frame (no empty-list flash); instant with
-     * LocalEveningPlanner, seconds once Gemini backs it.
+     * Tasks-for-tonight step: drops a task from tonight's list — alarms
+     * first (the task's own plus every subtask's, same order as the Tasks
+     * screen), then the row itself. No-op for a stale id (already deleted).
+     */
+    fun removeTask(taskId: Int) {
+        viewModelScope.launch {
+            val task = taskRepository.getTaskById(taskId) ?: return@launch
+            reminderScheduler.cancel(task.id)
+            task.subTasks.forEach { reminderScheduler.cancelSubTask(it.id) }
+            deleteTaskUseCase(task)
+        }
+    }
+
+    /**
+     * Recap → tasks step: persists today's check-in FIRST (so the
+     * snapshot includes it), then builds the snapshot and runs the planner —
+     * all while the "Tasks for tonight" step is open, so the plan is ready
+     * (or still loading there) when "Show my plan" lands on the PLAN step,
+     * which opens on the planning screen on its first frame (no empty-list
+     * flash); instant with LocalEveningPlanner, seconds once Gemini backs it.
      */
     fun generatePlan() {
         if (_isPlanning.value) return
@@ -267,15 +293,31 @@ class CheckinViewModel @Inject constructor(
     // still records a durable memory note so later evenings learn from it
     // (same as a typed regenerate comment).
 
-    /** Replaces the block at [index] (time/details), re-sorted by time. */
-    fun editBlock(index: Int, newBlock: PlanBlock) {
-        val current = _plan.value ?: return
-        if (_isPlanning.value) return
+    /**
+     * Replaces the block at [index] (time/details), re-sorted by time.
+     *
+     * Returns false when moving the block onto an occupied time would
+     * double-book it — the dialog stays open and shows
+     * [PlanBlockEdits.OVERLAP_MESSAGE]. An edit that keeps the block's own
+     * time is always accepted, even if the generated plan already overlaps.
+     */
+    fun editBlock(index: Int, newBlock: PlanBlock): Boolean {
+        val current = _plan.value ?: return true
+        if (_isPlanning.value) return true
+        val old = current.blocks.getOrNull(index)
+        val timeChanged = old != null &&
+            (old.startTime != newBlock.startTime || old.durationMinutes != newBlock.durationMinutes)
+        if (timeChanged &&
+            PlanBlockEdits.findOverlap(newBlock, current.blocks, excludeIndex = index) != null
+        ) {
+            return false
+        }
         val result = PlanBlockEdits.replace(current.blocks, _planTicks.value, index, newBlock)
-        if (result.blocks == current.blocks && result.checkedIndexes == _planTicks.value) return
+        if (result.blocks == current.blocks && result.checkedIndexes == _planTicks.value) return true
         _plan.value = current.copy(blocks = result.blocks)
         _planTicks.value = result.checkedIndexes
         recordEditNote(PlanBlockEdits.editNote(newBlock))
+        return true
     }
 
     /** Removes the block at [index] from the plan being reviewed. */
@@ -289,14 +331,20 @@ class CheckinViewModel @Inject constructor(
         recordEditNote(PlanBlockEdits.removeNote(current.blocks[index]))
     }
 
-    /** Inserts [block] in time order into the plan being reviewed. */
-    fun addBlock(block: PlanBlock) {
-        val current = _plan.value ?: return
-        if (_isPlanning.value) return
+    /**
+     * Inserts [block] in time order into the plan being reviewed.
+     * Returns false (dialog stays open, [PlanBlockEdits.OVERLAP_MESSAGE]) when
+     * the new block would land on an occupied time.
+     */
+    fun addBlock(block: PlanBlock): Boolean {
+        val current = _plan.value ?: return true
+        if (_isPlanning.value) return true
+        if (PlanBlockEdits.findOverlap(block, current.blocks) != null) return false
         val result = PlanBlockEdits.insert(current.blocks, _planTicks.value, block)
         _plan.value = current.copy(blocks = result.blocks)
         _planTicks.value = result.checkedIndexes
         recordEditNote(PlanBlockEdits.addNote(block))
+        return true
     }
 
     /** Durable AI memory — fire-and-forget; a DB hiccup never blocks editing. */

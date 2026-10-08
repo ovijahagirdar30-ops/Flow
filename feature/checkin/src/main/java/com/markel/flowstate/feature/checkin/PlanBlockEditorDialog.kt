@@ -1,6 +1,7 @@
 package com.markel.flowstate.feature.checkin
 
 import android.text.format.DateFormat
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +46,12 @@ import java.util.Locale
  * Theme-aware via MaterialTheme: dialogs render in their own window, so one
  * styled dialog reads correctly over both the light/dark Plan tab and the
  * black check-in step.
+ *
+ * [errorMessage] renders a red line inside the dialog — used for the overlap
+ * rejection ("Another task is scheduled during that time"): the caller
+ * refuses to close the dialog when [onConfirm] fails and passes the message
+ * here; it auto-hides on the caller's timer while the dialog stays open so
+ * the user can pick another time.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +60,7 @@ fun PlanBlockEditorDialog(
     onConfirm: (PlanBlock) -> Unit,
     onRemove: (() -> Unit)?,
     onDismiss: () -> Unit,
+    errorMessage: String? = null,
 ) {
     var title by remember(initial) { mutableStateOf(initial?.title.orEmpty()) }
     var reason by remember(initial) { mutableStateOf(initial?.reason.orEmpty()) }
@@ -128,6 +136,15 @@ fun PlanBlockEditorDialog(
                         label = "Details (optional)",
                         singleLine = false,
                     )
+
+                    AnimatedVisibility(visible = errorMessage != null) {
+                        Text(
+                            text = errorMessage.orEmpty(),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         },

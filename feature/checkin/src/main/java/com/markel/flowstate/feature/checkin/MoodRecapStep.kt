@@ -34,11 +34,14 @@ internal data class RecapRow(
 /**
  * Recap screen ending the designed flow — "Thanks, Ovi." plus the five
  * answers as tappable rows (a "· note" marker when a question carries a
- * note), so any answer can be amended before the plan is generated.
+ * note), so any answer can be amended before the plan is generated, closed
+ * by the design's "Day ends at" row (the end-of-day cutoff for the Plan tab).
  */
 @Composable
 internal fun MoodRecapStep(
     rows: List<RecapRow>,
+    endOfDayMinutes: Int,
+    onEndOfDayChange: (Int) -> Unit,
     onAmend: (CheckinStep) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -122,6 +125,13 @@ internal fun MoodRecapStep(
                 )
             }
         }
+
+        // Design's frame-8 closing row: hairline divider, then the
+        // end-of-day cutoff that gates the Plan tab's visibility.
+        EndOfDayRow(
+            minutes = endOfDayMinutes,
+            onMinutesChange = onEndOfDayChange
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
     }
